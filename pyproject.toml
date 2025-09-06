@@ -1,0 +1,68 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "originfd"
+version = "0.1.0"
+description = "OriginFD - Enterprise Solar PV, BESS & Hybrid Energy System Platform"
+authors = ["OriginFD Team <team@originfd.com>"]
+readme = "README.md"
+packages = [
+    {include = "packages/py/*"},
+    {include = "services/*"},
+    {include = "domains/*"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+sqlalchemy = "^2.0.0"
+alembic = "^1.12.0"
+psycopg2-binary = "^2.9.0"
+redis = "^5.0.0"
+celery = "^5.3.0"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+python-multipart = "^0.0.6"
+jsonpatch = "^1.33"
+jsonschema = "^4.20.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+black = "^23.12.0"
+isort = "^5.13.0"
+flake8 = "^6.1.0"
+mypy = "^1.8.0"
+pre-commit = "^3.6.0"
+
+[tool.poetry.group.ai.dependencies]
+openai = "^1.6.0"
+anthropic = "^0.8.0"
+langchain = "^0.1.0"
+langchain-community = "^0.0.10"
+chromadb = "^0.4.0"
+sentence-transformers = "^2.2.0"
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "--cov=packages --cov=services --cov=domains --cov-report=term-missing"
