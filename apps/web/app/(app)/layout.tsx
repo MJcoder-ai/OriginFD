@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRequireAuth } from '@/lib/auth/auth-context'
+import { useRequireAuth } from '@/lib/auth/auth-provider'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { AppHeader } from '@/components/layout/app-header'
 

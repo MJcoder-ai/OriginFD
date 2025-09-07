@@ -4,7 +4,7 @@ import * as React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from 'next-themes'
-import { AuthProvider } from '@/lib/auth/auth-context'
+import { AuthProvider } from '@/lib/auth/auth-provider'
 
 // Create a client
 const queryClient = new QueryClient({

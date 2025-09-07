@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, MoreHorizontal, Zap, Battery, Sun, Grid3x3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@originfd/http-client'
-import { useAuth } from '@/lib/auth/auth-context'
+import { useAuth } from '@/lib/auth/auth-provider'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@originfd/ui'
 import type { DocumentResponse } from '@originfd/types-odl'
 

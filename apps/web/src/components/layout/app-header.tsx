@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Search, Settings, User, LogOut, Moon, Sun, Monitor } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useAuth } from '@/lib/auth/auth-context'
+import { useAuth } from '@/lib/auth/auth-provider'
 import { Button } from '@originfd/ui'
 import {
   DropdownMenu,

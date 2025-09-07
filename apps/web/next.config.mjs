@@ -5,10 +5,10 @@ const nextConfig = {
   },
   transpilePackages: ['@originfd/ui', '@originfd/types-odl', '@originfd/http-client'],
   env: {
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_ORCHESTRATOR_URL: process.env.NEXT_PUBLIC_ORCHESTRATOR_URL,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'dev-secret-change-in-production',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_ORCHESTRATOR_URL: process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || 'http://localhost:8001',
   },
   images: {
     domains: ['images.unsplash.com', 'avatars.githubusercontent.com'],
@@ -23,10 +23,11 @@ const nextConfig = {
     ]
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     return [
       {
         source: '/api/bridge/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
+        destination: `${apiUrl}/:path*`,
       },
     ]
   },

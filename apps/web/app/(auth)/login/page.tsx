@@ -9,7 +9,7 @@ import * as z from 'zod'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-import { useAuth } from '@/lib/auth/auth-context'
+import { useAuth } from '@/lib/auth/auth-provider'
 import { Button } from '@originfd/ui'
 import type { LoginRequest } from '@originfd/types-odl'
 
