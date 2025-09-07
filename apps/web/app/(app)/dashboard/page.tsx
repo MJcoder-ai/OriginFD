@@ -4,14 +4,17 @@ import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, MoreHorizontal, Zap, Battery, Sun, Grid3x3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { apiClient } from '@originfd/http-client'
+import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth/auth-provider'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@originfd/ui'
-import type { DocumentResponse } from '@originfd/types-odl'
+import { NewProjectModal } from '@/components/projects/new-project-modal'
+import type { DocumentResponse } from '@/lib/types'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const [newProjectModalOpen, setNewProjectModalOpen] = React.useState(false)
+  const [selectedDomain, setSelectedDomain] = React.useState<string | undefined>()
 
   // Fetch projects/documents
   const {
@@ -156,7 +159,7 @@ export default function DashboardPage() {
             Welcome back, {user?.full_name || user?.email}
           </p>
         </div>
-        <Button onClick={() => router.push('/projects/new')} className="gap-2">
+        <Button onClick={() => setNewProjectModalOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -268,7 +271,13 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/projects/new?type=pv')}>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => {
+            setSelectedDomain('PV')
+            setNewProjectModalOpen(true)
+          }}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Sun className="h-5 w-5 text-yellow-600" />
@@ -280,7 +289,13 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/projects/new?type=bess')}>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => {
+            setSelectedDomain('BESS')
+            setNewProjectModalOpen(true)
+          }}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Battery className="h-5 w-5 text-green-600" />
@@ -292,7 +307,13 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/projects/new?type=hybrid')}>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => {
+            setSelectedDomain('HYBRID')
+            setNewProjectModalOpen(true)
+          }}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Zap className="h-5 w-5 text-purple-600" />
@@ -304,6 +325,18 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
       </div>
+
+      {/* New Project Modal */}
+      <NewProjectModal
+        open={newProjectModalOpen}
+        onOpenChange={(open) => {
+          setNewProjectModalOpen(open)
+          if (!open) {
+            setSelectedDomain(undefined)
+          }
+        }}
+        defaultDomain={selectedDomain}
+      />
     </div>
   )
 }

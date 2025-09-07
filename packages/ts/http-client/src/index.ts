@@ -44,6 +44,8 @@ export class OriginFDClient {
   private api: KyInstance
   private orchestratorApi: KyInstance
   private authTokens: AuthTokens | null = null
+  private baseUrl: string
+  private orchestratorUrl: string
 
   constructor(config: ApiClientConfig = {}) {
     const {
@@ -52,6 +54,9 @@ export class OriginFDClient {
       timeout = 30000,
       headers = {},
     } = config
+
+    this.baseUrl = baseUrl
+    this.orchestratorUrl = orchestratorUrl
 
     this.api = ky.create({
       prefixUrl: baseUrl,
@@ -347,11 +352,11 @@ export class OriginFDClient {
   }
 
   getBaseUrl(): string {
-    return this.api.defaults.options.prefixUrl?.toString() || ''
+    return this.baseUrl
   }
 
   getOrchestratorUrl(): string {
-    return this.orchestratorApi.defaults.options.prefixUrl?.toString() || ''
+    return this.orchestratorUrl
   }
 }
 

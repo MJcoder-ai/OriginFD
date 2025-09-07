@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm run build:css && next dev",
+    "dev:css": "npx tailwindcss -i ./app/globals.css -o ./public/styles.css --watch",
+    "build:css": "npx tailwindcss -i ./app/globals.css -o ./public/styles.css --minify",
+    "build": "npm run build:css && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
@@ -41,7 +43,8 @@
     "zod": "^3.22.4",
     "zustand": "^4.4.7",
     "@originfd/types-odl": "workspace:*",
-    "@originfd/http-client": "workspace:*"
+    "@originfd/http-client": "workspace:*",
+    "@originfd/ui": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -13,9 +13,9 @@
     "./styles.css": "./dist/styles.css"
   },
   "scripts": {
-    "build": "tsc && cp src/styles.css dist/",
+    "build": "tsc && copy src\\styles.css dist\\",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "rmdir /s /q dist 2>nul || echo \"dist not found\"",
     "type-check": "tsc --noEmit"
   },
   "peerDependencies": {

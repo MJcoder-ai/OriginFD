@@ -12,7 +12,7 @@ import jwt
 
 from core.config import get_settings
 from core.database import SessionDep
-# from models.user import User  # TODO: Create user model
+from models.user import User
 
 router = APIRouter()
 security = HTTPBearer()
@@ -133,26 +133,47 @@ async def login(login_request: LoginRequest, db: Session = Depends(SessionDep)):
     """
     Authenticate user and return JWT tokens.
     """
-    # TODO: Get user from database and verify password
-    # user = db.query(User).filter(User.email == login_request.email).first()
-    # if not user or not verify_password(login_request.password, user.hashed_password):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Invalid credentials"
-    #     )
+    # Get user from database
+    user = db.query(User).filter(User.email == login_request.email).first()
     
-    # Mock authentication for now
-    if login_request.email == "admin@originfd.com" and login_request.password == "admin":
-        user_data = {
-            "sub": "user-123",
-            "email": login_request.email,
-            "roles": ["admin", "engineer"]
-        }
+    # Check if user exists and password is correct
+    if not user or not verify_password(login_request.password, user.hashed_password):
+        # Check for demo credentials as fallback
+        if login_request.email == "admin@originfd.com" and login_request.password == "admin":
+            user_data = {
+                "sub": "demo-user",
+                "email": login_request.email,
+                "roles": ["admin", "engineer"]
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
     else:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
-        )
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is deactivated"
+            )
+        
+        # Check if account is locked
+        if user.is_locked():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is temporarily locked"
+            )
+        
+        # Update last login
+        user.update_last_login()
+        db.commit()
+        
+        user_data = {
+            "sub": str(user.id),
+            "email": user.email,
+            "roles": user.roles
+        }
     
     settings = get_settings()
     access_token = create_access_token(user_data)

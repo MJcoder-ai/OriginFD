@@ -3,6 +3,8 @@
  * Generated from Python Pydantic models
  */
 
+import * as React from 'react'
+
 export type Domain = 'PV' | 'BESS' | 'HYBRID' | 'GRID' | 'MICROGRID'
 export type Scale = 'RESIDENTIAL' | 'COMMERCIAL' | 'INDUSTRIAL' | 'UTILITY' | 'HYPERSCALE'
 export type UnitSystem = 'SI' | 'IMPERIAL'

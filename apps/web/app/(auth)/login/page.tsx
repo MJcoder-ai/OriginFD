@@ -10,8 +10,8 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { useAuth } from '@/lib/auth/auth-provider'
-import { Button } from '@originfd/ui'
-import type { LoginRequest } from '@originfd/types-odl'
+import { Button } from '@/components/ui/button'
+import type { LoginRequest } from '@/lib/types'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),

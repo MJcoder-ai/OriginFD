@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Bell, Search, Settings, User, LogOut, Moon, Sun, Monitor } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/lib/auth/auth-provider'
-import { Button } from '@originfd/ui'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,8 +16,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@originfd/ui'
-import { Avatar, AvatarFallback, AvatarImage } from '@originfd/ui'
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function AppHeader() {
   const router = useRouter()
@@ -133,7 +133,7 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder-avatar.jpg" alt={user?.email} />
+                <AvatarImage src="" alt={user?.email} />
                 <AvatarFallback>
                   {getInitials(user?.full_name || user?.email)}
                 </AvatarFallback>

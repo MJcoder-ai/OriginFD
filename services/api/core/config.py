@@ -3,7 +3,8 @@ Core configuration settings for OriginFD API.
 """
 from functools import lru_cache
 from typing import List, Optional
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings
 import os
 
 
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False, env="DEBUG")
     
     # Security
-    SECRET_KEY: str = Field(env="JWT_SECRET_KEY")
+    SECRET_KEY: str = Field(..., env="JWT_SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     DATABASE_MAX_OVERFLOW: int = Field(default=20, env="DATABASE_MAX_OVERFLOW")
     
     # Redis
-    REDIS_URL: str = Field(env="REDIS_URL")
+    REDIS_URL: Optional[str] = Field(default=None, env="REDIS_URL")
     REDIS_EXPIRE_TIME: int = Field(default=3600, env="REDIS_EXPIRE_TIME")
     
     # CORS
@@ -70,10 +71,12 @@ class Settings(BaseSettings):
             raise ValueError(f"Environment must be one of: {allowed}")
         return v
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8", 
+        "case_sensitive": True,
+        "extra": "ignore"
+    }
 
 
 @lru_cache()
