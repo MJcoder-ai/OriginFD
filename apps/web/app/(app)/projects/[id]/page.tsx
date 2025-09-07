@@ -34,6 +34,7 @@ import {
 import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth/auth-provider'
 import type { DocumentResponse, OdlDocument } from '@/lib/types'
+import { DocumentViewer, SystemDiagram } from '@/components/odl-sd'
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -177,7 +178,7 @@ export default function ProjectDetailPage() {
                   {project?.scale || document?.meta?.scale}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  v{project?.current_version || document?.meta?.version}
+                  v{project?.current_version || document?.meta?.versioning?.document_version}
                 </span>
               </div>
             </div>
@@ -217,6 +218,15 @@ export default function ProjectDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* System Architecture Diagram */}
+          {document && document.instances && document.instances.length > 0 && (
+            <SystemDiagram 
+              instances={document.instances}
+              connections={document.connections || []}
+              className="mb-6"
+            />
+          )}
+          
           {/* Project Overview */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {/* Project Info */}
@@ -230,17 +240,17 @@ export default function ProjectDetailPage() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Location</p>
-                  <p className="text-sm">{document?.content?.location || 'Not specified'}</p>
+                  <p className="text-sm">{document?.hierarchy?.portfolio?.location || 'Not specified'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Description</p>
-                  <p className="text-sm">{document?.content?.description || 'No description available'}</p>
+                  <p className="text-sm">{document?.hierarchy?.portfolio?.description || 'No description available'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Created</p>
                   <p className="text-sm">
-                    {document?.meta?.created_at 
-                      ? new Date(document.meta.created_at).toLocaleDateString()
+                    {document?.meta?.timestamps?.created_at 
+                      ? new Date(document.meta.timestamps.created_at).toLocaleDateString()
                       : project?.created_at 
                         ? new Date(project.created_at).toLocaleDateString()
                         : 'Unknown'
@@ -262,8 +272,10 @@ export default function ProjectDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Capacity</p>
                   <p className="text-sm">
-                    {document?.content?.capacity 
-                      ? document.content.capacity
+                    {document?.requirements?.functional?.capacity_kw 
+                      ? document.requirements.functional.capacity_kw >= 1000
+                        ? `${(document.requirements.functional.capacity_kw / 1000).toFixed(1)} MW`
+                        : `${document.requirements.functional.capacity_kw.toFixed(0)} kW`
                       : 'TBD'
                     }
                   </p>
@@ -271,13 +283,16 @@ export default function ProjectDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Annual Generation</p>
                   <p className="text-sm">
-                    'TBD'
+                    {document?.requirements?.functional?.annual_generation_kwh 
+                      ? `${(document.requirements.functional.annual_generation_kwh / 1000).toFixed(0)} MWh`
+                      : 'TBD'
+                    }
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Connection</p>
                   <p className="text-sm">
-                    'Yes'
+                    {document?.requirements?.technical?.grid_connection ? 'Yes' : 'No'}
                   </p>
                 </div>
               </CardContent>
@@ -301,23 +316,27 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Documents</CardTitle>
-              <CardDescription>
-                ODL-SD documents and related files for this project
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">No documents</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Document management features are coming soon.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {document ? (
+            <DocumentViewer document={document} projectId={projectId} />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Documents</CardTitle>
+                <CardDescription>
+                  ODL-SD documents and related files for this project
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-sm font-semibold text-gray-900">No documents</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    No ODL-SD document found for this project.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="team" className="space-y-6">

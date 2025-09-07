@@ -182,10 +182,22 @@ class ToolRegistry:
     
     async def _load_builtin_tools(self):
         """Load built-in tools from Python modules."""
+        from .component_tools import (
+            ParseDatasheetTool,
+            ComponentDeduplicationTool,
+            ComponentClassificationTool,
+            ComponentRecommendationTool
+        )
+        
         builtin_tools = [
             ValidateOdlTool(),
             SimulateEnergyTool(),
             SimulateFinanceTool(),
+            # Component management tools
+            ParseDatasheetTool(),
+            ComponentDeduplicationTool(),
+            ComponentClassificationTool(),
+            ComponentRecommendationTool(),
             # Add more built-in tools here
         ]
         

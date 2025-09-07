@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 # Password hashing
@@ -16,6 +17,9 @@ SECRET_KEY = "your-secret-key-here-change-in-production"  # TODO: Move to enviro
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+# HTTP Bearer security scheme
+security = HTTPBearer()
 
 
 class TokenData(BaseModel):
@@ -144,3 +148,10 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
 def get_user_by_email(email: str) -> Optional[dict]:
     """Get user by email"""
     return MOCK_USERS_DB.get(email)
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+    """Get current user from JWT token"""
+    token = credentials.credentials
+    payload = verify_token(token, "access")
+    return payload

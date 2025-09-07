@@ -17,10 +17,11 @@ from models.base import Base
 from core.config import get_settings
 
 # Import all models to ensure they're registered with Base
+import models.tenant
 import models.user
-import models.organization
+import models.project
 import models.document
-import models.audit
+import models.component
 
 # Alembic Config object
 config = context.config
@@ -84,14 +85,16 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
-            # Enable UUID extension
-            connection.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
-            
-            # Enable Row Level Security on tables that need it
-            connection.execute("ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY")
-            connection.execute("ALTER TABLE IF EXISTS document_versions ENABLE ROW LEVEL SECURITY")
-            connection.execute("ALTER TABLE IF EXISTS document_access ENABLE ROW LEVEL SECURITY")
-            connection.execute("ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY")
+            # Enable PostgreSQL extensions if using PostgreSQL
+            from sqlalchemy import text
+            if connection.dialect.name == 'postgresql':
+                connection.execute(text("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""))
+                
+                # Enable Row Level Security on tables that need it
+                connection.execute(text("ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY"))
+                connection.execute(text("ALTER TABLE IF EXISTS document_versions ENABLE ROW LEVEL SECURITY"))
+                connection.execute(text("ALTER TABLE IF EXISTS document_access ENABLE ROW LEVEL SECURITY"))
+                connection.execute(text("ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY"))
             
             context.run_migrations()
 
