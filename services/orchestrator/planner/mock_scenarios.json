@@ -1,0 +1,16 @@
+[
+  {
+    "id": "base",
+    "name": "Base Case",
+    "irr_percent": 10.5,
+    "lcoe_per_kwh": 0.05,
+    "npv_usd": 1500000
+  },
+  {
+    "id": "optimized",
+    "name": "Optimized",
+    "irr_percent": 12.5,
+    "lcoe_per_kwh": 0.042,
+    "npv_usd": 2850000
+  }
+]

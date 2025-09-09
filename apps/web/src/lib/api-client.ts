@@ -139,6 +139,16 @@ export class OriginFDClient {
     }
   }
 
+  async getProjectScenarios(projectId: string): Promise<any[]> {
+    return this.request(`projects/${projectId}/scenarios`)
+  }
+
+  async adoptScenario(projectId: string, scenarioId: string): Promise<any> {
+    return this.request(`projects/${projectId}/scenarios/${scenarioId}/adopt`, {
+      method: 'POST',
+    })
+  }
+
   async login(credentials: LoginRequest): Promise<UserResponse> {
     const response = await this.request('auth/login', {
       method: 'POST',
