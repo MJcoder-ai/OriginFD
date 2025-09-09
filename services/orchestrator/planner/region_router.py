@@ -100,18 +100,21 @@ class RegionRouter:
         # Model configurations
         self.model_configs: Dict[str, ModelConfig] = {}
         self.region_configs: Dict[Region, RegionConfig] = {}
-        
+        # Tenant region preferences
+        self.tenant_region_map: Dict[str, Region] = {}
+
         # Initialize default configurations
         self._initialize_model_configs()
         self._initialize_region_configs()
-        
+        self._initialize_tenant_region_map()
+
         # Performance tracking
         self.model_performance: Dict[str, Dict[str, Any]] = {}
         self.region_performance: Dict[Region, Dict[str, Any]] = {}
-        
+
         # Load balancing
         self.model_load: Dict[str, int] = {}
-        
+
         logger.info("RegionRouter initialized")
     
     async def get_region_config(
@@ -465,7 +468,14 @@ class RegionRouter:
             cost_optimization_enabled=True,
             load_balancing_enabled=True
         )
-    
+
+    def _initialize_tenant_region_map(self) -> None:
+        """Initialize tenant-specific region preferences."""
+        self.tenant_region_map = {
+            "tenant_us": Region.US_WEST,
+            "tenant_eu": Region.EU_CENTRAL,
+        }
+
     async def _determine_target_region(
         self,
         tenant_id: Optional[str],
@@ -486,10 +496,11 @@ class RegionRouter:
                 return Region.EU_CENTRAL
             elif user_location.startswith("APAC"):
                 return Region.APAC_SOUTHEAST
-        
-        # Default based on tenant configuration
-        # TODO: Implement tenant-specific region mapping
-        
+
+        # Tenant-specific region preference
+        if tenant_id and tenant_id in self.tenant_region_map:
+            return self.tenant_region_map[tenant_id]
+
         # Default to US East
         return Region.US_EAST
     
