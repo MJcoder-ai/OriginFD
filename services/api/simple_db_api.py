@@ -16,7 +16,7 @@ import os
 
 from core.auth import (
     authenticate_user, create_token_pair, verify_password, get_password_hash,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
 )
 
 # Simple database setup
@@ -265,6 +265,30 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         refresh_token=refresh_token,
         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
+
+@app.get("/auth/me")
+async def get_current_user_info(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get current user information"""
+    user_id = current_user.get("sub")
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "is_active": user.is_active,
+        "is_superuser": user.is_superuser,
+        "role": user.role,
+        "roles": user.roles,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
 
 @app.get("/projects")
 async def list_projects(db: Session = Depends(get_db)):

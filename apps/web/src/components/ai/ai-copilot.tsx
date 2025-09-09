@@ -408,9 +408,9 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
             <div className="flex items-center space-x-2">
               <Bot className="h-5 w-5" />
               <CardTitle className="text-lg">AI Assistant</CardTitle>
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+              <span className="bg-white/20 text-white border-white/30 px-2 py-1 rounded text-sm">
                 {isConnected ? 'Online' : 'Connecting...'}
-              </Badge>
+              </span>
             </div>
             <div className="flex items-center space-x-1">
               <Button
@@ -452,7 +452,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
 
               <TabsContent value="chat" className="flex-1 flex flex-col m-0 p-0">
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <div className="flex-1 p-4 overflow-y-auto">
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
@@ -498,9 +498,9 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                             <div className="flex items-center justify-between pt-2 text-xs opacity-70">
                               <div className="flex items-center space-x-2">
                                 {message.metadata.agent && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
                                     {message.metadata.agent}
-                                  </Badge>
+                                  </span>
                                 )}
                                 {message.metadata.confidence && (
                                   <span>{Math.round(message.metadata.confidence * 100)}% confident</span>
@@ -559,7 +559,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                     )}
                   </div>
                   <div ref={messagesEndRef} />
-                </ScrollArea>
+                </div>
 
                 {/* Input */}
                 <div className="p-4 border-t">

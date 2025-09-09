@@ -11,11 +11,8 @@ from sqlalchemy import or_, and_, func
 import uuid
 import logging
 
-# Note: Adjusted imports for ODL-SD API compatibility
-# In ODL-SD API context, these would be:
-# from core.auth import get_current_user  
-# from odl_sd_api import get_db
-# For now, making components optional with simplified auth
+from core.database import SessionDep
+from api.routers.auth import get_current_user
 from models.component import (
     Component, ComponentManagement, ComponentStatusEnum,
     Supplier, SupplierStatusEnum,

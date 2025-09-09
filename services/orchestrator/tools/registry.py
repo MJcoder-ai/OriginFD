@@ -48,6 +48,7 @@ class ToolMetadata(BaseModel):
 class ToolResult(BaseModel):
     """Standardized tool execution result."""
     success: bool
+    content: Optional[Any] = None  # For backward compatibility
     execution_time_ms: int
     outputs: Dict[str, Any] = {}
     errors: List[str] = []

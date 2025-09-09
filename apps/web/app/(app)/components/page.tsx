@@ -97,9 +97,9 @@ export default function ComponentsPage() {
       page,
       page_size: 20,
       search: searchQuery || undefined,
-      category: categoryFilter || undefined,
-      domain: domainFilter || undefined,
-      status: statusFilter || undefined
+      category: categoryFilter === 'all' ? undefined : categoryFilter || undefined,
+      domain: domainFilter === 'all' ? undefined : domainFilter || undefined,
+      status: statusFilter === 'all' ? undefined : statusFilter || undefined
     }),
   })
 
@@ -223,7 +223,7 @@ export default function ComponentsPage() {
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               <SelectItem value="generation">Generation</SelectItem>
               <SelectItem value="storage">Storage</SelectItem>
               <SelectItem value="conversion">Conversion</SelectItem>
@@ -238,7 +238,7 @@ export default function ComponentsPage() {
               <SelectValue placeholder="Domain" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Domains</SelectItem>
+              <SelectItem value="all">All Domains</SelectItem>
               <SelectItem value="PV">PV</SelectItem>
               <SelectItem value="BESS">BESS</SelectItem>
               <SelectItem value="HYBRID">Hybrid</SelectItem>
@@ -251,7 +251,7 @@ export default function ComponentsPage() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="available">Available</SelectItem>

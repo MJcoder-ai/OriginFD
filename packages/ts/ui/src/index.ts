@@ -14,6 +14,8 @@ export * from './components/ui/select'
 export * from './components/ui/textarea'
 export * from './components/ui/dialog'
 export * from './components/ui/tabs'
+export * from './components/ui/badge'
+export * from './components/ui/scroll-area'
 
 // Utilities
 export * from './lib/utils'
