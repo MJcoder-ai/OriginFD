@@ -46,6 +46,11 @@ export interface UserResponse {
   roles: string[]
 }
 
+export interface AuthTokens {
+  accessToken: string
+  refreshToken: string
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -163,6 +168,14 @@ export class OriginFDClient {
         }
       }
     }
+  }
+
+  getTokens(): AuthTokens | null {
+    return this.authTokens
+  }
+
+  setTokens(tokens: AuthTokens): void {
+    this.authTokens = tokens
   }
 
   isAuthenticated(): boolean {

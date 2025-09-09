@@ -1,8 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { apiClient, type AuthTokens } from '@/lib/api-client'
-import type { UserResponse } from '@/lib/types'
+import { apiClient, type AuthTokens, type UserResponse } from '@/lib/api-client'
 
 interface AuthContextValue {
   user: UserResponse | null
@@ -29,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [tokens, user])
 
   const login = async (username: string, password: string) => {
-    const currentUser = await apiClient.login({ username, password })
+    const currentUser = await apiClient.login({ email: username, password })
     setUser(currentUser)
     setTokens(apiClient.getTokens())
   }
