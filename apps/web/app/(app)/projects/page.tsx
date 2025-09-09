@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth/auth-provider'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@originfd/ui'
 import { NewProjectModal } from '@/components/projects/new-project-modal'
-import type { ProjectResponse } from '@/lib/types'
+import type { DocumentResponse } from '@originfd/types-odl'
 
 export default function ProjectsPage() {
   const router = useRouter()
@@ -157,7 +157,7 @@ export default function ProjectsPage() {
                       {getDomainIcon(project.domain)}
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-lg">{project.name}</CardTitle>
+                      <CardTitle className="text-lg">{project.project_name}</CardTitle>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getDomainColor(project.domain)}`}>
                           {project.domain}
@@ -183,19 +183,17 @@ export default function ProjectsPage() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Completion</span>
-                    <span>{project.completion_percentage}%</span>
+                    <span className="text-muted-foreground">Version</span>
+                    <span>v{project.current_version}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      project.status === 'ACTIVE' || project.status === 'OPERATIONAL'
+                      project.is_active
                         ? 'bg-green-100 text-green-800' 
-                        : project.status === 'DRAFT'
-                        ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {project.display_status}
+                      {project.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
