@@ -198,6 +198,42 @@ export class OriginFDClient {
     this.authTokens = tokens
   }
 
+  // Component APIs
+  async getComponent(componentId: string): Promise<any> {
+    return this.request(`components/${componentId}`)
+  }
+
+  async updateComponent(componentId: string, data: any): Promise<any> {
+    return this.request(`components/${componentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async parseDatasheet(file: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const url = `${this.baseUrl}/components/parse-datasheet`
+    const headers: HeadersInit = {}
+    if (this.authTokens?.accessToken) {
+      headers['Authorization'] = `Bearer ${this.authTokens.accessToken}`
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      headers,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status, errorText)
+    }
+
+    return response.json()
+  }
+
   isAuthenticated(): boolean {
     return !!this.authTokens?.accessToken
   }
