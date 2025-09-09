@@ -131,7 +131,6 @@ const scaleOptions = [
 export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjectModalProps) {
   const queryClient = useQueryClient()
   
-  
   const form = useForm<NewProjectFormData>({
     resolver: zodResolver(newProjectSchema),
     defaultValues: {
