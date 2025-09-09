@@ -14,6 +14,7 @@ export default function ProjectsPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [newProjectModalOpen, setNewProjectModalOpen] = React.useState(false)
+  // Debug: trigger recompilation
 
   // Fetch projects/documents
   const {
@@ -152,7 +153,12 @@ export default function ProjectsPage() {
             Manage your energy system projects
           </p>
         </div>
-        <Button onClick={() => setNewProjectModalOpen(true)} className="gap-2">
+        <Button onClick={() => {
+          console.log('New Project button clicked!')
+          console.log('Current modal state:', newProjectModalOpen)
+          setNewProjectModalOpen(true)
+          console.log('Modal state set to true')
+        }} className="gap-2">
           <Plus className="h-4 w-4" />
           New Project
         </Button>

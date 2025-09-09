@@ -131,6 +131,11 @@ const scaleOptions = [
 export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjectModalProps) {
   const queryClient = useQueryClient()
   
+  // Debug logging
+  React.useEffect(() => {
+    console.log('NewProjectModal open state changed:', open)
+  }, [open])
+  
   const form = useForm<NewProjectFormData>({
     resolver: zodResolver(newProjectSchema),
     defaultValues: {
@@ -236,86 +241,79 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
   const selectedDomain = form.watch('domain')
   const selectedScale = form.watch('scale')
 
+  React.useEffect(() => {
+    if (open) {
+      console.log('Modal should be visible now!')
+    }
+  }, [open])
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>
-            Set up a new energy system project. Choose the domain and scale that best fits your requirements.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Project Name */}
-          <div className="space-y-2">
-            <Label htmlFor="project_name">Project Name *</Label>
-            <Input
-              id="project_name"
-              placeholder="Enter project name"
-              {...form.register('project_name')}
-            />
-            {form.formState.errors.project_name && (
-              <p className="text-sm text-red-600">
-                {form.formState.errors.project_name.message}
-              </p>
-            )}
-          </div>
-
-          {/* Domain Selection */}
-          <div className="space-y-3">
-            <Label>Domain *</Label>
-            <Select
-              value={selectedDomain}
-              onValueChange={(value) => form.setValue('domain', value as any)}
+    <>
+      {/* Debug overlay */}
+      {open && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-red-500/50 flex items-center justify-center"
+          onClick={() => onOpenChange(false)}
+        >
+          <div 
+            className="bg-white p-8 rounded border-4 border-blue-500 max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4">DEBUG: Modal is Working!</h2>
+            <p className="mb-4">If you can see this, the modal state is working.</p>
+            <button 
+              onClick={() => onOpenChange(false)}
+              className="bg-blue-500 text-white px-4 py-2 rounded"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select system domain" />
-              </SelectTrigger>
-              <SelectContent>
-                {domainOptions.map((option) => {
-                  const Icon = option.icon
-                  return (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center space-x-2">
-                        <Icon className={`h-4 w-4 ${option.color}`} />
-                        <div>
-                          <div className="font-medium">{option.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {option.description}
-                          </div>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.domain && (
-              <p className="text-sm text-red-600">
-                {form.formState.errors.domain.message}
-              </p>
-            )}
+              Close
+            </button>
           </div>
+        </div>
+      )}
+      
+      {/* Original Dialog */}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[600px] bg-white border-4 border-red-500 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>
+              Set up a new energy system project. Choose the domain and scale that best fits your requirements.
+            </DialogDescription>
+          </DialogHeader>
 
-          {/* Scale Selection */}
-          <div className="space-y-3">
-            <Label>Scale *</Label>
-            <Select
-              value={selectedScale}
-              onValueChange={(value) => form.setValue('scale', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select project scale" />
-              </SelectTrigger>
-              <SelectContent>
-                {scaleOptions.map((option) => {
-                  const Icon = option.icon
-                  return (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center justify-between w-full">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Project Name */}
+            <div className="space-y-2">
+              <Label htmlFor="project_name">Project Name *</Label>
+              <Input
+                id="project_name"
+                placeholder="Enter project name"
+                {...form.register('project_name')}
+              />
+              {form.formState.errors.project_name && (
+                <p className="text-sm text-red-600">
+                  {form.formState.errors.project_name.message}
+                </p>
+              )}
+            </div>
+
+            {/* Domain Selection */}
+            <div className="space-y-3">
+              <Label>Domain *</Label>
+              <Select
+                value={selectedDomain}
+                onValueChange={(value) => form.setValue('domain', value as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select system domain" />
+                </SelectTrigger>
+                <SelectContent>
+                  {domainOptions.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <SelectItem key={option.value} value={option.value}>
                         <div className="flex items-center space-x-2">
-                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <Icon className={`h-4 w-4 ${option.color}`} />
                           <div>
                             <div className="font-medium">{option.label}</div>
                             <div className="text-xs text-muted-foreground">
@@ -323,64 +321,102 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
                             </div>
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {option.range}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.scale && (
-              <p className="text-sm text-red-600">
-                {form.formState.errors.scale.message}
-              </p>
-            )}
-          </div>
-
-          {/* Location */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="Enter project location (optional)"
-              {...form.register('location')}
-            />
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Enter project description (optional)"
-              rows={3}
-              {...form.register('description')}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={createProjectMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={createProjectMutation.isPending}
-            >
-              {createProjectMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.domain && (
+                <p className="text-sm text-red-600">
+                  {form.formState.errors.domain.message}
+                </p>
               )}
-              Create Project
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            </div>
+
+            {/* Scale Selection */}
+            <div className="space-y-3">
+              <Label>Scale *</Label>
+              <Select
+                value={selectedScale}
+                onValueChange={(value) => form.setValue('scale', value as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project scale" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scaleOptions.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center space-x-2">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">{option.label}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {option.description}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {option.range}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.scale && (
+                <p className="text-sm text-red-600">
+                  {form.formState.errors.scale.message}
+                </p>
+              )}
+            </div>
+
+            {/* Location */}
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                placeholder="Enter project location (optional)"
+                {...form.register('location')}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Enter project description (optional)"
+                rows={3}
+                {...form.register('description')}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={createProjectMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createProjectMutation.isPending}
+              >
+                {createProjectMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Create Project
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
