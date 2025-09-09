@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
@@ -335,6 +336,34 @@ async def get_document(
             "location": project.location_name or "TBD"
         }
     }
+
+# Scenario audit storage
+class ScenarioAudit(BaseModel):
+    id: Optional[str] = None
+    project_id: str
+    name: str
+    irr_percent: float
+    lcoe_per_kwh: float
+    npv_usd: float
+    created_at: Optional[str] = None
+
+
+scenario_audit_log: List[ScenarioAudit] = []
+
+
+@app.post("/scenarios", response_model=ScenarioAudit)
+async def store_scenario_audit(scenario: ScenarioAudit, current_user: CurrentUser):
+    record = ScenarioAudit(
+        id=scenario.id or str(uuid4()),
+        project_id=scenario.project_id,
+        name=scenario.name,
+        irr_percent=scenario.irr_percent,
+        lcoe_per_kwh=scenario.lcoe_per_kwh,
+        npv_usd=scenario.npv_usd,
+        created_at=datetime.utcnow().isoformat(),
+    )
+    scenario_audit_log.append(record)
+    return record
 
 # Admin endpoints
 @app.get("/admin/stats")

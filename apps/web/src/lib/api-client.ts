@@ -139,8 +139,16 @@ export class OriginFDClient {
     }
   }
 
-  async getProjectLifecycle(projectId: string): Promise<any> {
-    return this.request(`projects/${projectId}/lifecycle`)
+
+  async getProjectScenarios(projectId: string): Promise<any[]> {
+    return this.request(`projects/${projectId}/scenarios`)
+  }
+
+  async adoptScenario(projectId: string, scenarioId: string): Promise<any> {
+    return this.request(`projects/${projectId}/scenarios/${scenarioId}/adopt`, {
+      method: 'POST',
+    })
+
   }
 
   async login(credentials: LoginRequest): Promise<UserResponse> {

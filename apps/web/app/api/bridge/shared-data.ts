@@ -82,3 +82,15 @@ export function findProject(id: string) {
 export function getAllProjects() {
   return mockProjects
 }
+
+// Simple notification store used by API routes
+export let mockNotifications: any[] = []
+
+export function addNotification(notification: any) {
+  mockNotifications.push(notification)
+  return notification
+}
+
+export function getNotifications() {
+  return mockNotifications
+}
