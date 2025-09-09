@@ -60,7 +60,7 @@ class ProjectResponse(BaseModel):
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
-    total_capacity_kw: Optional[str]
+    total_capacity_kw: Optional[float]
     tags: List[str]
     owner_id: str
     created_at: datetime
@@ -80,7 +80,7 @@ class ProjectSummaryResponse(BaseModel):
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
-    total_capacity_kw: Optional[str]
+    total_capacity_kw: Optional[float]
     created_at: datetime
     updated_at: datetime
 

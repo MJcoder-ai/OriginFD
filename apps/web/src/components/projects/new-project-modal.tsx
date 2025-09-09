@@ -187,6 +187,9 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
     }
   }, [open])
 
+  // Debug: Check if this component is even rendering
+  console.log('NewProjectModal render - open:', open, 'defaultDomain:', defaultDomain)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px]">
