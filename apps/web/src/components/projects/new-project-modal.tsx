@@ -26,10 +26,10 @@ import {
   Textarea,
 } from '@originfd/ui'
 import { apiClient } from '@/lib/api-client'
-import type { DocumentCreateRequest } from '@/lib/types'
+import type { ProjectCreateRequest } from '@/lib/types'
 
 const newProjectSchema = z.object({
-  project_name: z
+  name: z
     .string()
     .min(1, 'Project name is required')
     .max(255, 'Project name must be less than 255 characters')
@@ -41,7 +41,7 @@ const newProjectSchema = z.object({
     required_error: 'Please select a scale',
   }),
   description: z.string().optional(),
-  location: z.string().optional(),
+  location_name: z.string().optional(),
 })
 
 type NewProjectFormData = z.infer<typeof newProjectSchema>
@@ -139,85 +139,25 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
   const form = useForm<NewProjectFormData>({
     resolver: zodResolver(newProjectSchema),
     defaultValues: {
-      project_name: '',
+      name: '',
       domain: defaultDomain as any || undefined,
       scale: undefined,
       description: '',
-      location: '',
+      location_name: '',
     },
   })
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: NewProjectFormData) => {
-      // Create basic ODL-SD document structure
-      const documentData = {
-        $schema: 'https://odl-sd.org/schemas/v4.1/document.json',
-        schema_version: '4.1',
-        meta: {
-          project: data.project_name,
-          domain: data.domain,
-          scale: data.scale,
-          units: {
-            system: 'SI',
-            currency: 'USD',
-            coordinate_system: 'EPSG:4326',
-          },
-          timestamps: {
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          versioning: {
-            document_version: '4.1.0',
-            content_hash: 'sha256:' + '0'.repeat(64), // Will be calculated by backend
-          },
-        },
-        hierarchy: {
-          portfolio: {
-            id: 'portfolio-1',
-            name: data.project_name,
-            description: data.description || `${data.domain} ${data.scale} project`,
-            location: data.location || 'TBD',
-          },
-        },
-        requirements: {
-          functional: {
-            capacity_kw: 0, // To be determined during design
-            annual_generation_kwh: 0,
-            performance_requirements: {},
-          },
-          technical: {
-            grid_connection: data.domain !== 'MICROGRID',
-            voltage_level: 'TBD',
-            frequency_hz: 50,
-          },
-          regulatory: {
-            grid_codes: [],
-            safety_standards: [],
-            environmental_permits: [],
-          },
-        },
-        libraries: {},
-        instances: [],
-        connections: [],
-        analysis: [],
-        audit: [],
-        data_management: {
-          partitioning_enabled: false,
-          external_refs_enabled: false,
-          streaming_enabled: false,
-          max_document_size_mb: 100,
-        },
-      }
-
-      const request: DocumentCreateRequest = {
-        project_name: data.project_name,
+      const request: ProjectCreateRequest = {
+        name: data.name,
         domain: data.domain,
         scale: data.scale,
         description: data.description,
-        location: data.location,
+        location_name: data.location_name,
       }
 
-      return apiClient.createDocument(request)
+      return apiClient.createProject(request)
     },
     onSuccess: (data) => {
       toast.success('Project created successfully!')
@@ -248,32 +188,8 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
   }, [open])
 
   return (
-    <>
-      {/* Debug overlay */}
-      {open && (
-        <div 
-          className="fixed inset-0 z-[9999] bg-red-500/50 flex items-center justify-center"
-          onClick={() => onOpenChange(false)}
-        >
-          <div 
-            className="bg-white p-8 rounded border-4 border-blue-500 max-w-md"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-bold mb-4">DEBUG: Modal is Working!</h2>
-            <p className="mb-4">If you can see this, the modal state is working.</p>
-            <button 
-              onClick={() => onOpenChange(false)}
-              className="bg-blue-500 text-white px-4 py-2 rounded"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {/* Original Dialog */}
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px] bg-white border-4 border-red-500 shadow-2xl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
             <DialogDescription>
@@ -284,15 +200,15 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Project Name */}
             <div className="space-y-2">
-              <Label htmlFor="project_name">Project Name *</Label>
+              <Label htmlFor="name">Project Name *</Label>
               <Input
-                id="project_name"
+                id="name"
                 placeholder="Enter project name"
-                {...form.register('project_name')}
+                {...form.register('name')}
               />
-              {form.formState.errors.project_name && (
+              {form.formState.errors.name && (
                 <p className="text-sm text-red-600">
-                  {form.formState.errors.project_name.message}
+                  {form.formState.errors.name.message}
                 </p>
               )}
             </div>
@@ -376,11 +292,11 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
 
             {/* Location */}
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location_name">Location</Label>
               <Input
-                id="location"
+                id="location_name"
                 placeholder="Enter project location (optional)"
-                {...form.register('location')}
+                {...form.register('location_name')}
               />
             </div>
 
@@ -417,6 +333,5 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
           </form>
         </DialogContent>
       </Dialog>
-    </>
   )
 }

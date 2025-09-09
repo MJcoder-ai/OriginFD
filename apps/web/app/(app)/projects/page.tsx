@@ -26,66 +26,7 @@ export default function ProjectsPage() {
     queryFn: () => apiClient.listProjects(),
   })
 
-  // Mock data for demo (same as dashboard)
-  const mockProjects: DocumentResponse[] = [
-    {
-      id: '1',
-      project_name: 'Solar Farm Arizona Phase 1',
-      domain: 'PV',
-      scale: 'UTILITY',
-      current_version: 3,
-      content_hash: 'sha256:abc123',
-      is_active: true,
-      created_at: '2024-01-15T10:30:00Z',
-      updated_at: '2024-01-20T15:45:00Z',
-    },
-    {
-      id: '2',
-      project_name: 'Commercial BESS Installation',
-      domain: 'BESS',
-      scale: 'COMMERCIAL',
-      current_version: 1,
-      content_hash: 'sha256:def456',
-      is_active: true,
-      created_at: '2024-01-18T09:15:00Z',
-      updated_at: '2024-01-18T09:15:00Z',
-    },
-    {
-      id: '3',
-      project_name: 'Hybrid Microgrid Campus',
-      domain: 'HYBRID',
-      scale: 'INDUSTRIAL',
-      current_version: 2,
-      content_hash: 'sha256:ghi789',
-      is_active: true,
-      created_at: '2024-01-22T14:20:00Z',
-      updated_at: '2024-01-23T11:30:00Z',
-    },
-    {
-      id: '4',
-      project_name: 'Residential Solar + Storage',
-      domain: 'HYBRID',
-      scale: 'RESIDENTIAL',
-      current_version: 1,
-      content_hash: 'sha256:jkl012',
-      is_active: true,
-      created_at: '2024-01-25T08:00:00Z',
-      updated_at: '2024-01-25T08:00:00Z',
-    },
-    {
-      id: '5',
-      project_name: 'Industrial Grid Tie System',
-      domain: 'GRID',
-      scale: 'INDUSTRIAL',
-      current_version: 2,
-      content_hash: 'sha256:mno345',
-      is_active: false,
-      created_at: '2024-01-10T16:30:00Z',
-      updated_at: '2024-01-12T10:15:00Z',
-    },
-  ]
-
-  const displayProjects = projects.length > 0 ? projects : mockProjects
+  const displayProjects = projects
 
   const getDomainIcon = (domain: string) => {
     switch (domain) {
@@ -183,9 +124,25 @@ export default function ProjectsPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Error loading projects. Showing demo data.</p>
+          <div className="max-w-md mx-auto">
+            <div className="text-red-500 mb-4">
+              <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load projects</h3>
+            <p className="text-muted-foreground mb-4">
+              There was an error connecting to the server. Please check your connection and try again.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+            >
+              Try Again
+            </Button>
+          </div>
         </div>
-      ) : (
+      ) : displayProjects?.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {displayProjects.map((project) => (
             <Card
@@ -247,6 +204,24 @@ export default function ProjectsPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="max-w-md mx-auto">
+            <div className="text-muted-foreground mb-4">
+              <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Get started by creating your first energy system project.
+            </p>
+            <Button onClick={() => setNewProjectModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Project
+            </Button>
+          </div>
         </div>
       )}
 

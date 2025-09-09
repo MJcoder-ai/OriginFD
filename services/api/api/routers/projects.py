@@ -1,7 +1,7 @@
 """
 Project management endpoints.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
@@ -24,11 +24,14 @@ class ProjectCreateRequest(BaseModel):
     domain: ProjectDomain
     scale: ProjectScale
     location_name: Optional[str] = Field(None, max_length=255)
-    latitude: Optional[str] = Field(None, max_length=20)
-    longitude: Optional[str] = Field(None, max_length=20)
-    country_code: Optional[str] = Field(None, max_length=3)
-    total_capacity_kw: Optional[str] = Field(None, max_length=20)
-    tags: List[str] = Field(default_factory=list)
+    latitude: Optional[float] = Field(None, ge=-90, le=90, description="Latitude must be between -90 and 90 degrees")
+    longitude: Optional[float] = Field(None, ge=-180, le=180, description="Longitude must be between -180 and 180 degrees")
+    country_code: Optional[str] = Field(None, min_length=2, max_length=3, description="ISO country code")
+    total_capacity_kw: Optional[float] = Field(None, gt=0, description="Capacity must be greater than 0")
+    tags: List[str] = Field(default_factory=list, max_items=20)
+    
+    class Config:
+        str_strip_whitespace = True
 
 
 class ProjectUpdateRequest(BaseModel):
@@ -37,10 +40,13 @@ class ProjectUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, max_length=1000)
     status: Optional[ProjectStatus] = None
     location_name: Optional[str] = Field(None, max_length=255)
-    latitude: Optional[str] = Field(None, max_length=20)
-    longitude: Optional[str] = Field(None, max_length=20)
-    total_capacity_kw: Optional[str] = Field(None, max_length=20)
-    tags: Optional[List[str]] = None
+    latitude: Optional[float] = Field(None, ge=-90, le=90, description="Latitude must be between -90 and 90 degrees")
+    longitude: Optional[float] = Field(None, ge=-180, le=180, description="Longitude must be between -180 and 180 degrees")
+    total_capacity_kw: Optional[float] = Field(None, gt=0, description="Capacity must be greater than 0")
+    tags: Optional[List[str]] = Field(None, max_items=20)
+    
+    class Config:
+        str_strip_whitespace = True
 
 
 class ProjectResponse(BaseModel):
@@ -103,7 +109,9 @@ async def list_projects(
     """
     List projects for the current user.
     """
-    query = db.query(Project).filter(Project.owner_id == current_user["id"])
+    query = db.query(Project).filter(
+        and_(Project.owner_id == current_user["id"], Project.is_archived == False)
+    )
     
     # Apply filters
     if domain:
@@ -217,12 +225,14 @@ async def get_project(
             detail="Invalid project ID format"
         )
     
-    project = db.query(Project).filter(Project.id == project_uuid).first()
+    project = db.query(Project).filter(
+        and_(Project.id == project_uuid, Project.is_archived == False)
+    ).first()
     
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail="Project not found or archived"
         )
     
     # Check if user has access to this project
@@ -268,12 +278,14 @@ async def update_project(
             detail="Invalid project ID format"
         )
     
-    project = db.query(Project).filter(Project.id == project_uuid).first()
+    project = db.query(Project).filter(
+        and_(Project.id == project_uuid, Project.is_archived == False)
+    ).first()
     
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail="Project not found or archived"
         )
     
     # Check if user has edit access
@@ -288,7 +300,7 @@ async def update_project(
     for field, value in update_data.items():
         setattr(project, field, value)
     
-    project.updated_at = datetime.utcnow()
+    project.updated_at = datetime.now(timezone.utc)
     
     db.commit()
     db.refresh(project)
@@ -318,7 +330,7 @@ async def delete_project(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Delete a specific project.
+    Soft delete a specific project (archive it).
     """
     try:
         project_uuid = uuid.UUID(project_id)
@@ -328,12 +340,14 @@ async def delete_project(
             detail="Invalid project ID format"
         )
     
-    project = db.query(Project).filter(Project.id == project_uuid).first()
+    project = db.query(Project).filter(
+        and_(Project.id == project_uuid, Project.is_archived == False)
+    ).first()
     
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail="Project not found or already archived"
         )
     
     # Check if user has delete access (only owner for now)
@@ -343,10 +357,13 @@ async def delete_project(
             detail="Only project owner can delete project"
         )
     
-    db.delete(project)
+    # Soft delete by setting archived flag
+    project.is_archived = True
+    project.updated_at = datetime.now(timezone.utc)
+    
     db.commit()
     
-    return {"message": "Project deleted successfully"}
+    return {"message": "Project archived successfully"}
 
 
 @router.get("/stats/summary")
@@ -359,25 +376,27 @@ async def get_project_stats(
     """
     user_id = current_user["id"]
     
-    # Total projects
-    total_projects = db.query(Project).filter(Project.owner_id == user_id).count()
-    
-    # Active projects
-    active_projects = db.query(Project).filter(
-        and_(Project.owner_id == user_id, Project.status == ProjectStatus.ACTIVE)
+    # Total projects (excluding archived)
+    total_projects = db.query(Project).filter(
+        and_(Project.owner_id == user_id, Project.is_archived == False)
     ).count()
     
-    # Projects by domain
+    # Active projects (excluding archived)
+    active_projects = db.query(Project).filter(
+        and_(Project.owner_id == user_id, Project.status == ProjectStatus.ACTIVE, Project.is_archived == False)
+    ).count()
+    
+    # Projects by domain (excluding archived)
     pv_projects = db.query(Project).filter(
-        and_(Project.owner_id == user_id, Project.domain == ProjectDomain.PV)
+        and_(Project.owner_id == user_id, Project.domain == ProjectDomain.PV, Project.is_archived == False)
     ).count()
     
     bess_projects = db.query(Project).filter(
-        and_(Project.owner_id == user_id, Project.domain == ProjectDomain.BESS)
+        and_(Project.owner_id == user_id, Project.domain == ProjectDomain.BESS, Project.is_archived == False)
     ).count()
     
     hybrid_projects = db.query(Project).filter(
-        and_(Project.owner_id == user_id, Project.domain == ProjectDomain.HYBRID)
+        and_(Project.owner_id == user_id, Project.domain == ProjectDomain.HYBRID, Project.is_archived == False)
     ).count()
     
     return {
