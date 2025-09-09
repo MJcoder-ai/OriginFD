@@ -18,7 +18,7 @@ export * from './components/ui/badge'
 export * from './components/ui/scroll-area'
 
 // Utilities
-export * from './lib/utils'
+export { cn } from './lib/utils'
 
 // TODO: Add remaining components as they are implemented
 // export * from './components/ui/sheet'
