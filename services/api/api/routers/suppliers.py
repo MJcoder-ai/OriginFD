@@ -12,7 +12,7 @@ import uuid
 import logging
 
 from core.database import SessionDep
-from core.security import get_current_user
+from core.auth import get_current_user
 from models.component import Supplier, SupplierStatusEnum, RFQ, RFQStatusEnum, PurchaseOrder, POStatusEnum
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ router = APIRouter()
 class SupplierCreateRequest(BaseModel):
     """Request model for creating suppliers."""
     name: str = Field(..., min_length=1, max_length=120)
-    gln: Optional[str] = Field(None, regex=r"^\d{13}$", description="GS1 Global Location Number")
+    gln: Optional[str] = Field(None, pattern=r"^\d{13}$", description="GS1 Global Location Number")
     contact: Dict[str, Any] = Field(..., description="Contact information")
     capabilities: Optional[Dict[str, Any]] = Field(None, description="Supplier capabilities")
     certifications: Optional[Dict[str, Any]] = Field(None, description="Quality certifications")
@@ -33,7 +33,7 @@ class SupplierCreateRequest(BaseModel):
 class SupplierUpdateRequest(BaseModel):
     """Request model for updating suppliers."""
     name: Optional[str] = Field(None, min_length=1, max_length=120)
-    gln: Optional[str] = Field(None, regex=r"^\d{13}$")
+    gln: Optional[str] = Field(None, pattern=r"^\d{13}$")
     contact: Optional[Dict[str, Any]] = None
     capabilities: Optional[Dict[str, Any]] = None
     certifications: Optional[Dict[str, Any]] = None

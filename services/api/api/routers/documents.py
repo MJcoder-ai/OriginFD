@@ -9,11 +9,11 @@ from typing import List, Optional, Dict, Any
 import uuid
 
 from core.database import SessionDep
-from core.security import get_current_user
+from core.auth import get_current_user
 # from core.rbac import guard_patch, has_document_access  # TODO: Implement RBAC
 from models.document import Document, DocumentVersion
-from odl_sd_schema import OdlDocument, validate_document
-from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
+from odl_sd.schemas import OdlSdDocument
+# from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError  # TODO: Check if this module exists
 
 router = APIRouter()
 
@@ -22,8 +22,8 @@ class DocumentCreateRequest(BaseModel):
     """Request model for creating new documents."""
     project_name: str = Field(..., min_length=1, max_length=255)
     portfolio_id: Optional[str] = None
-    domain: str = Field(..., regex="^(PV|BESS|HYBRID|GRID|MICROGRID)$")
-    scale: str = Field(..., regex="^(RESIDENTIAL|COMMERCIAL|INDUSTRIAL|UTILITY|HYPERSCALE)$")
+    domain: str = Field(..., pattern="^(PV|BESS|HYBRID|GRID|MICROGRID)$")
+    scale: str = Field(..., pattern="^(RESIDENTIAL|COMMERCIAL|INDUSTRIAL|UTILITY|HYPERSCALE)$")
     document_data: Dict[str, Any]
 
 
@@ -70,8 +70,8 @@ async def create_document(
     """
     try:
         # Validate ODL-SD document structure
-        odl_doc = OdlDocument.parse_obj(request.document_data)
-        validation_result = validate_document(odl_doc.dict())
+        odl_doc = OdlSdDocument.parse_obj(request.document_data)
+        validation_result = odl_doc.validate_document()
         
         if not validation_result.is_valid:
             raise HTTPException(
@@ -251,8 +251,8 @@ async def apply_document_patch(
             )
         
         # Validate patched document
-        odl_doc = OdlDocument.parse_obj(patched_doc)
-        validation_result = validate_document(odl_doc.dict())
+        odl_doc = OdlSdDocument.parse_obj(patched_doc)
+        validation_result = odl_doc.validate_document()
         
         if not validation_result.is_valid:
             raise HTTPException(

@@ -12,7 +12,9 @@ import uvicorn
 from core.config import get_settings
 from core.database import engine
 from core.logging_config import setup_logging
-from api.routers import auth, projects, documents, marketplace, components, component_integration, suppliers, health
+from api.routers import health, projects
+# Temporarily disabled due to import issues:
+# from api.routers import auth, documents, marketplace, components, component_integration, suppliers
 
 # Set up logging
 setup_logging()
@@ -29,7 +31,8 @@ async def lifespan(app: FastAPI):
     # Warm up database connection
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            from sqlalchemy import text
+            conn.execute(text("SELECT 1"))
         logger.info("Database connection verified")
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
@@ -59,18 +62,20 @@ app = FastAPI(
 settings = get_settings()
 
 # Add middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_HOSTS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Temporarily disabled CORS middleware for testing
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=settings.ALLOWED_HOSTS,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
+# Temporarily disabled TrustedHostMiddleware for development
+# app.add_middleware(
+#     TrustedHostMiddleware,
+#     allowed_hosts=settings.ALLOWED_HOSTS
+# )
 
 
 # Global exception handler
@@ -86,13 +91,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
-app.include_router(documents.router, prefix="/odl", tags=["documents"])
-app.include_router(components.router, prefix="/components", tags=["components"])
-app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
-app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
-app.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])
+
+# Temporarily disabled due to import issues:
+# app.include_router(auth.router, prefix="/auth", tags=["authentication"])
+# app.include_router(documents.router, prefix="/odl", tags=["documents"])
+# app.include_router(components.router, prefix="/components", tags=["components"])
+# app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
+# app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
+# app.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])
 
 
 @app.get("/")

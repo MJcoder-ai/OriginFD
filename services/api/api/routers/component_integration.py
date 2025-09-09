@@ -12,7 +12,7 @@ import uuid
 import logging
 
 from core.database import SessionDep
-from core.security import get_current_user
+from core.auth import get_current_user
 from models.component import Component, ComponentManagement
 from models.document import Document, DocumentVersion
 from packages.py.odl_sd_schema.document import OdlDocument

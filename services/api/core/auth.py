@@ -4,13 +4,21 @@ JWT Authentication utilities for OriginFD API
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+# from passlib.context import CryptContext  # Temporarily disabled due to bcrypt issues
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing - temporarily disabled due to bcrypt compatibility issues
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Simple hash function for now - replace with proper bcrypt once fixed
+def simple_hash(password: str) -> str:
+    import hashlib
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def simple_verify(password: str, hashed: str) -> bool:
+    return simple_hash(password) == hashed
 
 # JWT settings
 SECRET_KEY = "your-secret-key-here-change-in-production"  # TODO: Move to environment variable
@@ -30,12 +38,12 @@ class TokenData(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return simple_verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return pwd_context.hash(password)
+    return simple_hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

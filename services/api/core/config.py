@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # CORS
     ALLOWED_HOSTS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8000"], env="ALLOWED_HOSTS"
+        default=["localhost", "127.0.0.1", "http://localhost:3000", "http://localhost:8000"], env="ALLOWED_HOSTS"
     )
 
     # External APIs
