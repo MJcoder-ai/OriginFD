@@ -139,6 +139,10 @@ export class OriginFDClient {
     }
   }
 
+  async getProjectLifecycle(projectId: string): Promise<any> {
+    return this.request(`projects/${projectId}/lifecycle`)
+  }
+
   async login(credentials: LoginRequest): Promise<UserResponse> {
     const response = await this.request('auth/login', {
       method: 'POST',
