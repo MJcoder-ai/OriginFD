@@ -20,6 +20,7 @@ import {
   Bell,
   BookOpen,
   Building,
+  CheckSquare,
 } from 'lucide-react'
 
 interface SidebarItem {
@@ -57,6 +58,11 @@ const navigation: SidebarItem[] = [
     name: 'Components',
     href: '/components',
     icon: Grid3x3,
+  },
+  {
+    name: 'Missions',
+    href: '/missions',
+    icon: CheckSquare,
   },
   {
     name: 'Suppliers',
