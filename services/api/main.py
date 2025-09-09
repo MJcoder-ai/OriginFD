@@ -100,7 +100,7 @@ app.include_router(projects.router, prefix="/projects", tags=["projects"])
 app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 
 
-app.include_router(alarms.router, prefix="/alarms", tags=["alarms"], prefix="/approvals", tags=["approvals"])
+app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
 
 
 # Temporarily disabled due to import issues:
