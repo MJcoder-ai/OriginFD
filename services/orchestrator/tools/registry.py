@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Type
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, create_model
 import importlib
 import inspect
 
@@ -207,9 +207,61 @@ class ToolRegistry:
     
     async def _create_tool_from_definition(self, tool_def: Dict[str, Any]) -> BaseTool:
         """Create a tool instance from JSON definition."""
-        # This would create a generic tool wrapper
-        # For now, raise an error as we need specific implementation
-        raise NotImplementedError("Generic tool creation from JSON not yet implemented")
+        # Parse metadata using pydantic for validation
+        try:
+            metadata = ToolMetadata(**tool_def)
+        except ValidationError as e:
+            raise ToolValidationError(f"Invalid tool metadata: {e}")
+
+        # Validate input/output schemas by attempting to build models
+        try:
+            create_model_from_schema(f"{metadata.name}Input", metadata.inputs_schema)
+            create_model_from_schema(f"{metadata.name}Output", metadata.outputs_schema)
+        except Exception as e:
+            raise ToolValidationError(f"Schema validation failed: {e}")
+
+        module_name = tool_def.get("module")
+        function_name = tool_def.get("function")
+        if not module_name or not function_name:
+            raise ToolError("Tool definition must include 'module' and 'function'")
+
+        try:
+            module = importlib.import_module(module_name)
+            func = getattr(module, function_name)
+        except Exception as e:
+            raise ToolError(f"Failed to load implementation {module_name}.{function_name}: {e}")
+
+        if not callable(func):
+            raise ToolError(f"Implementation {module_name}.{function_name} is not callable")
+
+        class JsonDefinedTool(BaseTool):
+            def __init__(self, metadata: ToolMetadata, func):
+                self._metadata = metadata
+                self._func = func
+
+            @property
+            def metadata(self) -> ToolMetadata:  # type: ignore[override]
+                return self._metadata
+
+            async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
+                start_time = asyncio.get_event_loop().time()
+                try:
+                    validated_inputs = self.validate_inputs(inputs)
+
+                    if inspect.iscoroutinefunction(self._func):
+                        raw_outputs = await self._func(**validated_inputs)
+                    else:
+                        loop = asyncio.get_event_loop()
+                        raw_outputs = await loop.run_in_executor(None, lambda: self._func(**validated_inputs))
+
+                    validated_outputs = self.validate_outputs(raw_outputs)
+                    execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
+                    return ToolResult(success=True, execution_time_ms=execution_time, outputs=validated_outputs)
+                except Exception as e:  # pragma: no cover - defensive
+                    execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
+                    return ToolResult(success=False, execution_time_ms=execution_time, errors=[str(e)])
+
+        return JsonDefinedTool(metadata, func)
 
 
 def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseModel]:
@@ -217,11 +269,11 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
     # This is a simplified implementation
     # In practice, you'd use jsonschema-to-pydantic or similar
     fields = {}
-    
+
     if "properties" in schema:
         for field_name, field_schema in schema["properties"].items():
             field_type = str  # Default type
-            
+
             if field_schema.get("type") == "integer":
                 field_type = int
             elif field_schema.get("type") == "number":
@@ -232,15 +284,12 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
                 field_type = List[Any]
             elif field_schema.get("type") == "object":
                 field_type = Dict[str, Any]
-            
-            # Handle required fields
+
             is_required = field_name in schema.get("required", [])
-            if not is_required:
-                field_type = Optional[field_type]
-            
-            fields[field_name] = (field_type, ... if is_required else None)
-    
-    return type(name, (BaseModel,), {"__annotations__": fields})
+            default = ... if is_required else None
+            fields[field_name] = (field_type, default)
+
+    return create_model(name, **fields)
 
 
 # Built-in Tools
