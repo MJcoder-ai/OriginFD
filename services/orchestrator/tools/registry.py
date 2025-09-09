@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Type
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, create_model
 import importlib
 import inspect
 
@@ -216,12 +216,12 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
     """Create a Pydantic model from JSON schema."""
     # This is a simplified implementation
     # In practice, you'd use jsonschema-to-pydantic or similar
-    fields = {}
-    
+    fields: Dict[str, tuple[Any, Any]] = {}
+
     if "properties" in schema:
         for field_name, field_schema in schema["properties"].items():
-            field_type = str  # Default type
-            
+            field_type: Any = str  # Default type
+
             if field_schema.get("type") == "integer":
                 field_type = int
             elif field_schema.get("type") == "number":
@@ -232,15 +232,15 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
                 field_type = List[Any]
             elif field_schema.get("type") == "object":
                 field_type = Dict[str, Any]
-            
-            # Handle required fields
+
             is_required = field_name in schema.get("required", [])
+            default = ... if is_required else None
             if not is_required:
                 field_type = Optional[field_type]
-            
-            fields[field_name] = (field_type, ... if is_required else None)
-    
-    return type(name, (BaseModel,), {"__annotations__": fields})
+
+            fields[field_name] = (field_type, default)
+
+    return create_model(name, **fields)
 
 
 # Built-in Tools

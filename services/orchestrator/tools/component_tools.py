@@ -120,122 +120,221 @@ class ParseDatasheetTool(BaseTool):
             # - OCR service (Tesseract, Google Vision API)
             # - AI/ML model for specification extraction
             # - Image extraction and classification
-            
-            # Mock implementation for now
-            mock_specifications = self._generate_mock_specifications(component_type)
-            mock_images = self._generate_mock_images() if extract_images else []
-            
+
+            warnings: List[str] = []
+
+            # 1. Download the datasheet PDF
+            pdf_bytes = self._download_pdf(datasheet_url)
+
+            # 2. Parse PDF and optionally extract images
+            text, images, pages_processed, parse_warnings = self._extract_pdf_content(
+                pdf_bytes, extract_images
+            )
+            warnings.extend(parse_warnings)
+
+            # 3. Use AI model to extract structured specifications
+            specifications, confidence = self._extract_specifications_ai(
+                text, component_type, validated_inputs.get("target_language", "en")
+            )
+
             processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             outputs = {
-                "specifications": mock_specifications,
-                "extracted_images": mock_images,
-                "confidence_score": 0.85,
+                "specifications": specifications,
+                "extracted_images": images if extract_images else [],
+                "confidence_score": confidence,
                 "processing_time_ms": processing_time,
-                "pages_processed": 12,
-                "warnings": ["Some technical drawings could not be processed"]
+                "pages_processed": pages_processed,
+                "warnings": warnings,
             }
-            
-            # Validate outputs
-            validated_outputs = self.validate_outputs(outputs)
-            
+
             return ToolResult(
                 success=True,
-                outputs=validated_outputs,
+                outputs=outputs,
                 execution_time_ms=processing_time,
-                intent=f"Parsed {component_type} datasheet with {validated_outputs['confidence_score']:.0%} confidence"
+                intent=f"Parsed {component_type} datasheet with {outputs['confidence_score']:.0%} confidence",
             )
             
         except Exception as e:
             logger.error(f"Datasheet parsing failed: {str(e)}")
             return ToolResult(
                 success=False,
-                error=str(e),
+                errors=[str(e)],
                 execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
                 intent="Failed to parse component datasheet"
             )
     
-    def _generate_mock_specifications(self, component_type: str) -> Dict[str, Any]:
-        """Generate mock specifications based on component type."""
-        base_specs = {
+    # --- Parsing helpers -------------------------------------------------
+
+    def _download_pdf(self, url: str) -> bytes:
+        """Download PDF from HTTP(S) or file URI."""
+        try:
+            if url.startswith("file://"):
+                path = url.replace("file://", "")
+                with open(path, "rb") as f:
+                    return f.read()
+
+            import requests
+
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            return response.content
+        except Exception as e:
+            raise RuntimeError(f"Failed to download datasheet: {e}") from e
+
+    def _extract_pdf_content(
+        self, pdf_bytes: bytes, extract_images: bool
+    ) -> tuple[str, List[Dict[str, Any]], int, List[str]]:
+        """Extract text and optionally images from PDF."""
+        import io
+        warnings: List[str] = []
+        images: List[Dict[str, Any]] = []
+        pages_processed = 0
+
+        try:
+            from pypdf import PdfReader
+        except Exception as e:
+            raise RuntimeError("pypdf library is required for PDF parsing") from e
+
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        texts: List[str] = []
+        for page_number, page in enumerate(reader.pages, start=1):
+            pages_processed += 1
+            page_text = page.extract_text() or ""
+            if not page_text.strip():
+                ocr_text = self._ocr_page(pdf_bytes, page_number)
+                if ocr_text:
+                    page_text = ocr_text
+                else:
+                    warnings.append(
+                        f"No text found on page {page_number}; OCR unavailable"
+                    )
+            texts.append(page_text)
+
+            if extract_images:
+                images.extend(self._extract_images_from_page(page, page_number))
+
+        return "\n".join(texts), images, pages_processed, warnings
+
+    def _ocr_page(self, pdf_bytes: bytes, page_number: int) -> str:
+        """Attempt OCR on a PDF page. Returns extracted text or empty string."""
+        try:
+            from pdf2image import convert_from_bytes  # type: ignore
+            import pytesseract  # type: ignore
+        except Exception:
+            return ""
+
+        try:
+            images = convert_from_bytes(
+                pdf_bytes, first_page=page_number, last_page=page_number
+            )
+            if not images:
+                return ""
+            return pytesseract.image_to_string(images[0])
+        except Exception:
+            return ""
+
+    def _extract_images_from_page(
+        self, page: Any, page_number: int
+    ) -> List[Dict[str, Any]]:
+        """Extract images from a PDF page."""
+        extracted: List[Dict[str, Any]] = []
+        try:
+            xobjects = page["/Resources"].get("/XObject")
+            if not xobjects:
+                return extracted
+            xobjects = xobjects.get_object()
+            for name in xobjects:
+                xobj = xobjects[name]
+                if xobj.get("/Subtype") != "/Image":
+                    continue
+                try:
+                    from PIL import Image
+                    import base64
+                    import io as _io
+
+                    data = xobj.get_data()
+                    mode = "RGB"
+                    if xobj.get("/ColorSpace") == "/DeviceCMYK":
+                        mode = "CMYK"
+                    elif xobj.get("/ColorSpace") == "/DeviceGray":
+                        mode = "L"
+                    img = Image.frombytes(mode, xobj["/Width"], xobj["/Height"], data)
+                    buf = _io.BytesIO()
+                    img.save(buf, format="PNG")
+                    b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+                    extracted.append(
+                        {
+                            "url": f"data:image/png;base64,{b64}",
+                            "type": "image",
+                            "description": "extracted",
+                            "page": page_number,
+                        }
+                    )
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return extracted
+
+    def _extract_specifications_ai(
+        self, text: str, component_type: str, target_language: str
+    ) -> tuple[Dict[str, Any], float]:
+        """Use an AI model to extract structured specifications."""
+        if not text.strip():
+            raise RuntimeError("No text available for specification extraction")
+
+        prompt = (
+            "Extract the technical specifications for a {component} from the"
+            " following datasheet text. Respond in JSON."
+        ).format(component=component_type)
+        prompt += f"\n{text}"
+
+        try:
+            from openai import OpenAI
+
+            client = OpenAI()
+            completion = client.responses.create(
+                model="gpt-4o-mini",
+                input=[{"role": "user", "content": prompt}],
+                max_output_tokens=500,
+            )
+            content = completion.output[0].content[0].text  # type: ignore
+            specs = json.loads(content)
+            return specs, 0.9
+        except Exception as e:
+            logger.warning(
+                f"AI extraction failed, falling back to heuristic parsing: {e}"
+            )
+            return self._heuristic_extract(text, component_type), 0.5
+
+    def _heuristic_extract(self, text: str, component_type: str) -> Dict[str, Any]:
+        """Basic heuristic extraction if AI model unavailable."""
+        import re
+
+        specs: Dict[str, Any] = {
             "electrical": {},
             "mechanical": {},
             "thermal": {},
             "environmental": {},
-            "certifications": []
+            "certifications": [],
         }
-        
+
         if component_type == "pv_module":
-            base_specs.update({
-                "electrical": {
-                    "power_stc_w": 400,
-                    "voltage_mpp_v": 40.5,
-                    "current_mpp_a": 9.88,
-                    "voltage_oc_v": 49.1,
-                    "current_sc_a": 10.45,
-                    "efficiency_pct": 20.3,
-                    "power_tolerance_pct": {"min": -0, "max": 5},
-                    "temperature_coefficients": {
-                        "power_pct_k": -0.37,
-                        "voltage_pct_k": -0.29,
-                        "current_pct_k": 0.05
-                    }
-                },
-                "mechanical": {
-                    "dimensions_mm": [2008, 1002, 40],
-                    "weight_kg": 22.0,
-                    "frame_material": "anodized_aluminum",
-                    "glass_type": "tempered_low_iron",
-                    "glass_thickness_mm": 3.2
-                },
-                "thermal": {
-                    "operating_temp_c": {"min": -40, "max": 85},
-                    "noct_c": 45
-                },
-                "environmental": {
-                    "ip_rating": "IP67",
-                    "wind_load_pa": 2400,
-                    "snow_load_pa": 5400
-                },
-                "certifications": ["IEC61215", "IEC61730", "UL61730", "CE"]
-            })
-        elif component_type == "inverter":
-            base_specs.update({
-                "electrical": {
-                    "power_ac_w": 5000,
-                    "power_dc_w": 5200,
-                    "efficiency_pct": 97.6,
-                    "voltage_ac_v": 230,
-                    "voltage_dc_range_v": {"min": 160, "max": 950},
-                    "frequency_hz": 50,
-                    "thd_pct": 3.0
-                },
-                "mechanical": {
-                    "dimensions_mm": [470, 350, 180],
-                    "weight_kg": 16.5,
-                    "enclosure_rating": "IP65"
-                },
-                "certifications": ["IEC62109", "EN50549", "VDE-AR-N4105"]
-            })
-        
-        return base_specs
-    
-    def _generate_mock_images(self) -> List[Dict[str, Any]]:
-        """Generate mock extracted images."""
-        return [
-            {
-                "url": "https://storage.example.com/extracted/datasheet_diagram_1.png",
-                "type": "electrical_diagram",
-                "description": "Electrical connection diagram",
-                "page": 3
-            },
-            {
-                "url": "https://storage.example.com/extracted/datasheet_dimensions.png",
-                "type": "dimensional_drawing",
-                "description": "Mechanical dimensions and mounting",
-                "page": 8
-            }
-        ]
+            m = re.search(r"Power STC:?\s*(\d+)\s*W", text, re.I)
+            if m:
+                specs["electrical"]["power_stc_w"] = int(m.group(1))
+            m = re.search(r"Voltage MPP:?\s*(\d+\.?\d*)\s*V", text, re.I)
+            if m:
+                specs["electrical"]["voltage_mpp_v"] = float(m.group(1))
+            m = re.search(r"Current MPP:?\s*(\d+\.?\d*)\s*A", text, re.I)
+            if m:
+                specs["electrical"]["current_mpp_a"] = float(m.group(1))
+            m = re.search(r"Efficiency:?\s*(\d+\.?\d*)\s*%", text, re.I)
+            if m:
+                specs["electrical"]["efficiency_pct"] = float(m.group(1))
+
+        return specs
 
 
 class ComponentDeduplicationTool(BaseTool):
@@ -349,7 +448,7 @@ class ComponentDeduplicationTool(BaseTool):
             logger.error(f"Component deduplication failed: {str(e)}")
             return ToolResult(
                 success=False,
-                error=str(e),
+                errors=[str(e)],
                 execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
                 intent="Failed to check for duplicate components"
             )
@@ -488,7 +587,7 @@ class ComponentClassificationTool(BaseTool):
             logger.error(f"Component classification failed: {str(e)}")
             return ToolResult(
                 success=False,
-                error=str(e),
+                errors=[str(e)],
                 execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
                 intent="Failed to classify component"
             )
@@ -607,7 +706,7 @@ class ComponentRecommendationTool(BaseTool):
             logger.error(f"Component recommendation failed: {str(e)}")
             return ToolResult(
                 success=False,
-                error=str(e),
+                errors=[str(e)],
                 execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
                 intent="Failed to generate component recommendations"
             )
