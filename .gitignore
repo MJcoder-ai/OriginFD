@@ -142,6 +142,8 @@ htmlcov/
 *.h5
 *.onnx
 models/
+!services/api/models/
+!services/api/models/**
 checkpoints/
 
 # Temporary files
