@@ -105,7 +105,7 @@ export const InspectorContext = React.createContext<InspectorContextValue>({
 })
 
 // Mock AI Service
-class AICopilotService {
+export class AICopilotService {
   private isConnected = false
   private agents: AIAgent[] = [
     {

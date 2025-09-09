@@ -2,8 +2,8 @@
 Simple component API router for ODL-SD integration.
 Provides basic component management functionality.
 """
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -43,6 +43,11 @@ class ComponentListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class DatasheetParseResponse(BaseModel):
+    """Response model for parsed datasheet attributes."""
+    attributes: Dict[str, Any]
 
 # Mock data for testing
 MOCK_COMPONENTS = [
@@ -205,3 +210,37 @@ async def get_search_suggestions(q: str = Query(...)):
         "brands": list(brands)[:10],
         "part_numbers": list(part_numbers)[:10]
     }
+
+
+@router.post("/parse-datasheet", response_model=DatasheetParseResponse)
+async def parse_datasheet(file: UploadFile = File(...)):
+    """Parse an uploaded datasheet PDF and extract key attributes."""
+    content = await file.read()
+    text = ""
+    try:
+        from pypdf import PdfReader
+        import io
+
+        reader = PdfReader(io.BytesIO(content))
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            text += page_text + "\n"
+    except Exception:
+        try:
+            text = content.decode("utf-8")
+        except Exception:
+            text = ""
+
+    attributes: Dict[str, Any] = {}
+    for line in text.splitlines():
+        if ":" in line:
+            key, value = line.split(":", 1)
+            key_norm = key.strip().lower().replace(" ", "_")
+            attributes[key_norm] = value.strip()
+        if len(attributes) >= 20:
+            break
+
+    if not attributes:
+        attributes["raw_text"] = text[:1000]
+
+    return DatasheetParseResponse(attributes=attributes)
