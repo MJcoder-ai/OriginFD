@@ -7,7 +7,8 @@ from typing import Any, Dict, Literal
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from packages.py.odl_sd_patch.diff_utils import generate_diff_summary
+# Temporarily disabled due to import issues:
+# from packages.py.odl_sd_patch.diff_utils import generate_diff_summary
 
 router = APIRouter()
 

@@ -17,7 +17,8 @@ from models.user import User
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
-from services.orchestrator.agents.agent_manager import AgentManager
+# Temporarily disabled due to import issues:
+# from services.orchestrator.agents.agent_manager import AgentManager
 
 router = APIRouter()
 
