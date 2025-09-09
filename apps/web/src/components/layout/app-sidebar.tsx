@@ -19,6 +19,7 @@ import {
   Users,
   Bell,
   BookOpen,
+  Building,
 } from 'lucide-react'
 
 interface SidebarItem {
@@ -56,6 +57,11 @@ const navigation: SidebarItem[] = [
     name: 'Components',
     href: '/components',
     icon: Grid3x3,
+  },
+  {
+    name: 'Suppliers',
+    href: '/suppliers',
+    icon: Building,
   },
   {
     name: 'Analytics',

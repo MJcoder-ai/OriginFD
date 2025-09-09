@@ -33,6 +33,7 @@ import {
 } from '@originfd/ui'
 import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth/auth-provider'
+import { ComponentSelector } from '@/components/components/component-selector'
 import type { DocumentResponse, OdlDocument } from '@/lib/types'
 import { DocumentViewer, SystemDiagram } from '@/components/odl-sd'
 
@@ -41,6 +42,7 @@ export default function ProjectDetailPage() {
   const router = useRouter()
   const { user } = useAuth()
   const projectId = params.id as string
+  const [componentSelectorOpen, setComponentSelectorOpen] = React.useState(false)
 
   // Fetch project metadata
   const {
@@ -207,6 +209,10 @@ export default function ProjectDetailPage() {
             <FileText className="h-4 w-4" />
             Documents
           </TabsTrigger>
+          <TabsTrigger value="components" className="flex items-center gap-2">
+            <Grid3x3 className="h-4 w-4" />
+            Components
+          </TabsTrigger>
           <TabsTrigger value="team" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Team
@@ -339,6 +345,82 @@ export default function ProjectDetailPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="components" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Project Components</h3>
+              <p className="text-sm text-muted-foreground">
+                Manage components used in this project
+              </p>
+            </div>
+            <Button onClick={() => setComponentSelectorOpen(true)}>
+              <Grid3x3 className="h-4 w-4 mr-2" />
+              Add Components
+            </Button>
+          </div>
+
+          {/* Components Library from Document */}
+          {document?.libraries?.components && document.libraries.components.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {document.libraries.components.map((component: any, index: number) => (
+                <Card key={index}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-2 rounded-lg bg-muted">
+                        <Grid3x3 className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-sm font-medium truncate">
+                          {component.brand} {component.part_number}
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          {component.rating_w}W • {component.category}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-2">
+                      {component.quantity && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Quantity</span>
+                          <span>{component.quantity}</span>
+                        </div>
+                      )}
+                      {component.placement?.location && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Location</span>
+                          <span className="truncate">{component.placement.location}</span>
+                        </div>
+                      )}
+                      {component.status && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Status</span>
+                          <span className="capitalize">{component.status}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Grid3x3 className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Components Added</h3>
+                <p className="text-sm text-muted-foreground text-center mb-4">
+                  Start building your project by adding components from the library
+                </p>
+                <Button onClick={() => setComponentSelectorOpen(true)}>
+                  <Grid3x3 className="h-4 w-4 mr-2" />
+                  Add Your First Component
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="team" className="space-y-6">
           <Card>
             <CardHeader>
@@ -379,6 +461,41 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Component Selector Modal */}
+      <ComponentSelector
+        open={componentSelectorOpen}
+        onOpenChange={setComponentSelectorOpen}
+        onComponentsSelected={async (selectedComponents) => {
+          try {
+            // TODO: Implement API call to add components to project
+            console.log('Adding components to project:', selectedComponents)
+            
+            // For now, just show success message
+            // In real implementation, this would call the component integration API
+            // await componentIntegrationAPI.addComponentsToProject({
+            //   project_document_id: projectId,
+            //   components: selectedComponents.map(sc => ({
+            //     component_id: sc.component.id,
+            //     quantity: sc.quantity,
+            //     placement: sc.placement,
+            //     configuration: sc.configuration,
+            //     notes: sc.notes
+            //   }))
+            // })
+            
+            // Refetch project data to show updated components
+            // refetch()
+            
+          } catch (error) {
+            console.error('Failed to add components:', error)
+          }
+        }}
+        projectDomain={project?.domain}
+        projectScale={project?.scale}
+        title="Add Components to Project"
+        description={`Select components to add to ${project?.project_name || 'this project'}`}
+      />
     </div>
   )
 }

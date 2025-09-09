@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useRequireAuth } from '@/lib/auth/auth-provider'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { AppHeader } from '@/components/layout/app-header'
+import { AICopilot } from '@/components/ai/ai-copilot'
 
 export default function AppLayout({
   children,
@@ -38,6 +39,9 @@ export default function AppLayout({
           {children}
         </main>
       </div>
+
+      {/* AI Copilot */}
+      <AICopilot />
     </div>
   )
 }

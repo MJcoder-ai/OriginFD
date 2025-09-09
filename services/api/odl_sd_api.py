@@ -22,6 +22,15 @@ from core.auth import (
 from odl_sd.document_generator import DocumentGenerator
 from odl_sd.schemas import OdlSdDocument
 
+# Simple Component API router
+try:
+    from simple_components import router as components_router
+    COMPONENTS_AVAILABLE = True
+    print("[SUCCESS] Simple components module loaded successfully")
+except ImportError as e:
+    COMPONENTS_AVAILABLE = False
+    print(f"Warning: Simple components not available: {e}")
+
 # Simple database setup
 DATABASE_URL = "sqlite:///./originfd_odl.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -207,6 +216,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include component router if available
+if COMPONENTS_AVAILABLE:
+    app.include_router(components_router, prefix="/components", tags=["components"])
+    print("[SUCCESS] Component API routes registered at /components")
+    
+    # Debug endpoint to test router integration
+    @app.get("/debug/components-test")
+    async def test_components():
+        return {"status": "Components router integrated successfully", "available": True}
+else:
+    print("[WARNING] Component API routes not available")
+    
+    @app.get("/debug/components-test")
+    async def test_components():
+        return {"status": "Components router not available", "available": False}
 
 # Request/Response models
 class LoginRequest(BaseModel):
