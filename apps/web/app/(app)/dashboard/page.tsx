@@ -64,7 +64,19 @@ export default function DashboardPage() {
     },
   ]
 
-  const displayProjects = projects.length > 0 ? projects : mockProjects
+  const displayProjects = React.useMemo(() => {
+    if (projects.length > 0) {
+      console.log('Dashboard: Using API data -', projects.length, 'projects loaded')
+      return projects
+    } else {
+      if (error) {
+        console.warn('Dashboard: API failed, falling back to mock data. Error:', error)
+      } else {
+        console.log('Dashboard: No API data available, using mock data -', mockProjects.length, 'projects')
+      }
+      return mockProjects
+    }
+  }, [projects, error])
 
   const getDomainIcon = (domain: string) => {
     switch (domain) {

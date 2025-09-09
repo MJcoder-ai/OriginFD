@@ -1,53 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Mock projects data
-const mockProjects = [
-  {
-    id: '1',
-    project_name: 'Solar Farm Arizona Phase 1',
-    domain: 'PV',
-    scale: 'UTILITY',
-    current_version: 3,
-    content_hash: 'sha256:abc123',
-    is_active: true,
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-20T15:45:00Z',
-  },
-  {
-    id: '2',
-    project_name: 'Commercial BESS Installation',
-    domain: 'BESS',
-    scale: 'COMMERCIAL',
-    current_version: 1,
-    content_hash: 'sha256:def456',
-    is_active: true,
-    created_at: '2024-01-18T09:15:00Z',
-    updated_at: '2024-01-18T09:15:00Z',
-  },
-  {
-    id: '3',
-    project_name: 'Hybrid Microgrid Campus',
-    domain: 'HYBRID',
-    scale: 'INDUSTRIAL',
-    current_version: 2,
-    content_hash: 'sha256:ghi789',
-    is_active: true,
-    created_at: '2024-01-22T14:20:00Z',
-    updated_at: '2024-01-23T11:30:00Z',
-  },
-]
+import { getAllProjects, addProject } from '../shared-data'
 
 export async function GET() {
-  console.log('Fetching projects list:', mockProjects.length, 'projects')
-  return NextResponse.json(mockProjects)
+  const projects = getAllProjects()
+  console.log('Fetching projects list:', projects.length, 'projects')
+  return NextResponse.json(projects)
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Generate a new project ID
-    const newId = String(mockProjects.length + 1)
+    // Generate a new project ID using UUID format
+    const newId = `proj_${crypto.randomUUID()}`
     const now = new Date().toISOString()
     
     const newProject = {
@@ -62,8 +27,8 @@ export async function POST(request: NextRequest) {
       updated_at: now,
     }
     
-    // Add to mock data
-    mockProjects.push(newProject)
+    // Add to shared data store
+    addProject(newProject)
     
     // Simulate successful creation
     return NextResponse.json(newProject, { status: 201 })

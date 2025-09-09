@@ -55,14 +55,25 @@ export default function ProjectDetailPage() {
     enabled: !!projectId,
   })
 
-  // Fetch project document
+  // Fetch project document (primary document for the project)
   const {
     data: document,
     isLoading: isDocumentLoading,
     error: documentError,
   } = useQuery({
-    queryKey: ['document', projectId],
-    queryFn: () => apiClient.getDocument(projectId),
+    queryKey: ['project-document', projectId],
+    queryFn: () => apiClient.getPrimaryProjectDocument(projectId),
+    enabled: !!projectId,
+  })
+
+  // Fetch all project documents for the documents tab
+  const {
+    data: projectDocuments = [],
+    isLoading: isProjectDocumentsLoading,
+    error: projectDocumentsError,
+  } = useQuery({
+    queryKey: ['project-documents', projectId],
+    queryFn: () => apiClient.getProjectDocuments(projectId),
     enabled: !!projectId,
   })
 
@@ -123,18 +134,51 @@ export default function ProjectDetailPage() {
   }
 
   if (projectError || documentError) {
+    // Determine error type for better user messaging
+    let title = "Error Loading Project"
+    let message = "An unexpected error occurred."
+    
+    if (projectError && documentError) {
+      title = "Project and Document Not Found"
+      message = "Both the project and its associated document could not be found or you don't have access to them."
+    } else if (projectError) {
+      title = "Project Not Found"
+      message = "The project you're looking for doesn't exist or you don't have access to it."
+    } else if (documentError) {
+      title = "Project Document Missing"
+      message = "The project exists but its document could not be loaded. The document may not have been created yet."
+    }
+    
+    // Log errors for debugging
+    if (projectError) {
+      console.error('Project loading error:', projectError)
+    }
+    if (documentError) {
+      console.error('Document loading error:', documentError)
+    }
+    
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Project Not Found</h2>
-          <p className="text-gray-600 mt-2">
-            The project you're looking for doesn't exist or you don't have access to it.
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <p className="text-gray-600 mt-2">{message}</p>
+          {documentError && !projectError && (
+            <p className="text-sm text-muted-foreground mt-2">
+              You can still view project information, but document features will be unavailable.
+            </p>
+          )}
         </div>
-        <Button onClick={() => router.push('/dashboard')} variant="outline">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => router.push('/dashboard')} variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          {documentError && !projectError && (
+            <Button onClick={() => window.location.reload()} variant="default">
+              Retry Loading
+            </Button>
+          )}
+        </div>
       </div>
     )
   }
@@ -322,24 +366,88 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          {document ? (
-            <DocumentViewer document={document} projectId={projectId} />
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Project Documents</h3>
+              <p className="text-sm text-muted-foreground">
+                ODL-SD documents and related files for this project
+              </p>
+            </div>
+            <Button variant="outline" size="sm">
+              <FileText className="h-4 w-4 mr-2" />
+              New Document
+            </Button>
+          </div>
+
+          {isProjectDocumentsLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : projectDocuments.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {projectDocuments.map((doc: any) => (
+                <Card key={doc.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-2 rounded-lg bg-muted">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-sm font-medium truncate">
+                          {doc.name}
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          {doc.document_type} • {doc.is_primary ? 'Primary' : 'Secondary'}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Created</span>
+                        <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Updated</span>
+                        <span>{new Date(doc.updated_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">ID</span>
+                        <span className="truncate font-mono text-xs">{doc.id.split('-').pop()}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : (
             <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Documents</h3>
+                <p className="text-sm text-muted-foreground text-center mb-4">
+                  No ODL-SD documents found for this project. Create your first document to get started.
+                </p>
+                <Button variant="outline">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Create First Document
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Primary Document Viewer - if available */}
+          {document && (
+            <Card>
               <CardHeader>
-                <CardTitle>Project Documents</CardTitle>
+                <CardTitle>Primary System Document</CardTitle>
                 <CardDescription>
-                  ODL-SD documents and related files for this project
+                  Main ODL-SD document with full system specification
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-semibold text-gray-900">No documents</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    No ODL-SD document found for this project.
-                  </p>
-                </div>
+                <DocumentViewer document={document} projectId={projectId} />
               </CardContent>
             </Card>
           )}

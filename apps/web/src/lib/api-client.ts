@@ -119,6 +119,26 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}`)
   }
 
+  async getDocument(documentId: string): Promise<any> {
+    return this.request(`documents/${documentId}`)
+  }
+
+  async getProjectDocuments(projectId: string): Promise<any[]> {
+    return this.request(`projects/${projectId}/documents`)
+  }
+
+  async getPrimaryProjectDocument(projectId: string): Promise<any> {
+    // Get the primary/main document for a project
+    // For backward compatibility, try project-{uuid} format first
+    try {
+      return this.request(`documents/${projectId}-main`)
+    } catch (error) {
+      // Fallback to old behavior for existing mock data
+      console.warn('Primary document not found, falling back to project ID:', projectId)
+      return this.request(`documents/${projectId}`)
+    }
+  }
+
   async login(credentials: LoginRequest): Promise<UserResponse> {
     const response = await this.request('auth/login', {
       method: 'POST',
