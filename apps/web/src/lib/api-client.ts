@@ -139,6 +139,17 @@ export class OriginFDClient {
     }
   }
 
+  async getProjectReview(projectId: string): Promise<any> {
+    return this.request(`projects/${projectId}/review`)
+  }
+
+  async submitApproval(projectId: string, approved: boolean): Promise<any> {
+    return this.request('approvals', {
+      method: 'POST',
+      body: JSON.stringify({ project_id: projectId, approved }),
+    })
+  }
+
   async login(credentials: LoginRequest): Promise<UserResponse> {
     const response = await this.request('auth/login', {
       method: 'POST',
