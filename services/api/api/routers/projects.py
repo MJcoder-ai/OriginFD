@@ -4,7 +4,7 @@ Project management endpoints.
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
 import httpx
@@ -17,6 +17,7 @@ from models.user import User
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
+from services.orchestrator.agents.agent_manager import AgentManager
 
 router = APIRouter()
 
@@ -506,8 +507,64 @@ async def get_project_stats(
 
     return {
         "total_projects": total_projects,
-        "active_projects": active_projects,
+       "active_projects": active_projects,
         "pv_projects": pv_projects,
         "bess_projects": bess_projects,
         "hybrid_projects": hybrid_projects,
     }
+
+
+@router.get("/{project_id}/lifecycle")
+async def get_project_lifecycle(
+    project_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Return lifecycle phases and gate checklist for a project.
+
+    This temporary implementation returns mock data and uses the
+    orchestrator to annotate gates with potential bottlenecks.
+    """
+
+    # In a real implementation this data would come from the database
+    # or project documents. We provide a minimal structure for now.
+    lifecycle_data = {
+        "phases": [
+            {
+                "id": "design",
+                "name": "Design",
+                "status": "completed",
+                "gates": [
+                    {"id": "site_assessment", "name": "Site Assessment", "status": "completed"},
+                    {"id": "bom_approval", "name": "BOM Approval", "status": "completed"},
+                ],
+            },
+            {
+                "id": "procurement",
+                "name": "Procurement",
+                "status": "current",
+                "gates": [
+                    {"id": "supplier_selection", "name": "Supplier Selection", "status": "blocked"},
+                    {
+                        "id": "contract_signed",
+                        "name": "Contract Signed",
+                        "status": "pending",
+                        "due_date": (datetime.utcnow() - timedelta(days=3)).isoformat(),
+                    },
+                ],
+            },
+            {
+                "id": "construction",
+                "name": "Construction",
+                "status": "upcoming",
+                "gates": [
+                    {"id": "mobilization", "name": "Mobilization", "status": "pending"}
+                ],
+            },
+        ]
+    }
+
+    # Use orchestrator to detect bottlenecks and annotate gates
+    bottlenecks = AgentManager.detect_bottlenecks(lifecycle_data)
+    lifecycle_data["bottlenecks"] = bottlenecks
+
+    return lifecycle_data
