@@ -93,6 +93,17 @@ interface AIAgent {
   current_task?: string
 }
 
+// Inspector context
+export interface InspectorContextValue {
+  focusId: string | null
+  setFocusId: (id: string | null) => void
+}
+
+export const InspectorContext = React.createContext<InspectorContextValue>({
+  focusId: null,
+  setFocusId: () => {}
+})
+
 // Mock AI Service
 class AICopilotService {
   private isConnected = false
@@ -256,6 +267,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
   const [selectedTab, setSelectedTab] = useState('chat')
   const [isConnected, setIsConnected] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
+  const [focusId, setFocusId] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -292,7 +304,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
     setIsLoading(true)
 
     try {
-      const response = await aiService.sendMessage(inputMessage)
+      const response = await aiService.sendMessage(inputMessage, { focusId })
       setMessages(prev => [...prev, response])
     } catch (error) {
       const errorMessage: AIMessage = {
@@ -377,31 +389,34 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
 
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50",
-          "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700",
-          className
-        )}
-      >
-        <Bot className="h-6 w-6" />
-      </Button>
+      <InspectorContext.Provider value={{ focusId, setFocusId }}>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className={cn(
+            "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50",
+            "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700",
+            className
+          )}
+        >
+          <Bot className="h-6 w-6" />
+        </Button>
+      </InspectorContext.Provider>
     )
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className={cn(
-        "fixed bottom-6 right-6 z-50",
-        isMinimized ? "w-80 h-16" : "w-96 h-[600px]",
-        className
-      )}
-    >
-      <Card className="h-full flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+    <InspectorContext.Provider value={{ focusId, setFocusId }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className={cn(
+          "fixed bottom-6 right-6 z-50",
+          isMinimized ? "w-80 h-16" : "w-96 h-[600px]",
+          className
+        )}
+      >
+        <Card className="h-full flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
         {/* Header */}
         <CardHeader className="pb-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
@@ -695,5 +710,6 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
         )}
       </Card>
     </motion.div>
+  </InspectorContext.Provider>
   )
 }

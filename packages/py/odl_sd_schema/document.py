@@ -45,7 +45,7 @@ class UnitSystem(str, Enum):
 class Units(BaseModel):
     """Unit system configuration."""
     system: UnitSystem = UnitSystem.SI
-    currency: str = Field(default="USD", regex="^[A-Z]{3}$")
+    currency: str = Field(default="USD", pattern="^[A-Z]{3}$")
     coordinate_system: str = Field(default="EPSG:4326")
 
 
@@ -60,8 +60,8 @@ class Timestamps(BaseModel):
 class Versioning(BaseModel):
     """Document versioning information."""
     document_version: str = Field(default="4.1.0")
-    content_hash: str = Field(regex="^sha256:[a-f0-9]{64}$")
-    previous_hash: Optional[str] = Field(default=None, regex="^sha256:[a-f0-9]{64}$")
+    content_hash: str = Field(pattern="^sha256:[a-f0-9]{64}$")
+    previous_hash: Optional[str] = Field(default=None, pattern="^sha256:[a-f0-9]{64}$")
     change_summary: Optional[str] = None
 
 

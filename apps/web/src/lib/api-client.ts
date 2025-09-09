@@ -139,6 +139,7 @@ export class OriginFDClient {
     }
   }
 
+
   async getProjectReview(projectId: string): Promise<any> {
     return this.request(`projects/${projectId}/review`)
   }
@@ -148,6 +149,7 @@ export class OriginFDClient {
       method: 'POST',
       body: JSON.stringify({ project_id: projectId, approved }),
     })
+
   }
 
   async login(credentials: LoginRequest): Promise<UserResponse> {
