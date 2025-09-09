@@ -124,7 +124,7 @@ class ParseDatasheetTool(BaseTool):
             warnings: List[str] = []
 
             # 1. Download the datasheet PDF
-            pdf_bytes = self._download_pdf(datasheet_url)
+            pdf_bytes = await self._download_pdf(datasheet_url)
 
             # 2. Parse PDF and optionally extract images
             text, images, pages_processed, parse_warnings = self._extract_pdf_content(
@@ -133,7 +133,7 @@ class ParseDatasheetTool(BaseTool):
             warnings.extend(parse_warnings)
 
             # 3. Use AI model to extract structured specifications
-            specifications, confidence = self._extract_specifications_ai(
+            specifications, confidence = await self._extract_specifications_ai(
                 text, component_type, validated_inputs.get("target_language", "en")
             )
 
@@ -166,19 +166,28 @@ class ParseDatasheetTool(BaseTool):
     
     # --- Parsing helpers -------------------------------------------------
 
-    def _download_pdf(self, url: str) -> bytes:
-        """Download PDF from HTTP(S) or file URI."""
+    async def _download_pdf(self, url: str) -> bytes:
+        """Download PDF from HTTP(S) or file URI asynchronously."""
         try:
             if url.startswith("file://"):
                 path = url.replace("file://", "")
-                with open(path, "rb") as f:
-                    return f.read()
+                import asyncio
+                from pathlib import Path
 
-            import requests
+                data = await asyncio.to_thread(Path(path).read_bytes)
+                if not data.startswith(b"%PDF"):
+                    raise ValueError("Provided file is not a valid PDF")
+                return data
 
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-            return response.content
+            import httpx
+
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                content = response.content
+            if not content.startswith(b"%PDF"):
+                raise ValueError("URL did not return a valid PDF")
+            return content
         except Exception as e:
             raise RuntimeError(f"Failed to download datasheet: {e}") from e
 
@@ -196,7 +205,10 @@ class ParseDatasheetTool(BaseTool):
         except Exception as e:
             raise RuntimeError("pypdf library is required for PDF parsing") from e
 
-        reader = PdfReader(io.BytesIO(pdf_bytes))
+        try:
+            reader = PdfReader(io.BytesIO(pdf_bytes))
+        except Exception as e:
+            raise RuntimeError("Invalid or corrupted PDF") from e
         texts: List[str] = []
         for page_number, page in enumerate(reader.pages, start=1):
             pages_processed += 1
@@ -277,7 +289,7 @@ class ParseDatasheetTool(BaseTool):
             pass
         return extracted
 
-    def _extract_specifications_ai(
+    async def _extract_specifications_ai(
         self, text: str, component_type: str, target_language: str
     ) -> tuple[Dict[str, Any], float]:
         """Use an AI model to extract structured specifications."""
@@ -291,10 +303,10 @@ class ParseDatasheetTool(BaseTool):
         prompt += f"\n{text}"
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI()
-            completion = client.responses.create(
+            client = AsyncOpenAI()
+            completion = await client.responses.create(
                 model="gpt-4o-mini",
                 input=[{"role": "user", "content": prompt}],
                 max_output_tokens=500,
