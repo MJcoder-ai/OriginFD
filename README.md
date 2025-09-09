@@ -45,6 +45,23 @@ OriginFD is an enterprise-grade platform for solar PV, BESS (Battery Energy Stor
    - AI Orchestrator: http://localhost:8001
    - API Docs: http://localhost:8000/docs
 
+## Dependency Management
+
+Python dependencies are managed with [Poetry](https://python-poetry.org/).
+All packages are declared in `pyproject.toml`, and the legacy
+`requirements.txt` file has been removed. Install dependencies with:
+
+```bash
+poetry install
+```
+
+If a `requirements.txt` file is needed for other tooling, generate one
+using:
+
+```bash
+poetry export -f requirements.txt --output requirements.txt
+```
+
 ## Architecture Overview
 
 OriginFD follows a microservices architecture with the following key components:
