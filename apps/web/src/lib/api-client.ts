@@ -139,6 +139,7 @@ export class OriginFDClient {
     }
   }
 
+
   async getProjectScenarios(projectId: string): Promise<any[]> {
     return this.request(`projects/${projectId}/scenarios`)
   }
@@ -147,6 +148,7 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}/scenarios/${scenarioId}/adopt`, {
       method: 'POST',
     })
+
   }
 
   async login(credentials: LoginRequest): Promise<UserResponse> {
