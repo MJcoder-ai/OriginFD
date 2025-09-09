@@ -394,6 +394,10 @@ async def test_graph_rag_queries():
     
     semantic_result = await graph_rag.query_graph(semantic_query)
     logger.info(f"Semantic query returned {len(semantic_result.nodes)} nodes")
+    assert any(
+        node.properties["name"] == "Solar Panel Array 1"
+        for node in semantic_result.nodes
+    ), "Semantic search failed to find expected component"
     
     # Test structural query
     structural_query = GraphQuery(
