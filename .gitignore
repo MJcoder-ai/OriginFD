@@ -159,3 +159,10 @@ temp/
 .local/
 .dev/
 dev-data/
+# Allow web app lib directory
+!apps/web/src/lib/
+!apps/web/src/lib/**
+
+!packages/ts/ui/src/lib/
+!packages/ts/ui/src/lib/**
+

@@ -268,11 +268,13 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
     """Create a Pydantic model from JSON schema."""
     # This is a simplified implementation
     # In practice, you'd use jsonschema-to-pydantic or similar
-    fields = {}
+
+    fields: Dict[str, tuple[Any, Any]] = {}
 
     if "properties" in schema:
         for field_name, field_schema in schema["properties"].items():
-            field_type = str  # Default type
+            field_type: Any = str  # Default type
+
 
             if field_schema.get("type") == "integer":
                 field_type = int
@@ -287,6 +289,11 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
 
             is_required = field_name in schema.get("required", [])
             default = ... if is_required else None
+
+            if not is_required:
+                field_type = Optional[field_type]
+
+
             fields[field_name] = (field_type, default)
 
     return create_model(name, **fields)
