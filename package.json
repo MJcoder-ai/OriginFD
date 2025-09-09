@@ -23,6 +23,7 @@
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,md,json}\""
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
