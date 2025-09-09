@@ -19,7 +19,7 @@ export * from './components/ui/scroll-area'
 export * from './components/ui/separator'
 
 // Utilities
-export * from './lib/utils'
+export { cn } from './lib/utils'
 
 // TODO: Add remaining components as they are implemented
 // export * from './components/ui/sheet'
