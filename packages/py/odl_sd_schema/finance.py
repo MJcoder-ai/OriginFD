@@ -17,7 +17,7 @@ class FinancialModel(BaseModel):
 class Finance(BaseModel):
     """Finance section including capital and operational costs."""
 
-    currency: str = Field(default="USD", regex="^[A-Z]{3}$")
+    currency: str = Field(default="USD", pattern="^[A-Z]{3}$")
     capex: Optional[float] = None
     opex: Optional[float] = None
     models: List[FinancialModel] = Field(default_factory=list)
