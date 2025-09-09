@@ -12,7 +12,8 @@ import uvicorn
 from core.config import get_settings
 from core.database import engine
 from core.logging_config import setup_logging
-from api.routers import health, projects
+# Include core API routers
+from api.routers import health, projects, alarms
 # Temporarily disabled due to import issues:
 # from api.routers import auth, documents, marketplace, components, component_integration, suppliers
 
@@ -92,6 +93,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
+app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
 
 # Temporarily disabled due to import issues:
 # app.include_router(auth.router, prefix="/auth", tags=["authentication"])
