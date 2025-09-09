@@ -14,6 +14,7 @@ from core.database import engine
 from core.logging_config import setup_logging
 
 
+
 # Include core API routers
 from api.routers import health, projects, alarms, approvals
 
@@ -96,6 +97,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
+app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 
 
 app.include_router(alarms.router, prefix="/alarms", tags=["alarms"], prefix="/approvals", tags=["approvals"])

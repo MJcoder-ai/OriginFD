@@ -140,13 +140,14 @@ export class OriginFDClient {
   }
 
 
-  async getProjectScenarios(projectId: string): Promise<any[]> {
-    return this.request(`projects/${projectId}/scenarios`)
+  async getProjectReview(projectId: string): Promise<any> {
+    return this.request(`projects/${projectId}/review`)
   }
 
-  async adoptScenario(projectId: string, scenarioId: string): Promise<any> {
-    return this.request(`projects/${projectId}/scenarios/${scenarioId}/adopt`, {
+  async submitApproval(projectId: string, approved: boolean): Promise<any> {
+    return this.request('approvals', {
       method: 'POST',
+      body: JSON.stringify({ project_id: projectId, approved }),
     })
 
   }
