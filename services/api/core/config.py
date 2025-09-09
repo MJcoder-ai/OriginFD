@@ -41,6 +41,17 @@ class Settings(BaseSettings):
     # External APIs
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+
+    # Embeddings
+    EMBEDDING_PROVIDER: str = Field(
+        default="sentence_transformers", env="EMBEDDING_PROVIDER"
+    )
+    EMBEDDING_MODEL: str = Field(
+        default="all-MiniLM-L6-v2", env="EMBEDDING_MODEL"
+    )
+    EMBEDDING_API_KEY: Optional[str] = Field(
+        default=None, env="EMBEDDING_API_KEY"
+    )
     
     # Google Cloud
     GOOGLE_CLOUD_PROJECT: Optional[str] = Field(default=None, env="GOOGLE_CLOUD_PROJECT")

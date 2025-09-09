@@ -14,6 +14,8 @@ import networkx as nx
 import numpy as np
 from pathlib import Path
 
+from core.config import get_settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,23 +81,41 @@ class ODLSDGraphRAG:
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or Path("data/odl_sd_graph.db")
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
+        # Settings and embedding configuration
+        self.settings = get_settings()
+        self.embedding_provider = self.settings.EMBEDDING_PROVIDER
+        self.embedding_model = self.settings.EMBEDDING_MODEL
+        self.embedding_api_key = (
+            self.settings.EMBEDDING_API_KEY or self.settings.OPENAI_API_KEY
+        )
+        self._st_model = None
+        self._openai_client = None
+        if self.embedding_provider == "sentence_transformers":
+            from sentence_transformers import SentenceTransformer
+
+            self._st_model = SentenceTransformer(self.embedding_model)
+        elif self.embedding_provider == "openai" and self.embedding_api_key:
+            from openai import AsyncOpenAI
+
+            self._openai_client = AsyncOpenAI(api_key=self.embedding_api_key)
+
         # Graph storage
         self.graph = nx.MultiDiGraph()
         self.nodes: Dict[str, GraphNode] = {}
         self.edges: Dict[str, GraphEdge] = {}
-        
+
         # Embeddings cache
         self.embeddings_cache: Dict[str, np.ndarray] = {}
-        
+
         # ODL-SD schema knowledge
         self.odl_schema = self._initialize_odl_schema()
         self.relationship_types = self._initialize_relationship_types()
-        
+
         # Query cache
         self.query_cache: Dict[str, GraphResult] = {}
         self.cache_ttl = timedelta(hours=1)
-        
+
         logger.info("ODLSDGraphRAG initialized")
     
     async def initialize(self):
@@ -668,13 +688,24 @@ class ODLSDGraphRAG:
             )
     
     async def _generate_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Generate embedding for text (placeholder - integrate with actual embedding service)."""
-        # TODO: Integrate with actual embedding service
-        if text:
-            # Use a simple hash-based approach for now
-            text_hash = hashlib.md5(text.encode()).hexdigest()
-            np.random.seed(int(text_hash[:8], 16))
-            return np.random.normal(0, 1, 384).astype(np.float32)
+        """Generate embedding for text using configured embedding service."""
+        if not text:
+            return None
+
+        try:
+            if self.embedding_provider == "openai" and self._openai_client:
+                response = await self._openai_client.embeddings.create(
+                    input=text, model=self.embedding_model
+                )
+                return np.array(response.data[0].embedding, dtype=np.float32)
+            elif (
+                self.embedding_provider == "sentence_transformers"
+                and self._st_model is not None
+            ):
+                embedding = await asyncio.to_thread(self._st_model.encode, text)
+                return np.array(embedding, dtype=np.float32)
+        except Exception as e:
+            logger.error(f"Embedding generation failed: {e}")
         return None
     
     def _cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
