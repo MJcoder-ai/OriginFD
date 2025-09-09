@@ -34,6 +34,7 @@
     "@tanstack/react-table": "^8.11.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "d3": "^7.9.0",
     "date-fns": "^3.0.6",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.303.0",
@@ -49,10 +50,10 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
-    "@playwright/test": "^1.55.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.4",
