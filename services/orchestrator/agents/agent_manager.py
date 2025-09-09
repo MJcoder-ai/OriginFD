@@ -571,8 +571,52 @@ class AgentManager:
                 inactive_time = datetime.utcnow() - perf["last_activity"]
                 if inactive_time > timedelta(hours=1):
                     logger.warning(f"Agent {agent_id} has been inactive for {inactive_time}")
-            
+
             # Check error states
             if agent.status == AgentStatus.ERROR:
                 logger.error(f"Agent {agent_id} is in error state")
                 # TODO: Implement agent recovery logic
+
+    @staticmethod
+    def detect_bottlenecks(lifecycle_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze lifecycle gate data and flag potential bottlenecks.
+
+        A gate is considered a bottleneck when:
+        - Its status is explicitly marked as "blocked" or "delayed"
+        - It has a due_date in the past and is not completed
+
+        The function annotates the provided lifecycle data in-place by
+        adding a "bottleneck" field to affected gates and returns a list of
+        bottleneck annotations for additional context.
+        """
+        annotations: List[Dict[str, Any]] = []
+        now = datetime.utcnow()
+
+        for phase in lifecycle_data.get("phases", []):
+            for gate in phase.get("gates", []):
+                status = gate.get("status", "").lower()
+                due_date = gate.get("due_date")
+                reason: Optional[str] = None
+
+                if status in {"blocked", "delayed"}:
+                    reason = status
+                elif due_date:
+                    try:
+                        due_dt = datetime.fromisoformat(due_date)
+                        if due_dt < now and status != "completed":
+                            reason = "overdue"
+                    except Exception:
+                        # Ignore parsing errors
+                        pass
+
+                if reason:
+                    gate["bottleneck"] = reason
+                    annotations.append(
+                        {
+                            "phase_id": phase.get("id"),
+                            "gate_id": gate.get("id"),
+                            "reason": reason,
+                        }
+                    )
+
+        return annotations

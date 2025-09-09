@@ -36,6 +36,8 @@ class ComponentCreateRequest(BaseModel):
     domain: Optional[str] = Field(None, max_length=20)
     scale: Optional[str] = Field(None, max_length=20)
     classification: Optional[Dict[str, Any]] = None
+    warranty_status: Optional[str] = Field("inactive", max_length=50)
+    rma_tracking: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ComponentUpdateRequest(BaseModel):
@@ -48,6 +50,8 @@ class ComponentUpdateRequest(BaseModel):
     domain: Optional[str] = Field(None, max_length=20)
     scale: Optional[str] = Field(None, max_length=20)
     classification: Optional[Dict[str, Any]] = None
+    warranty_status: Optional[str] = Field(None, max_length=50)
+    rma_tracking: Optional[List[Dict[str, Any]]] = None
 
 
 class ComponentResponse(BaseModel):
@@ -68,6 +72,8 @@ class ComponentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     created_by: Optional[str]
+    warranty_status: Optional[str]
+    rma_tracking: List[Dict[str, Any]] = []
 
     class Config:
         from_attributes = True
@@ -159,6 +165,11 @@ async def create_component(
             classification=request.classification,
             created_by=uuid.UUID(current_user["id"])
         )
+
+        if hasattr(component, "warranty_status"):
+            component.warranty_status = request.warranty_status
+        if hasattr(component, "rma_tracking"):
+            component.rma_tracking = request.rma_tracking or []
         
         db.add(component)
         db.flush()  # Get the component ID
@@ -204,7 +215,9 @@ async def create_component(
             is_active=component.is_active,
             created_at=component.created_at,
             updated_at=component.updated_at,
-            created_by=str(component.created_by) if component.created_by else None
+            created_by=str(component.created_by) if component.created_by else None,
+            warranty_status=getattr(component, "warranty_status", request.warranty_status),
+            rma_tracking=getattr(component, "rma_tracking", request.rma_tracking or [])
         )
         
     except Exception as e:
@@ -300,7 +313,9 @@ async def list_components(
             is_active=comp.is_active,
             created_at=comp.created_at,
             updated_at=comp.updated_at,
-            created_by=str(comp.created_by) if comp.created_by else None
+            created_by=str(comp.created_by) if comp.created_by else None,
+            warranty_status=getattr(comp, "warranty_status", None),
+            rma_tracking=getattr(comp, "rma_tracking", [])
         ))
     
     return ComponentListResponse(
@@ -357,7 +372,9 @@ async def get_component(
         is_active=component.is_active,
         created_at=component.created_at,
         updated_at=component.updated_at,
-        created_by=str(component.created_by) if component.created_by else None
+        created_by=str(component.created_by) if component.created_by else None,
+        warranty_status=getattr(component, "warranty_status", None),
+        rma_tracking=getattr(component, "rma_tracking", [])
     )
 
 
@@ -406,7 +423,7 @@ async def update_component(
     
     # Update other fields
     for field, value in update_data.items():
-        if field not in ['brand', 'part_number', 'rating_w']:
+        if field not in ['brand', 'part_number', 'rating_w'] and hasattr(component, field):
             setattr(component, field, value)
     
     component.updated_by = uuid.UUID(current_user["id"])
@@ -433,7 +450,9 @@ async def update_component(
         is_active=component.is_active,
         created_at=component.created_at,
         updated_at=component.updated_at,
-        created_by=str(component.created_by) if component.created_by else None
+        created_by=str(component.created_by) if component.created_by else None,
+        warranty_status=getattr(component, "warranty_status", None),
+        rma_tracking=getattr(component, "rma_tracking", [])
     )
 
 
@@ -554,7 +573,9 @@ async def transition_component_status(
         is_active=component.is_active,
         created_at=component.created_at,
         updated_at=component.updated_at,
-        created_by=str(component.created_by) if component.created_by else None
+        created_by=str(component.created_by) if component.created_by else None,
+        warranty_status=getattr(component, "warranty_status", None),
+        rma_tracking=getattr(component, "rma_tracking", [])
     )
 
 
