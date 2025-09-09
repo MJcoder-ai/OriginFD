@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const [newProjectModalOpen, setNewProjectModalOpen] = React.useState(false)
   const [selectedDomain, setSelectedDomain] = React.useState<string | undefined>()
 
+
   // Fetch projects/documents
   const {
     data: projects = [],
@@ -159,7 +160,13 @@ export default function DashboardPage() {
             Welcome back, {user?.full_name || user?.email}
           </p>
         </div>
-        <Button onClick={() => setNewProjectModalOpen(true)} className="gap-2">
+        <Button onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setTimeout(() => {
+            setNewProjectModalOpen(true)
+          }, 0)
+        }} className="gap-2">
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -273,9 +280,13 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
             setSelectedDomain('PV')
-            setNewProjectModalOpen(true)
+            setTimeout(() => {
+              setNewProjectModalOpen(true)
+            }, 0)
           }}
         >
           <CardHeader>
@@ -291,9 +302,13 @@ export default function DashboardPage() {
 
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
             setSelectedDomain('BESS')
-            setNewProjectModalOpen(true)
+            setTimeout(() => {
+              setNewProjectModalOpen(true)
+            }, 0)
           }}
         >
           <CardHeader>
@@ -309,9 +324,13 @@ export default function DashboardPage() {
 
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
             setSelectedDomain('HYBRID')
-            setNewProjectModalOpen(true)
+            setTimeout(() => {
+              setNewProjectModalOpen(true)
+            }, 0)
           }}
         >
           <CardHeader>

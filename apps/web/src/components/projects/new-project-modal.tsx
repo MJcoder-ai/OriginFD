@@ -131,10 +131,6 @@ const scaleOptions = [
 export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjectModalProps) {
   const queryClient = useQueryClient()
   
-  // Debug logging
-  React.useEffect(() => {
-    console.log('NewProjectModal open state changed:', open)
-  }, [open])
   
   const form = useForm<NewProjectFormData>({
     resolver: zodResolver(newProjectSchema),
@@ -226,17 +222,12 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
   const selectedDomain = form.watch('domain')
   const selectedScale = form.watch('scale')
 
-  React.useEffect(() => {
-    if (open) {
-      console.log('Modal should be visible now!')
-    }
-  }, [open])
-
-  // Debug: Check if this component is even rendering
-  console.log('NewProjectModal render - open:', open, 'defaultDomain:', defaultDomain)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+    >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
