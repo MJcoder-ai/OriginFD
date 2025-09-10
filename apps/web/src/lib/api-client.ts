@@ -162,11 +162,11 @@ export class OriginFDClient {
     // Get the primary/main document for a project
     // For backward compatibility, try project-{uuid} format first
     try {
-      return this.request(`documents/${projectId}-main`)
+      return await this.request(`documents/${projectId}-main`)
     } catch (error) {
       // Fallback to old behavior for existing mock data
       console.warn('Primary document not found, falling back to project ID:', projectId)
-      return this.request(`documents/${projectId}`)
+      return await this.request(`documents/${projectId}`)
     }
   }
 

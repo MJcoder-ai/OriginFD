@@ -134,27 +134,65 @@ export default function ProjectDetailPage() {
   }
 
   if (projectError || documentError) {
+    // Helper function to get error status
+    const getErrorStatus = (error: any) => {
+      return error?.status || error?.response?.status || 500
+    }
+
+    // Helper function to check if error is forbidden (403)
+    const isForbidden = (error: any) => getErrorStatus(error) === 403
+    
+    // Helper function to check if error is not found (404)
+    const isNotFound = (error: any) => getErrorStatus(error) === 404
+
     // Determine error type for better user messaging
     let title = "Error Loading Project"
     let message = "An unexpected error occurred."
     
+    const projectStatus = projectError ? getErrorStatus(projectError) : null
+    const documentStatus = documentError ? getErrorStatus(documentError) : null
+    
     if (projectError && documentError) {
-      title = "Project and Document Not Found"
-      message = "Both the project and its associated document could not be found or you don't have access to them."
+      if (isForbidden(projectError) || isForbidden(documentError)) {
+        title = "Access Denied"
+        message = "You don't have permission to access this project or its documents. Please contact your administrator."
+      } else if (isNotFound(projectError) && isNotFound(documentError)) {
+        title = "Project and Document Not Found"
+        message = "The project and its associated document could not be found."
+      } else {
+        title = "Project and Document Error"
+        message = "There was an issue loading both the project and its document."
+      }
     } else if (projectError) {
-      title = "Project Not Found"
-      message = "The project you're looking for doesn't exist or you don't have access to it."
+      if (isForbidden(projectError)) {
+        title = "Project Access Denied"
+        message = "You don't have permission to view this project. Please contact your administrator."
+      } else if (isNotFound(projectError)) {
+        title = "Project Not Found"
+        message = "The project you're looking for doesn't exist or has been deleted."
+      } else {
+        title = "Project Loading Error"
+        message = "There was an issue loading this project. Please try again."
+      }
     } else if (documentError) {
-      title = "Project Document Missing"
-      message = "The project exists but its document could not be loaded. The document may not have been created yet."
+      if (isForbidden(documentError)) {
+        title = "Document Access Denied"
+        message = "You don't have permission to view this project's document."
+      } else if (isNotFound(documentError)) {
+        title = "Project Document Missing"
+        message = "The project exists but its document could not be found. The document may not have been created yet."
+      } else {
+        title = "Document Loading Error"
+        message = "There was an issue loading the project document. You can still view project information."
+      }
     }
     
     // Log errors for debugging
     if (projectError) {
-      console.error('Project loading error:', projectError)
+      console.error('Project loading error:', projectError, 'Status:', projectStatus)
     }
     if (documentError) {
-      console.error('Document loading error:', documentError)
+      console.error('Document loading error:', documentError, 'Status:', documentStatus)
     }
     
     return (
