@@ -1,8 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mockDocuments } from '../../../documents/[id]/route'
 import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
+
+// Mock documents for review functionality
+const mockDocuments: { [key: string]: any } = {
+  'proj_550e8400-e29b-41d4-a716-446655440001': {
+    finance: { capex: 100000, opex: 50000 },
+    meta: { project: 'Solar Farm Arizona Phase 1' }
+  },
+  'proj_550e8400-e29b-41d4-a716-446655440002': {
+    finance: { capex: 80000, opex: 30000 },
+    meta: { project: 'Commercial BESS Installation' }
+  },
+  'proj_550e8400-e29b-41d4-a716-446655440003': {
+    finance: { capex: 60000, opex: 25000 },
+    meta: { project: 'Hybrid Microgrid Campus' }
+  },
+  '1': {
+    finance: { capex: 100000, opex: 50000 },
+    meta: { project: 'Solar Farm Arizona Phase 1' }
+  },
+  '2': {
+    finance: { capex: 80000, opex: 30000 },
+    meta: { project: 'Commercial BESS Installation' }
+  },
+  '3': {
+    finance: { capex: 60000, opex: 25000 },
+    meta: { project: 'Hybrid Microgrid Campus' }
+  }
+}
 
 function getPythonPath() {
   let pyPath = path.resolve(process.cwd(), '..', '..', 'packages', 'py')

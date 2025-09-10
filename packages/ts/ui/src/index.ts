@@ -17,6 +17,7 @@ export * from './components/ui/tabs'
 export * from './components/ui/badge'
 export * from './components/ui/scroll-area'
 export * from './components/ui/separator'
+export * from './components/ui/table'
 
 // Utilities
 export { cn } from './lib/utils'

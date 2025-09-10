@@ -271,6 +271,13 @@ export class OriginFDClient {
     })
   }
 
+  async transitionStatus(componentId: string, newStatus: string, comment?: string): Promise<any> {
+    return this.request(`components/${componentId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status: newStatus, comment }),
+    })
+  }
+
   async parseDatasheet(file: File): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Mock ODL document data that corresponds to our projects
 // Updated to support both legacy numeric IDs and new UUID-based IDs
-export const mockDocuments: { [key: string]: any } = {
+const mockDocuments: { [key: string]: any } = {
   // New UUID-based project IDs
   'proj_550e8400-e29b-41d4-a716-446655440001': {
     $schema: 'https://odl-sd.org/schemas/v4.1/document.json',

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { findProject } from '../shared-data'
+import { findProject } from '../../shared-data'
 
 export async function GET(
   request: NextRequest,
