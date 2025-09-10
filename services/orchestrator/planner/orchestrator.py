@@ -13,6 +13,7 @@ from .planner import TaskPlanner, PlanningResult
 from .policy_router import PolicyRouter, PSUBudgetExceeded
 from .region_router import RegionRouter
 from .critic import CriticVerifier
+from .model_selector import ModelSelector
 from tools.registry import ToolRegistry, ToolError
 from memory.cag_store import CAGStore
 from memory.episodic import EpisodicMemory
@@ -83,6 +84,7 @@ class AIOrchestrator:
         self.region_router = RegionRouter()
         self.critic_verifier = CriticVerifier()
         self.tool_registry = ToolRegistry()
+        self.model_selector = ModelSelector()
         self.cag_store = CAGStore()
         self.episodic_memory = EpisodicMemory()
         
@@ -234,11 +236,19 @@ class AIOrchestrator:
             
             # Step 3: Planner - Create execution plan with grounding
             task.status = TaskStatus.PLANNING
+            model_info = self.model_selector.select_model(
+                task.type, region_config.get("region") if region_config else None
+            )
+            fallback_models = self.model_selector.get_fallback_models(
+                task.type, region_config.get("region") if region_config else None
+            )
             plan = await self.task_planner.create_plan(
                 task.type,
                 task.description,
                 task.context,
-                region_config
+                region_config,
+                model_info=model_info,
+                fallback_models=fallback_models,
             )
             task.plan = plan
             

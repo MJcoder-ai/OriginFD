@@ -11,6 +11,11 @@ from pydantic import BaseModel
 from enum import Enum
 
 try:
+    from model_registry import ModelInfo
+except ImportError:  # pragma: no cover - makes module work without registry
+    ModelInfo = None  # type: ignore
+
+try:
     from ..memory.semantic import SemanticMemory
     from ..memory.episodic import EpisodicMemory
     from ..tools.registry import ToolRegistry, ToolMetadata
@@ -111,7 +116,9 @@ class TaskPlanner:
         task_type: str,
         task_description: str,
         context: Dict[str, Any],
-        region_config: Optional[Dict[str, Any]] = None
+        region_config: Optional[Dict[str, Any]] = None,
+        model_info: Optional["ModelInfo"] = None,
+        fallback_models: Optional[List["ModelInfo"]] = None,
     ) -> PlanningResult:
         """Create an execution plan for the given task."""
         start_time = datetime.utcnow()
@@ -140,6 +147,16 @@ class TaskPlanner:
                 task_type, task_description, optimized_steps, grounding_info
             )
             
+            metadata = {
+                    "region_config": region_config,
+                    "context_summary": self._summarize_context(context),
+                    "planning_time_ms": int((datetime.utcnow() - start_time).total_seconds() * 1000),
+                }
+            if model_info is not None:
+                metadata["model"] = model_info.dict()
+            if fallback_models:
+                metadata["fallback_models"] = [m.dict() for m in fallback_models]
+
             plan = PlanningResult(
                 plan_id=plan_id,
                 task_type=task_type,
@@ -151,11 +168,7 @@ class TaskPlanner:
                 grounding_sources=grounding_info.get("sources", []),
                 reasoning=reasoning,
                 created_at=start_time,
-                metadata={
-                    "region_config": region_config,
-                    "context_summary": self._summarize_context(context),
-                    "planning_time_ms": int((datetime.utcnow() - start_time).total_seconds() * 1000)
-                }
+                metadata=metadata,
             )
             
             # Store plan in episodic memory

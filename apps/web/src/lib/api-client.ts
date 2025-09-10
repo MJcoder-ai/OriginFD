@@ -38,6 +38,20 @@ export interface TokenResponse {
   expires_in: number
 }
 
+export interface ModelInfo {
+  id: string
+  name: string
+  provider: string
+  region: string
+  cost_per_1k_tokens: number
+  latency_ms: number
+  eval_score: number
+  is_active: boolean
+  routing_rules?: Record<string, string>
+  cag_hit_rate: number
+  cag_drift: number
+}
+
 export interface UserResponse {
   id: string
   email: string
@@ -142,6 +156,10 @@ export class OriginFDClient {
 
   async getProjectReview(projectId: string): Promise<any> {
     return this.request(`projects/${projectId}/review`)
+  }
+
+  async listModels(): Promise<ModelInfo[]> {
+    return this.request('model-registry/models')
   }
 
   async submitApproval(projectId: string, approved: boolean): Promise<any> {

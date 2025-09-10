@@ -11,6 +11,7 @@ import uvicorn
 from core.config import get_settings
 from core.logging_config import setup_logging
 from api.routers import tasks, tools, planning, health
+from model_registry import api as model_registry_api
 from planner.orchestrator import AIOrchestrator
 
 # Set up logging
@@ -72,6 +73,7 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(tools.router, prefix="/tools", tags=["tools"])
 app.include_router(planning.router, prefix="/planning", tags=["planning"])
+app.include_router(model_registry_api.router, prefix="/model-registry", tags=["model-registry"])
 
 
 @app.get("/")
