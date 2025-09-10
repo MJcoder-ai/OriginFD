@@ -38,9 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [tokens, user])
 
   const login = async (username: string, password: string) => {
-    const currentUser = await apiClient.login({ email: username, password })
-    setUser(currentUser)
-    setTokens(apiClient.getTokens())
+    try {
+      const currentUser = await apiClient.login({ email: username, password })
+      setUser(currentUser)
+      setTokens(apiClient.getTokens())
+    } catch (error) {
+      console.error('Login failed:', error)
+      throw error
+    }
   }
 
   const logout = async () => {

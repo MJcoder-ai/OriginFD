@@ -46,8 +46,15 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password)
+      toast.success('Login successful! Redirecting...')
+      router.push('/dashboard')
     } catch (error) {
-      // Error is handled in the auth context
+      console.error('Login error:', error)
+      if (error instanceof Error) {
+        toast.error(error.message || 'Login failed. Please check your credentials.')
+      } else {
+        toast.error('Login failed. Please check your credentials.')
+      }
     }
   }
 

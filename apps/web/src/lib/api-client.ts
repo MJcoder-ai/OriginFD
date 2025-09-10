@@ -203,8 +203,12 @@ export class OriginFDClient {
       localStorage.setItem('originfd_tokens', JSON.stringify(this.authTokens))
     }
 
-    // Get user info
-    return this.getCurrentUser()
+    // Return user data from login response (if available) or get user info separately
+    if (response.user) {
+      return response.user
+    } else {
+      return this.getCurrentUser()
+    }
   }
 
   async getCurrentUser(): Promise<UserResponse> {
