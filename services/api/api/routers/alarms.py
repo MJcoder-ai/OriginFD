@@ -64,7 +64,10 @@ async def correlate_alarm(
 
 
 @router.websocket("/ws")
-async def alarm_stream(websocket: WebSocket) -> None:
+async def alarm_stream(
+    websocket: WebSocket,
+    current_user: dict = Depends(get_current_user),
+) -> None:
     """Stream alarm trend updates to connected clients."""
 
     await websocket.accept()

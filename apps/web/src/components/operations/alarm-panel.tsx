@@ -20,7 +20,11 @@ export default function AlarmPanel() {
   const wsRef = React.useRef<WebSocket | null>(null)
 
   React.useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/alarms/ws')
+    const base =
+      process.env.NEXT_PUBLIC_API_URL ?? window.location.origin
+    const url = new URL('/alarms/ws', base)
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    const ws = new WebSocket(url)
     wsRef.current = ws
 
     ws.onmessage = (event) => {
