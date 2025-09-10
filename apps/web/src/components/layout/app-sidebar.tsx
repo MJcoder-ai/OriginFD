@@ -75,6 +75,11 @@ const navigation: SidebarItem[] = [
     icon: BarChart3,
   },
   {
+    name: 'Transparency',
+    href: '/transparency-dashboard',
+    icon: BarChart3,
+  },
+  {
     name: 'Team',
     href: '/team',
     icon: Users,

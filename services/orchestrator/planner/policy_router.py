@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 from pydantic import BaseModel
 from enum import Enum
+from services.commerce_core import publish_usage_event
 
 logger = logging.getLogger(__name__)
 
@@ -358,11 +359,14 @@ class PolicyRouter:
         """Consume PSU budget after task completion."""
         if tenant_id in self.budget_allocations:
             allocation = self.budget_allocations[tenant_id]
-            
+
             # Move from reserved to used
             allocation.reserved_budget = max(0, allocation.reserved_budget - actual_psu_cost)
             allocation.used_budget += actual_psu_cost
-            
+
+            # Publish usage event for transparency dashboards
+            publish_usage_event(tenant_id, actual_psu_cost, {"task_id": task_id})
+
             logger.debug(f"Consumed {actual_psu_cost} PSU for tenant {tenant_id} (task: {task_id})")
         else:
             logger.warning(f"No budget allocation found for tenant {tenant_id}")

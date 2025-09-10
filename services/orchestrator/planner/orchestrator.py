@@ -262,11 +262,18 @@ class AIOrchestrator:
             # Step 6: Generate JSON-Patches if needed
             patches = await self._generate_patches(task, execution_results)
             task.patches = patches
-            
+
             # Complete task
             task.status = TaskStatus.COMPLETED
             task.completed_at = datetime.utcnow()
-            
+
+            # Publish usage metrics via policy router
+            await self.policy_router.consume_psu_budget(
+                tenant_id=task.tenant_id or "", 
+                actual_psu_cost=task.context.get("estimated_psu_cost", 1),
+                task_id=task.id,
+            )
+
             # Store in episodic memory for learning
             await self.episodic_memory.store_episode(
                 task_id=task.id,
