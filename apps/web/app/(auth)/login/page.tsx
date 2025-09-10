@@ -6,12 +6,11 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { useAuth } from '@/lib/auth/auth-provider'
 import { Button } from '@/components/ui/button'
-import type { LoginRequest } from '@/lib/types'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -22,7 +21,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, isLoading } = useAuth()
   const [showPassword, setShowPassword] = React.useState(false)
 
   const {
@@ -39,14 +38,14 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (!isLoading && isAuthenticated) {
       router.push('/dashboard')
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, isLoading, router])
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data)
+      await login(data.email, data.password)
     } catch (error) {
       // Error is handled in the auth context
     }
@@ -56,6 +55,17 @@ export default function LoginPage() {
     handleSubmit((data) =>
       onSubmit({ email: 'admin@originfd.com', password: 'admin' })
     )()
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   if (isAuthenticated) {
