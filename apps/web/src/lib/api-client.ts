@@ -38,6 +38,20 @@ export interface TokenResponse {
   expires_in: number
 }
 
+export interface ModelInfo {
+  id: string
+  name: string
+  provider: string
+  region: string
+  cost_per_1k_tokens: number
+  latency_ms: number
+  eval_score: number
+  is_active: boolean
+  routing_rules?: Record<string, string>
+  cag_hit_rate: number
+  cag_drift: number
+}
+
 export interface UserResponse {
   id: string
   email: string
@@ -49,6 +63,23 @@ export interface UserResponse {
 export interface AuthTokens {
   accessToken: string
   refreshToken: string
+}
+
+export interface PSUUsageResponse {
+  tenant_id: string
+  total_psu: number
+  events: any[]
+}
+
+export interface EscrowStatusResponse {
+  tenant_id: string
+  milestones: any[]
+  total: number
+}
+
+export interface TransactionsResponse {
+  tenant_id: string
+  transactions: any[]
 }
 
 export class ApiError extends Error {
@@ -144,6 +175,10 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}/review`)
   }
 
+  async listModels(): Promise<ModelInfo[]> {
+    return this.request('model-registry/models')
+  }
+
   async submitApproval(projectId: string, approved: boolean): Promise<any> {
     return this.request('approvals', {
       method: 'POST',
@@ -209,6 +244,19 @@ export class OriginFDClient {
 
   setTokens(tokens: AuthTokens): void {
     this.authTokens = tokens
+  }
+
+  // Commerce APIs
+  async getPsuUsage(tenantId: string): Promise<PSUUsageResponse> {
+    return this.request(`commerce/psu/${tenantId}`)
+  }
+
+  async getEscrowStatus(tenantId: string): Promise<EscrowStatusResponse> {
+    return this.request(`commerce/escrow/${tenantId}`)
+  }
+
+  async getTransactionHistory(tenantId: string): Promise<TransactionsResponse> {
+    return this.request(`commerce/transactions/${tenantId}`)
   }
 
   // Component APIs

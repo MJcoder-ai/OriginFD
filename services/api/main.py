@@ -16,7 +16,7 @@ from core.logging_config import setup_logging
 
 
 # Include core API routers
-from api.routers import health, projects, alarms, approvals
+from api.routers import health, projects, alarms, approvals, commerce
 
 # Temporarily disabled due to import issues:
 # from api.routers import auth, documents, marketplace, components, component_integration, suppliers
@@ -101,6 +101,7 @@ app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 
 
 app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
+app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
 
 
 # Temporarily disabled due to import issues:

@@ -10,12 +10,17 @@ import uvicorn
 
 from core.config import get_settings
 from core.logging_config import setup_logging
+
 from graph_store import GraphStore
 from api.routers import graph
 try:  # Optional routers may not exist yet
     from api.routers import tasks, tools, planning, health
 except ImportError:  # pragma: no cover - missing optional modules
     tasks = tools = planning = health = None
+
+
+from api.routers import tasks, tools, planning, health
+from model_registry import api as model_registry_api
 
 from planner.orchestrator import AIOrchestrator
 
@@ -81,6 +86,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Include routers
+
 if health:
     app.include_router(health.router, prefix="/health", tags=["health"])
 if tasks:
@@ -90,6 +96,9 @@ if tools:
 if planning:
     app.include_router(planning.router, prefix="/planning", tags=["planning"])
 app.include_router(graph.router, prefix="/graph", tags=["graph"])
+
+
+
 
 
 @app.get("/")

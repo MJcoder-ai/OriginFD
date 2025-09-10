@@ -20,6 +20,7 @@ import {
   Bell,
   BookOpen,
   Building,
+  Database,
   CheckSquare,
 } from 'lucide-react'
 
@@ -70,8 +71,18 @@ const navigation: SidebarItem[] = [
     icon: Building,
   },
   {
+    name: 'Model Registry',
+    href: '/model-registry',
+    icon: Database,
+  },
+  {
     name: 'Analytics',
     href: '/analytics',
+    icon: BarChart3,
+  },
+  {
+    name: 'Transparency',
+    href: '/transparency-dashboard',
     icon: BarChart3,
   },
   {
