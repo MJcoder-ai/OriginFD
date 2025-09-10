@@ -4,6 +4,7 @@ Manages PSU budgets, permissions, and execution policies.
 """
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
@@ -102,11 +103,12 @@ class PolicyRouter:
             PolicyViolationType.RATE_LIMIT_EXCEEDED: 10,
             PolicyViolationType.PERMISSION_DENIED: 5
         }
-        
+
         # Default policies
         self.default_policies = {
             "max_task_duration_minutes": 30,
             "max_concurrent_tasks_per_user": 5,
+            "max_concurrent_tasks_per_tenant": 20,
             "max_tool_executions_per_task": 20,
             "max_psu_per_task": 100,
             "require_approval_above_psu": 50,
@@ -129,8 +131,33 @@ class PolicyRouter:
                 "design_read", "component_read", "finance_read"
             ]
         }
-        
+
         logger.info("PolicyRouter initialized")
+
+        # Track active tasks for concurrency limits
+        self.active_tasks_by_user: Dict[str, int] = {}
+        self.active_tasks_by_tenant: Dict[str, int] = {}
+
+    def register_task_start(self, tenant_id: Optional[str], user_id: Optional[str]):
+        """Register the start of a task for concurrency tracking."""
+        if tenant_id:
+            self.active_tasks_by_tenant[tenant_id] = self.active_tasks_by_tenant.get(tenant_id, 0) + 1
+        if user_id:
+            key = f"{tenant_id or 'global'}:{user_id}"
+            self.active_tasks_by_user[key] = self.active_tasks_by_user.get(key, 0) + 1
+
+    def register_task_completion(self, tenant_id: Optional[str], user_id: Optional[str]):
+        """Register the completion of a task for concurrency tracking."""
+        if tenant_id and tenant_id in self.active_tasks_by_tenant:
+            self.active_tasks_by_tenant[tenant_id] = max(0, self.active_tasks_by_tenant[tenant_id] - 1)
+            if self.active_tasks_by_tenant[tenant_id] == 0:
+                del self.active_tasks_by_tenant[tenant_id]
+        if user_id:
+            key = f"{tenant_id or 'global'}:{user_id}"
+            if key in self.active_tasks_by_user:
+                self.active_tasks_by_user[key] = max(0, self.active_tasks_by_user[key] - 1)
+                if self.active_tasks_by_user[key] == 0:
+                    del self.active_tasks_by_user[key]
     
     async def check_policy_compliance(
         self,
@@ -531,20 +558,61 @@ class PolicyRouter:
                 "approved": False,
                 "reason": f"Task duration exceeds limit: {estimated_duration_ms/1000:.1f}s > {max_duration_ms/1000:.1f}s"
             }
-        
+
         # Check concurrent task limits
-        # TODO: Implement actual concurrent task tracking
-        
+        tenant_id = context.get("tenant_id")
+        user_id = context.get("user_id")
+
+        if user_id:
+            user_key = f"{tenant_id or 'global'}:{user_id}"
+            user_active = self.active_tasks_by_user.get(user_key, 0)
+            if user_active >= self.default_policies["max_concurrent_tasks_per_user"]:
+                return {
+                    "approved": False,
+                    "reason": f"User has too many concurrent tasks: {user_active}"
+                }
+
+        if tenant_id:
+            tenant_active = self.active_tasks_by_tenant.get(tenant_id, 0)
+            if tenant_active >= self.default_policies["max_concurrent_tasks_per_tenant"]:
+                return {
+                    "approved": False,
+                    "reason": f"Tenant has too many concurrent tasks: {tenant_active}"
+                }
+
         return {"approved": True}
     
     async def _check_content_policy(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Check content policy compliance."""
         if not self.default_policies["content_filtering_enabled"]:
             return {"approved": True}
-        
-        # TODO: Implement actual content filtering
-        # Check for inappropriate content, PII, etc.
-        
+
+        def _collect_strings(obj: Any) -> List[str]:
+            strings: List[str] = []
+            if isinstance(obj, dict):
+                for v in obj.values():
+                    strings.extend(_collect_strings(v))
+            elif isinstance(obj, list):
+                for item in obj:
+                    strings.extend(_collect_strings(item))
+            elif isinstance(obj, str):
+                strings.append(obj)
+            else:
+                strings.append(str(obj))
+            return strings
+
+        text = " ".join(_collect_strings(context)).lower()
+
+        banned_terms = {"malware", "hack", "exploit"}
+        for term in banned_terms:
+            if term in text:
+                return {"approved": False, "reason": f"Content contains banned term: {term}"}
+
+        email_pattern = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+        phone_pattern = re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b")
+        if email_pattern.search(text) or phone_pattern.search(text):
+            return {"approved": False, "reason": "Content appears to contain PII"}
+
         return {"approved": True}
     
     async def _reserve_psu_budget(
