@@ -164,6 +164,14 @@ terraform apply
 - Escrow and payment processing
 - Service handover and provider switching
 
+### Tool Registry & SDK
+- Tool metadata exposed via `/tools` on the AI Orchestrator
+- Run any tool with sample inputs via `POST /tools/{tool_name}/sample`
+- Generate client SDK types: `python services/orchestrator/tools/generate_sdk.py`
+- Download generated SDKs:
+  - TypeScript: http://localhost:8001/tools/sdk/typescript
+  - Python: http://localhost:8001/tools/sdk/python
+
 ## Documentation
 
 - [Development Plan](DEVELOPMENT_PLAN.md) - Phased development approach
