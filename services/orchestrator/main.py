@@ -10,8 +10,18 @@ import uvicorn
 
 from core.config import get_settings
 from core.logging_config import setup_logging
+
+from graph_store import GraphStore
+from api.routers import graph
+try:  # Optional routers may not exist yet
+    from api.routers import tasks, tools, planning, health
+except ImportError:  # pragma: no cover - missing optional modules
+    tasks = tools = planning = health = None
+
+
 from api.routers import tasks, tools, planning, health
 from model_registry import api as model_registry_api
+
 from planner.orchestrator import AIOrchestrator
 
 # Set up logging
@@ -29,10 +39,15 @@ async def lifespan(app: FastAPI):
     # Initialize AI orchestrator
     orchestrator = AIOrchestrator()
     await orchestrator.initialize()
-    
-    # Store orchestrator in app state
+
+    # Load graph configurations
+    graph_store = GraphStore()
+    graph_store.load()
+
+    # Store services in app state
     app.state.orchestrator = orchestrator
-    
+    app.state.graph_store = graph_store
+
     logger.info("AI Orchestrator startup complete")
     
     yield
@@ -41,6 +56,8 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down OriginFD AI Orchestrator...")
     if hasattr(app.state, 'orchestrator'):
         await app.state.orchestrator.cleanup()
+    if hasattr(app.state, 'graph_store'):
+        app.state.graph_store.save()
 
 
 # Create FastAPI app
@@ -69,11 +86,19 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Include routers
-app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
-app.include_router(tools.router, prefix="/tools", tags=["tools"])
-app.include_router(planning.router, prefix="/planning", tags=["planning"])
-app.include_router(model_registry_api.router, prefix="/model-registry", tags=["model-registry"])
+
+if health:
+    app.include_router(health.router, prefix="/health", tags=["health"])
+if tasks:
+    app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
+if tools:
+    app.include_router(tools.router, prefix="/tools", tags=["tools"])
+if planning:
+    app.include_router(planning.router, prefix="/planning", tags=["planning"])
+app.include_router(graph.router, prefix="/graph", tags=["graph"])
+
+
+
 
 
 @app.get("/")

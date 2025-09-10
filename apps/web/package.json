@@ -37,6 +37,7 @@
     "d3": "^7.9.0",
     "date-fns": "^3.0.6",
     "framer-motion": "^12.23.12",
+    "reactflow": "^11.10.0",
     "lucide-react": "^0.303.0",
     "next": "14.0.4",
     "next-themes": "^0.2.1",
