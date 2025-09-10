@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { apiClient, type AuthTokens, type UserResponse } from '@/lib/api-client'
 
 interface AuthContextValue {
@@ -8,6 +9,8 @@ interface AuthContextValue {
   tokens: AuthTokens | null
   login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  isAuthenticated: boolean
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -15,15 +18,22 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null)
   const [tokens, setTokens] = useState<AuthTokens | null>(apiClient.getTokens())
+  const [isLoading, setIsLoading] = useState<boolean>(!!tokens)
 
   useEffect(() => {
     if (tokens && !user) {
+      setIsLoading(true)
       apiClient
         .getCurrentUser()
         .then(setUser)
         .catch(() => {
           setTokens(null)
         })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    } else {
+      setIsLoading(false)
     }
   }, [tokens, user])
 
@@ -39,7 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(null)
   }
 
-  return <AuthContext.Provider value={{ user, tokens, login, logout }}>{children}</AuthContext.Provider>
+  const isAuthenticated = !!user
+
+  return (
+    <AuthContext.Provider
+      value={{ user, tokens, login, logout, isAuthenticated, isLoading }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth(): AuthContextValue {
@@ -51,5 +69,14 @@ export function useAuth(): AuthContextValue {
 }
 
 export function useRequireAuth(): AuthContextValue {
-  return useAuth()
+  const auth = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!auth.isLoading && !auth.isAuthenticated) {
+      router.replace('/login')
+    }
+  }, [auth.isLoading, auth.isAuthenticated, router])
+
+  return auth
 }
