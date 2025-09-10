@@ -1,5 +1,8 @@
 """Commerce API endpoints."""
 from fastapi import APIRouter, HTTPException
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
 from services.commerce_core import psu_meter, escrow_manager, payout_ledger
 
 router = APIRouter()
