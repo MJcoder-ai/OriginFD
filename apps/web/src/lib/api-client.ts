@@ -51,6 +51,23 @@ export interface AuthTokens {
   refreshToken: string
 }
 
+export interface PSUUsageResponse {
+  tenant_id: string
+  total_psu: number
+  events: any[]
+}
+
+export interface EscrowStatusResponse {
+  tenant_id: string
+  milestones: any[]
+  total: number
+}
+
+export interface TransactionsResponse {
+  tenant_id: string
+  transactions: any[]
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -209,6 +226,19 @@ export class OriginFDClient {
 
   setTokens(tokens: AuthTokens): void {
     this.authTokens = tokens
+  }
+
+  // Commerce APIs
+  async getPsuUsage(tenantId: string): Promise<PSUUsageResponse> {
+    return this.request(`commerce/psu/${tenantId}`)
+  }
+
+  async getEscrowStatus(tenantId: string): Promise<EscrowStatusResponse> {
+    return this.request(`commerce/escrow/${tenantId}`)
+  }
+
+  async getTransactionHistory(tenantId: string): Promise<TransactionsResponse> {
+    return this.request(`commerce/transactions/${tenantId}`)
   }
 
   // Component APIs
