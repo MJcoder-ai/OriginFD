@@ -23,6 +23,7 @@ import {
   Database,
   CheckSquare,
 } from 'lucide-react'
+import { ProjectExplorer } from '@/components/projects/project-explorer'
 
 interface SidebarItem {
   name: string
@@ -194,6 +195,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
                 level={level + 1}
               />
             ))}
+            {item.name === 'Projects' && (
+              <ProjectExplorer level={level + 1} />
+            )}
           </div>
         )}
       </div>
