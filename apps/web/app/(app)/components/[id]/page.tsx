@@ -52,7 +52,8 @@ const statusTransitions = {
   enriched: ['approved', 'parsed'],
   approved: ['available'],
   available: ['operational'],
-  operational: ['archived']
+  operational: ['archived'],
+  archived: []
 }
 
 export default function ComponentDetailPage() {

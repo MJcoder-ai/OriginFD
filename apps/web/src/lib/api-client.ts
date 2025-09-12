@@ -175,6 +175,35 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}/review`)
   }
 
+  // ---- New (Phase-1) ----
+  async getProjectHierarchy(projectId: string): Promise<any> {
+    return this.request(`projects/${projectId}/hierarchy`)
+  }
+  async getProjectViews(projectId: string): Promise<any[]> {
+    return this.request(`projects/${projectId}/views`)
+  }
+  async getCanvasView(canvasId: string, projectId: string): Promise<any> {
+    const qs = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
+    return this.request(`views/${canvasId}${qs}`)
+  }
+  async getSLD(projectId: string, scope: string): Promise<{ scope: string; nodes: any[]; edges: any[] }> {
+    return this.request(`projects/${projectId}/sld?scope=${encodeURIComponent(scope)}`)
+  }
+  async getViewOverrides(canvasId: string): Promise<Record<string, { x: number; y: number }>> {
+    return this.request(`views/${canvasId}/overrides`)
+  }
+  async patchViewOverrides(canvasId: string, positions: Record<string, { x: number; y: number }>): Promise<{ ok: boolean }> {
+    return this.request(`views/${canvasId}/overrides`, { method: 'PATCH', body: JSON.stringify(positions) })
+  }
+  async getAsset(projectId: string, instanceId: string): Promise<any> {
+    const qs = `?projectId=${encodeURIComponent(projectId)}`
+    return this.request(`assets/${encodeURIComponent(instanceId)}${qs}`)
+  }
+
+  async getProjectScenarios(projectId: string): Promise<any[]> {
+    return this.request(`projects/${projectId}/scenarios`)
+  }
+
   async listModels(): Promise<ModelInfo[]> {
     return this.request('model-registry/models')
   }
@@ -264,6 +293,30 @@ export class OriginFDClient {
   }
 
   // Component APIs
+  async listComponents(params: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    category?: string;
+    domain?: string;
+    status?: string;
+  } = {}): Promise<any> {
+    const searchParams = new URLSearchParams()
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value))
+      }
+    })
+    
+    const query = searchParams.toString()
+    return this.request(`components${query ? '?' + query : ''}`)
+  }
+
+  async getStats(): Promise<any> {
+    return this.request('components/stats')
+  }
+
   async getComponent(componentId: string): Promise<any> {
     return this.request(`components/${componentId}`)
   }

@@ -14,6 +14,8 @@ interface SystemDiagramProps {
   instances: ComponentInstance[];
   connections: Connection[];
   className?: string;
+  compact?: boolean;
+  onNodeClick?: (node: any) => void;
 }
 
 interface ComponentPosition {
@@ -43,6 +45,8 @@ export function SystemDiagram({
   instances,
   connections,
   className,
+  compact = false,
+  onNodeClick,
 }: SystemDiagramProps) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const [positions, setPositions] = React.useState<ComponentPosition[]>([]);
@@ -218,6 +222,140 @@ export function SystemDiagram({
     }
     return "";
   };
+
+
+  if (compact) {
+    // Show welcome state if no components
+    if (!instances.length || positions.length === 0) {
+      return (
+        <div className={`${className} relative w-full h-full`}>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-lg flex items-center justify-center">
+                <Grid3x3 className="w-8 h-8 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Canvas Ready</h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-sm">
+                Your single line diagram canvas is ready. Components will appear here when you add them to your project.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <span>Use</span>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Components</kbd>
+                <span>or</span>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Models</kbd>
+                <span>to get started</span>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={className}>
+        <div className="relative w-full h-full">
+          <svg
+            ref={svgRef}
+            width="100%"
+            height="100%"
+            viewBox="0 0 800 600"
+            className="border border-gray-200 rounded bg-white"
+            style={{ minHeight: '400px' }}
+          >
+            {/* Render compact version without header */}
+            {connections
+              .filter((connection) => {
+                const connectionLayer = (connection as ConnectionWithLayer).layer;
+                return connectionLayer ? layers[connectionLayer] : true;
+              })
+              .map((connection) => {
+                const fromPos = getPositionById(connection.from_component);
+                const toPos = getPositionById(connection.to_component);
+
+                if (!fromPos || !toPos) return null;
+
+                return (
+                  <g key={connection.id}>
+                    {/* Connection line */}
+                    <line
+                      x1={fromPos.x}
+                      y1={fromPos.y}
+                      x2={toPos.x}
+                      y2={toPos.y}
+                      className={`${getConnectionColor(connection.connection_type)} stroke-2`}
+                      markerEnd="url(#arrowhead)"
+                    />
+                  </g>
+                );
+              })}
+
+            {/* Arrow marker definition */}
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="7"
+                refX="9"
+                refY="3.5"
+                orient="auto"
+              >
+                <polygon points="0 0, 10 3.5, 0 7" className="fill-gray-500" />
+              </marker>
+            </defs>
+
+            {/* Draw components */}
+            {positions.map((pos) => {
+              const Icon = getComponentIcon(pos.type);
+              const componentName = getComponentName(pos.id);
+              const capacity = getCapacityFromComponent(pos.id);
+
+              return (
+                <g
+                  key={pos.id}
+                  className="cursor-pointer hover:opacity-80"
+                  onClick={() => onNodeClick?.(pos)}
+                >
+                  {/* Component box */}
+                  <rect
+                    x={pos.x - 70}
+                    y={pos.y - 28}
+                    width="140"
+                    height="56"
+                    className={`${getComponentColor(pos.type)} rounded`}
+                    rx="4"
+                  />
+                  
+                  {/* Component name */}
+                  <text
+                    x={pos.x}
+                    y={pos.y - 8}
+                    textAnchor="middle"
+                    className="text-sm font-medium fill-current"
+                  >
+                    {componentName}
+                  </text>
+                  
+                  {/* Component capacity */}
+                  {capacity && (
+                    <text
+                      x={pos.x}
+                      y={pos.y + 8}
+                      textAnchor="middle"
+                      className="text-xs fill-current opacity-75"
+                    >
+                      {capacity}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className={className}>

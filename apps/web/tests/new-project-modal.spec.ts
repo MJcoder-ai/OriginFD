@@ -48,4 +48,28 @@ test.describe('New Project modal', () => {
     await page.getByRole('button', { name: 'Create Project' }).click();
     await page.waitForURL('**/projects/test-project');
   });
+
+  test('sidebar navigation and theme toggle persists', async ({ page }) => {
+    await page.goto('/dashboard');
+    // Toggle theme to dark via header menu button
+    await page.getByRole('button', { name: 'Toggle theme' }).click();
+    await page.getByRole('menuitem', { name: 'Dark' }).click();
+    // Navigate to projects page from sidebar link text
+    await page.getByRole('link', { name: 'Projects' }).click();
+    await expect(page).toHaveURL(/.*\/projects$/);
+    // Theme class should include dark
+    const htmlClass = await page.locator('html').getAttribute('class');
+    expect(htmlClass || '').toContain('dark');
+  });
+
+  test('open canvas and use layer toggle + zoom controls', async ({ page }) => {
+    await page.goto('/projects/proj_550e8400-e29b-41d4-a716-446655440001/canvases');
+    // Open LV or MV canvas card button
+    await page.getByRole('button', { name: 'Open Canvas' }).first().click();
+    // Zoom in button should be present
+    await page.getByTitle('Zoom In (Ctrl + +)').click();
+    // Open keyboard shortcuts overlay
+    await page.keyboard.press('?');
+    await expect(page.getByText('Keyboard Shortcuts')).toBeVisible();
+  });
 });

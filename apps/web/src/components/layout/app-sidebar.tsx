@@ -3,6 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -22,8 +23,10 @@ import {
   Building,
   Database,
   CheckSquare,
+  FileText,
+  Layers,
 } from 'lucide-react'
-import { ProjectExplorer } from '@/components/projects/project-explorer'
+import { apiClient } from '@/lib/api-client'
 
 interface SidebarItem {
   name: string
@@ -33,22 +36,11 @@ interface SidebarItem {
   children?: SidebarItem[]
 }
 
-const navigation: SidebarItem[] = [
+const staticNavigation: SidebarItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-  },
-  {
-    name: 'Projects',
-    href: '/projects',
-    icon: FolderOpen,
-    children: [
-      { name: 'All Projects', href: '/projects', icon: FolderOpen },
-      { name: 'PV Systems', href: '/projects?filter=pv', icon: Sun },
-      { name: 'BESS', href: '/projects?filter=bess', icon: Battery },
-      { name: 'Hybrid', href: '/projects?filter=hybrid', icon: Zap },
-    ],
   },
   {
     name: 'AI Assistant',
@@ -93,6 +85,26 @@ const navigation: SidebarItem[] = [
   },
 ]
 
+const getDomainIcon = (domain: string) => {
+  switch (domain) {
+    case 'PV':
+      return Sun
+    case 'BESS':
+      return Battery
+    case 'HYBRID':
+      return Zap
+    default:
+      return FolderOpen
+  }
+}
+
+const createProjectSubItems = (projectId: string): SidebarItem[] => [
+  { name: 'Canvases', href: `/projects/${projectId}/canvases`, icon: Layers },
+  { name: 'Models', href: `/projects/${projectId}/models`, icon: Database },
+  { name: 'Documents', href: `/projects/${projectId}/documents`, icon: FileText },
+  { name: 'Reviews & Approvals', href: `/projects/${projectId}/reviews`, icon: CheckSquare },
+]
+
 const bottomNavigation: SidebarItem[] = [
   {
     name: 'Documentation',
@@ -118,7 +130,42 @@ interface AppSidebarProps {
 export function AppSidebar({ className }: AppSidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
+  const [hoverOpen, setHoverOpen] = React.useState(false)
   const [expandedItems, setExpandedItems] = React.useState<string[]>([])
+  
+  // Load projects dynamically
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => apiClient.listProjects(),
+  })
+  
+  // Filter out legacy projects and create dynamic navigation
+  const uniqueProjects = projects.filter((project: any) => 
+    !project.project_name.includes('(Legacy)')
+  )
+  
+  // Create dynamic navigation with projects
+  const navigation = React.useMemo(() => {
+    const projectsItem = {
+      name: 'Projects',
+      href: '/projects',
+      icon: FolderOpen,
+      children: [
+        ...uniqueProjects.map((project: any) => ({
+          name: project.project_name,
+          href: `/projects/${project.id}`,
+          icon: FolderOpen,
+          children: createProjectSubItems(project.id),
+        }))
+      ],
+    }
+    
+    return [
+      staticNavigation[0], // Dashboard
+      projectsItem,
+      ...staticNavigation.slice(1), // Rest of the navigation
+    ]
+  }, [uniqueProjects])
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -146,8 +193,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
         <Link
           href={item.href}
           className={cn(
-            'group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-            level > 0 && 'ml-6',
+            'group flex items-center justify-between py-1.5 text-sm font-medium rounded-lg transition-colors w-full',
+            level === 0 && 'px-3',
+            level === 1 && 'px-3',
+            level === 2 && 'px-3',
             isItemActive
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted',
@@ -160,23 +209,25 @@ export function AppSidebar({ className }: AppSidebarProps) {
             }
           }}
         >
-          <div className="flex items-center gap-3">
-            <Icon className={cn('h-4 w-4 flex-shrink-0', level > 0 && 'h-3 w-3')} />
+          <div className="flex items-center min-w-0 flex-1" style={{ 
+            paddingLeft: level === 1 ? '1rem' : level === 2 ? '1.75rem' : '0'
+          }}>
+            <Icon className="h-4 w-4 flex-shrink-0 mr-2" />
             {!isCollapsed && (
-              <span className="truncate">{item.name}</span>
+              <span className="truncate text-sm">{item.name}</span>
             )}
           </div>
           {!isCollapsed && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {item.badge && (
-                <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">
+                <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap">
                   {item.badge}
                 </span>
               )}
               {hasChildren && (
                 <ChevronRight
                   className={cn(
-                    'h-4 w-4 transition-transform',
+                    'h-3 w-3 transition-transform flex-shrink-0',
                     isExpanded && 'rotate-90'
                   )}
                 />
@@ -187,7 +238,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
         {/* Children */}
         {hasChildren && isExpanded && !isCollapsed && (
-          <div className="mt-1 space-y-1">
+          <div className="space-y-0.5">
             {item.children!.map((child) => (
               <SidebarLink
                 key={child.name}
@@ -195,9 +246,6 @@ export function AppSidebar({ className }: AppSidebarProps) {
                 level={level + 1}
               />
             ))}
-            {item.name === 'Projects' && (
-              <ProjectExplorer level={level + 1} />
-            )}
           </div>
         )}
       </div>
@@ -206,15 +254,17 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
   return (
     <div
+      onMouseEnter={() => setHoverOpen(true)}
+      onMouseLeave={() => setHoverOpen(false)}
       className={cn(
-        'flex flex-col h-full bg-card border-r border-border transition-all duration-300',
-        isCollapsed ? 'w-16' : 'w-64',
+        'flex flex-col h-full bg-card border-r border-border transition-[width] duration-200 overflow-hidden',
+        (isCollapsed && !hoverOpen) ? 'w-16' : 'w-64',
         className
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
-        {!isCollapsed && (
+        {(!isCollapsed || hoverOpen) && (
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 bg-gradient-to-r from-originfd-blue-600 to-originfd-green-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">OF</span>
@@ -236,11 +286,17 @@ export function AppSidebar({ className }: AppSidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-1">
-          {navigation.map((item) => (
-            <SidebarLink key={item.name} item={item} />
-          ))}
+          {isLoading ? (
+            <div className="px-3 py-2 text-sm text-muted-foreground">
+              Loading navigation...
+            </div>
+          ) : (
+            navigation.map((item) => (
+              <SidebarLink key={item.name} item={item} />
+            ))
+          )}
         </div>
       </nav>
 
@@ -254,7 +310,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
       </div>
 
       {/* Notifications (when expanded) */}
-      {!isCollapsed && (
+      {(!isCollapsed || hoverOpen) && (
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
             <div className="p-2 bg-originfd-blue-100 rounded-lg">

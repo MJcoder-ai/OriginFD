@@ -70,28 +70,38 @@ const CommandItem = ({ children, onSelect }: { children: React.ReactNode; onSele
   </div>
 )
 
-// Helper functions for enhanced component display
-const getLifecycleStageDisplay = (stage?: string) => {
-  const stages = {
-    development: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Dev' },
-    active: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Active' },
-    mature: { icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Mature' },
-    deprecated: { icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50', label: 'Deprecated' },
-    obsolete: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', label: 'Obsolete' },
-    discontinued: { icon: X, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Discontinued' }
+// Helper functions for ODL-SD v4.1 component display
+const getODLStatusDisplay = (status?: string) => {
+  const statuses = {
+    draft: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Draft' },
+    parsed: { icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Parsed' },
+    enriched: { icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Enriched' },
+    approved: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Approved' },
+    available: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Available' },
+    rfq_open: { icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50', label: 'RFQ Open' },
+    operational: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Operational' },
+    archived: { icon: Package, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Archived' }
   }
-  return stages[stage as keyof typeof stages] || stages.active
+  return statuses[status as keyof typeof statuses] || statuses.draft
 }
 
-const getComplianceDisplay = (status?: string) => {
-  const statuses = {
-    compliant: { icon: CheckCircle, color: 'text-green-600', label: 'Compliant' },
-    non_compliant: { icon: AlertCircle, color: 'text-red-600', label: 'Non-Compliant' },
-    pending_review: { icon: Clock, color: 'text-yellow-600', label: 'Pending' },
-    expired: { icon: X, color: 'text-red-600', label: 'Expired' },
-    not_applicable: { icon: Package, color: 'text-gray-600', label: 'N/A' }
+const getComplianceDisplay = (certificates?: Array<{standard: string, valid_until: string}>) => {
+  if (!certificates || certificates.length === 0) {
+    return { icon: AlertCircle, color: 'text-red-600', label: 'No Certificates' }
   }
-  return statuses[status as keyof typeof statuses] || statuses.not_applicable
+  
+  const now = new Date()
+  const expiringSoon = certificates.some(cert => {
+    const validUntil = new Date(cert.valid_until)
+    const monthsUntilExpiry = (validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
+    return monthsUntilExpiry < 6
+  })
+  
+  if (expiringSoon) {
+    return { icon: AlertCircle, color: 'text-orange-600', label: 'Expiring Soon' }
+  }
+  
+  return { icon: CheckCircle, color: 'text-green-600', label: `${certificates.length} Certs` }
 }
 
 interface ComponentSelectorProps {
@@ -267,20 +277,14 @@ export function ComponentSelector({
                           <CommandItem onSelect={() => setCategoryFilter('')}>
                             All Categories
                           </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('generation')}>
-                            Generation
+                          <CommandItem onSelect={() => setCategoryFilter('pv_modules')}>
+                            PV Modules
                           </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('storage')}>
-                            Storage
+                          <CommandItem onSelect={() => setCategoryFilter('inverters')}>
+                            Inverters
                           </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('conversion')}>
-                            Conversion
-                          </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('protection')}>
-                            Protection
-                          </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('monitoring')}>
-                            Monitoring
+                          <CommandItem onSelect={() => setCategoryFilter('batteries')}>
+                            Batteries
                           </CommandItem>
                         </CommandGroup>
                       </CommandList>
@@ -340,19 +344,22 @@ export function ComponentSelector({
                       <CommandList>
                         <CommandGroup>
                           <CommandItem onSelect={() => setLifecycleFilter('')}>
-                            All Stages
+                            All Statuses
                           </CommandItem>
-                          <CommandItem onSelect={() => setLifecycleFilter('active')}>
-                            Active
+                          <CommandItem onSelect={() => setLifecycleFilter('draft')}>
+                            Draft
                           </CommandItem>
-                          <CommandItem onSelect={() => setLifecycleFilter('mature')}>
-                            Mature
+                          <CommandItem onSelect={() => setLifecycleFilter('approved')}>
+                            Approved
                           </CommandItem>
-                          <CommandItem onSelect={() => setLifecycleFilter('deprecated')}>
-                            Deprecated
+                          <CommandItem onSelect={() => setLifecycleFilter('available')}>
+                            Available
                           </CommandItem>
-                          <CommandItem onSelect={() => setLifecycleFilter('obsolete')}>
-                            Obsolete
+                          <CommandItem onSelect={() => setLifecycleFilter('operational')}>
+                            Operational
+                          </CommandItem>
+                          <CommandItem onSelect={() => setLifecycleFilter('archived')}>
+                            Archived
                           </CommandItem>
                         </CommandGroup>
                       </CommandList>
@@ -385,10 +392,13 @@ export function ComponentSelector({
                 </div>
               ) : (
                 components.map((component) => {
-                  const lifecycleDisplay = getLifecycleStageDisplay(component.lifecycle_stage)
-                  const complianceDisplay = getComplianceDisplay(component.compliance_status)
-                  const LifecycleIcon = lifecycleDisplay.icon
+                  const statusDisplay = getODLStatusDisplay(component.component_management.status)
+                  const complianceDisplay = getComplianceDisplay(component.component_management.compliance.certificates)
+                  const StatusIcon = statusDisplay.icon
                   const ComplianceIcon = complianceDisplay.icon
+                  const identity = component.component_management.component_identity
+                  const hasInventory = component.component_management.inventory.stocks.length > 0
+                  const inventoryQty = hasInventory ? component.component_management.inventory.stocks[0].on_hand_qty : 0
 
                   return (
                     <Card
@@ -407,17 +417,21 @@ export function ComponentSelector({
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">
-                                {component.brand} {component.part_number}
+                                {identity.brand} {identity.part_number}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {component.rating_w}W • {component.category}
+                                {identity.rating_w}W • {identity.classification?.unspsc ? 
+                                  (identity.classification.unspsc === '26111704' ? 'PV Modules' :
+                                   identity.classification.unspsc === '26111705' ? 'Inverters' :
+                                   identity.classification.unspsc === '26111706' ? 'Batteries' : 'Component')
+                                  : 'Component'}
                               </p>
                               
-                              {/* Enhanced status indicators */}
+                              {/* ODL-SD v4.1 status indicators */}
                               <div className="flex items-center gap-2 mt-1">
-                                <div className={cn("flex items-center gap-1 px-1.5 py-0.5 rounded text-xs", lifecycleDisplay.bg)}>
-                                  <LifecycleIcon className={cn("h-3 w-3", lifecycleDisplay.color)} />
-                                  <span className={lifecycleDisplay.color}>{lifecycleDisplay.label}</span>
+                                <div className={cn("flex items-center gap-1 px-1.5 py-0.5 rounded text-xs", statusDisplay.bg)}>
+                                  <StatusIcon className={cn("h-3 w-3", statusDisplay.color)} />
+                                  <span className={statusDisplay.color}>{statusDisplay.label}</span>
                                 </div>
                                 
                                 <div className="flex items-center gap-1">
@@ -427,10 +441,10 @@ export function ComponentSelector({
                                   </span>
                                 </div>
                                 
-                                {component.inventory_managed && (
+                                {hasInventory && (
                                   <div className="flex items-center gap-1">
                                     <Warehouse className="h-3 w-3 text-blue-600" />
-                                    <span className="text-xs text-blue-600">Stock</span>
+                                    <span className="text-xs text-blue-600">{inventoryQty} pcs</span>
                                   </div>
                                 )}
                               </div>
@@ -438,9 +452,9 @@ export function ComponentSelector({
                           </div>
                           
                           <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                            {component.domain && (
+                            {component.component_management.warranty.terms.duration_years > 0 && (
                               <Badge variant="outline" className="text-xs">
-                                {component.domain}
+                                {component.component_management.warranty.terms.duration_years}yr warranty
                               </Badge>
                             )}
                             {isComponentSelected(component) && (

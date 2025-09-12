@@ -64,13 +64,13 @@ export default function ProjectReviewPage() {
         </Card>
       )}
       <div className="flex gap-2">
-        <Button onClick={() => approval.mutate(true)} disabled={approval.isLoading}>
+        <Button onClick={() => approval.mutate(true)} disabled={approval.isPending}>
           Approve
         </Button>
         <Button
           onClick={() => approval.mutate(false)}
           variant="destructive"
-          disabled={approval.isLoading}
+          disabled={approval.isPending}
         >
           Reject
         </Button>

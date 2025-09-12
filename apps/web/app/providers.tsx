@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from 'next-themes'
 import { AuthProvider } from '@/lib/auth/auth-provider'
+import NProgress from 'nprogress'
+import { usePathname } from 'next/navigation'
 
 // Create a client
 const queryClient = new QueryClient({
@@ -28,6 +30,7 @@ const queryClient = new QueryClient({
 })
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   React.useEffect(() => {
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch((err) => {
@@ -36,12 +39,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Configure NProgress (App Router): start on pathname change then finish shortly after
+  React.useEffect(() => {
+    NProgress.configure({ showSpinner: false })
+    NProgress.start()
+    const timer = setTimeout(() => NProgress.done(), 300)
+    return () => {
+      clearTimeout(timer)
+      NProgress.done()
+    }
+  }, [pathname])
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="light"
-        enableSystem={false}
+        defaultTheme="system"
+        enableSystem={true}
         disableTransitionOnChange
       >
         <AuthProvider>

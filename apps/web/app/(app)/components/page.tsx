@@ -19,7 +19,8 @@ import {
   Edit,
   Archive,
   Download,
-  Upload
+  Upload,
+  Settings
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -48,22 +49,20 @@ import type { ComponentResponse, ComponentCategory, ComponentDomain, ComponentSt
 
 const categoryIcons = {
   generation: Sun,
+  transmission: Zap,
+  distribution: Package,
   storage: Battery,
-  conversion: Zap,
-  protection: Shield,
   monitoring: Activity,
-  structural: Package,
-  other: Grid3x3
+  control: Settings
 }
 
 const categoryColors = {
   generation: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  transmission: 'bg-purple-100 text-purple-800 border-purple-200',
+  distribution: 'bg-gray-100 text-gray-800 border-gray-200',
   storage: 'bg-green-100 text-green-800 border-green-200',
-  conversion: 'bg-purple-100 text-purple-800 border-purple-200',
-  protection: 'bg-red-100 text-red-800 border-red-200',
   monitoring: 'bg-blue-100 text-blue-800 border-blue-200',
-  structural: 'bg-gray-100 text-gray-800 border-gray-200',
-  other: 'bg-slate-100 text-slate-800 border-slate-200'
+  control: 'bg-indigo-100 text-indigo-800 border-indigo-200'
 }
 
 const statusColors = {
@@ -118,8 +117,8 @@ export default function ComponentsPage() {
   }
 
   const getCategoryColor = (category?: ComponentCategory) => {
-    if (!category) return categoryColors.other
-    return categoryColors[category] || categoryColors.other
+    if (!category) return 'bg-slate-100 text-slate-800 border-slate-200'
+    return categoryColors[category] || 'bg-slate-100 text-slate-800 border-slate-200'
   }
 
   const getStatusColor = (status: ComponentStatus) => {
@@ -306,7 +305,7 @@ export default function ComponentsPage() {
             ? 'grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             : 'space-y-4'
         }>
-          {components.map((component) => {
+          {components.map((component: ComponentResponse) => {
             const CategoryIcon = getCategoryIcon(component.category)
             
             if (viewMode === 'grid') {

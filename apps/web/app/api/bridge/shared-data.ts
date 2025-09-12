@@ -101,6 +101,64 @@ export let mockDocuments = [
       location: 'Arizona',
       modules: 4000,
       inverters: 100
+    },
+    libraries: {
+      components: [
+        {
+          id: 'comp_001',
+          part_number: 'SPR-X22-370',
+          brand: 'SunPower',
+          category: 'pv_module',
+          rating_w: 370,
+          status: 'selected',
+          placement: { location: 'Array Block A1' }
+        },
+        {
+          id: 'comp_002', 
+          part_number: 'STP-25000TL-30',
+          brand: 'SMA',
+          category: 'inverter',
+          rating_w: 25000,
+          status: 'selected',
+          placement: { location: 'Inverter Skid 1' }
+        },
+        {
+          id: 'comp_003',
+          part_number: 'SE-MTR240-0',
+          brand: 'SolarEdge',
+          category: 'monitoring',
+          rating_w: 50,
+          status: 'selected',
+          placement: { location: 'Main Control Panel' }
+        },
+        {
+          id: 'comp_004',
+          part_number: 'OVR-PV-40-1000-P',
+          brand: 'ABB', 
+          category: 'protection',
+          rating_w: 1000,
+          status: 'selected',
+          placement: { location: 'DC Combiner Box' }
+        },
+        {
+          id: 'comp_005',
+          part_number: 'LG-NeON-2-385',
+          brand: 'LG',
+          category: 'pv_module',
+          rating_w: 385,
+          status: 'candidate',
+          placement: { location: 'Array Block A2' }
+        },
+        {
+          id: 'comp_006',
+          part_number: 'SYMO-15000TL-10',
+          brand: 'Fronius',
+          category: 'inverter', 
+          rating_w: 15000,
+          status: 'candidate',
+          placement: { location: 'Inverter Skid 2' }
+        }
+      ]
     }
   },
   {
