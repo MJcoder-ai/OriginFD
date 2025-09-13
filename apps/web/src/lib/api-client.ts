@@ -365,7 +365,8 @@ export class OriginFDClient {
 }
 
 // Default client instance
-export const apiClient = new OriginFDClient()
+// Use real backend API instead of mock endpoints
+export const apiClient = new OriginFDClient('http://localhost:8000')
 
 // Initialize stored tokens on import (browser only)
 if (typeof window !== 'undefined') {

@@ -18,10 +18,11 @@ from core.logging_config import setup_logging
 # Include core API routers
 # Temporarily disable commerce router due to import issues
 from api.routers import health, projects, alarms, approvals
+# Temporarily disabled: , auth
 # from api.routers import commerce
 
 # Temporarily disabled due to import issues:
-# from api.routers import auth, documents, marketplace, components, component_integration, suppliers
+# from api.routers import documents, marketplace, components, component_integration, suppliers
 
 # Set up logging
 setup_logging()
@@ -69,14 +70,13 @@ app = FastAPI(
 settings = get_settings()
 
 # Add middleware
-# Temporarily disabled CORS middleware for testing
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=settings.ALLOWED_HOSTS,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_HOSTS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Temporarily disabled TrustedHostMiddleware for development
 # app.add_middleware(
@@ -107,8 +107,7 @@ app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
 # app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
 
 
-# Temporarily disabled due to import issues:
-# app.include_router(auth.router, prefix="/auth", tags=["authentication"])
+# Temporarily disabled: app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 # app.include_router(documents.router, prefix="/odl", tags=["documents"])
 # app.include_router(components.router, prefix="/components", tags=["components"])
 # app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])

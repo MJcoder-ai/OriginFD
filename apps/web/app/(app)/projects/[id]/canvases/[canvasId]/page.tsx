@@ -70,10 +70,10 @@ export default function CanvasPage() {
       <div className="flex items-center justify-center px-4 py-1.5 bg-card border-b border-border shadow-sm relative">
         <div className="flex items-center gap-4">
           {type === 'sld' ? <Layers className="h-4 w-4 text-blue-600" /> : <Map className="h-4 w-4 text-green-600" />}
-          <span className="text-sm font-medium text-gray-800">
+          <span className="text-sm font-medium text-foreground">
             {type === 'sld' ? 'Single Line Diagram' : 'Site Layout'}
           </span>
-          <div className="h-4 w-px bg-gray-300 mx-3" />
+          <div className="h-4 w-px bg-border mx-3" />
           <LayersPanel active={layers} onChange={setLayers} />
         </div>
         
@@ -141,7 +141,7 @@ export default function CanvasPage() {
           <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground shadow-md z-10">
             <div className="flex items-center gap-3">
               <span className="font-medium">Zoom: {zoom}%</span>
-              <span className="text-gray-400">•</span>
+              <span className="text-muted-foreground/60">•</span>
               <span>Layers: {layers.length}</span>
               <span className="text-muted-foreground">•</span>
               <span className="text-primary font-medium">{type === 'sld' ? 'SLD' : 'Site'}</span>
@@ -217,9 +217,9 @@ export default function CanvasPage() {
           {/* Keyboard Shortcuts Overlay */}
           {showShortcuts && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 max-w-md w-full mx-4">
+              <div className="bg-card rounded-lg shadow-xl border border-border p-6 max-w-md w-full mx-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Keyboard Shortcuts</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Keyboard Shortcuts</h3>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -232,11 +232,11 @@ export default function CanvasPage() {
                 <div className="space-y-3 text-sm">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="font-medium text-gray-700 mb-2">Navigation</div>
+                      <div className="font-medium text-foreground mb-2">Navigation</div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
                           <span>Pan Canvas</span>
-                          <kbd className="bg-gray-100 px-1 rounded">Space + Drag</kbd>
+                          <kbd className="bg-muted px-1 rounded">Space + Drag</kbd>
                         </div>
                         <div className="flex justify-between">
                           <span>Zoom In</span>
@@ -253,7 +253,7 @@ export default function CanvasPage() {
                       </div>
                     </div>
                     <div>
-                      <div className="font-medium text-gray-700 mb-2">Tools</div>
+                      <div className="font-medium text-foreground mb-2">Tools</div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
                           <span>Toggle Grid</span>
@@ -282,9 +282,9 @@ export default function CanvasPage() {
 
         {/* Collapsible Inspector Panel */}
         {showInspector && (
-          <div className="w-80 border-l border-gray-200 bg-white flex flex-col">
-            <div className="flex items-center justify-between p-3 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-800">Inspector</h3>
+          <div className="w-80 border-l border-border bg-card flex flex-col">
+            <div className="flex items-center justify-between p-3 border-b border-border">
+              <h3 className="text-sm font-medium text-foreground">Inspector</h3>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -306,7 +306,7 @@ export default function CanvasPage() {
             variant="ghost" 
             size="sm"
             onClick={() => setShowInspector(true)}
-            className="absolute top-4 right-4 h-8 w-8 p-0 bg-white border border-gray-200 shadow-sm z-10"
+            className="absolute top-4 right-4 h-8 w-8 p-0 bg-card border border-border shadow-sm z-10"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>

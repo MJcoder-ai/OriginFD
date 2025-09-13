@@ -24,8 +24,8 @@ export function InspectorPanel({ projectId, currentCanvasId }: { projectId: stri
   }, [projectId, instanceId])
 
   if (!instanceId) return (
-    <div className="p-4 text-center text-sm text-gray-500">
-      <MousePointer2 className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+    <div className="p-4 text-center text-sm text-muted-foreground">
+      <MousePointer2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
       <p>Select an element to view details</p>
     </div>
   )
@@ -34,23 +34,23 @@ export function InspectorPanel({ projectId, currentCanvasId }: { projectId: stri
     <div className="p-4 space-y-4">
       {/* Selected Element */}
       <div className="space-y-3">
-        <div className="font-medium text-gray-900 text-sm truncate" title={instanceId}>
+        <div className="font-medium text-foreground text-sm truncate" title={instanceId}>
           {asset?.name || instanceId}
         </div>
         
         {asset && (
           <div className="space-y-2 text-xs">
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Type:</span>
-              <span className="col-span-2 text-gray-900">{asset.type ?? '—'}</span>
+              <span className="text-muted-foreground">Type:</span>
+              <span className="col-span-2 text-foreground">{asset.type ?? '—'}</span>
             </div>
             
             {asset.parameters && (
               <details className="group">
-                <summary className="cursor-pointer text-gray-600 hover:text-gray-900 py-1">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground py-1">
                   Parameters
                 </summary>
-                <div className="mt-2 p-2 bg-gray-50 rounded text-xs overflow-auto max-h-32">
+                <div className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-32">
                   <pre>{JSON.stringify(asset.parameters, null, 2)}</pre>
                 </div>
               </details>
@@ -60,7 +60,7 @@ export function InspectorPanel({ projectId, currentCanvasId }: { projectId: stri
       </div>
       
       {/* Actions */}
-      <div className="space-y-2 pt-2 border-t border-gray-200">
+      <div className="space-y-2 pt-2 border-t border-border">
         <Button 
           size="sm" 
           variant="outline" 

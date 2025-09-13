@@ -176,7 +176,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
       const url = URL.createObjectURL(blob)
       const a = window.document.createElement('a')
       a.href = url
-      a.download = `${document.meta.project.replace(/\s+/g, '-').toLowerCase()}.${format}`
+      a.download = `${document.meta?.project?.replace(/\s+/g, '-').toLowerCase() || 'document'}.${format}`
       window.document.body.appendChild(a)
       a.click()
       window.document.body.removeChild(a)
@@ -190,7 +190,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
       const url = URL.createObjectURL(blob)
       const a = window.document.createElement('a')
       a.href = url
-      a.download = `${document.meta.project.replace(/\s+/g, '-').toLowerCase()}.${format}`
+      a.download = `${document.meta?.project?.replace(/\s+/g, '-').toLowerCase() || 'document'}.${format}`
       window.document.body.appendChild(a)
       a.click()
       window.document.body.removeChild(a)
@@ -258,7 +258,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Capacity</p>
                   <p className="text-lg font-semibold">
-                    {formatCapacity(document.requirements.functional.capacity_kw)}
+                    {formatCapacity(document.requirements?.functional?.capacity_kw)}
                   </p>
                 </div>
                 <div>
@@ -272,13 +272,13 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Connected</p>
                   <div className="flex items-center gap-2">
-                    {document.requirements.technical.grid_connection ? (
+                    {document.requirements?.technical?.grid_connection ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <div className="h-4 w-4 rounded-full bg-red-200" />
                     )}
                     <span className="text-sm">
-                      {document.requirements.technical.grid_connection ? 'Yes' : 'No'}
+                      {document.requirements?.technical?.grid_connection ? 'Yes' : 'No'}
                     </span>
                   </div>
                 </div>
@@ -296,23 +296,23 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Version</p>
-                  <p className="text-sm">{document.meta.versioning.document_version}</p>
+                  <p className="text-sm">{document.meta?.versioning?.document_version || 'Not specified'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Content Hash</p>
                   <p className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                    {document.meta.versioning.content_hash.substring(7, 19)}...
+                    {document.meta?.versioning?.content_hash?.substring(7, 19) || 'N/A'}...
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
                   <p className="text-sm">
-                    {new Date(document.meta.timestamps.updated_at).toLocaleDateString()}
+                    {document.meta?.timestamps?.updated_at ? new Date(document.meta.timestamps.updated_at).toLocaleDateString() : 'Not available'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Units</p>
-                  <p className="text-sm">{document.meta.units.system} / {document.meta.units.currency}</p>
+                  <p className="text-sm">{document.meta?.units?.system || 'N/A'} / {document.meta?.units?.currency || 'N/A'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -468,13 +468,13 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">System Capacity</p>
                   <p className="text-sm">
-                    {formatCapacity(document.requirements.functional.capacity_kw)}
+                    {formatCapacity(document.requirements?.functional?.capacity_kw)}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Annual Generation</p>
                   <p className="text-sm">
-                    {document.requirements.functional.annual_generation_kwh 
+                    {document.requirements?.functional?.annual_generation_kwh 
                       ? `${(document.requirements.functional.annual_generation_kwh / 1000).toFixed(0)} MWh`
                       : 'Not specified'
                     }
@@ -483,7 +483,10 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Performance Requirements</p>
                   <p className="text-sm">
-                    {Object.keys(document.requirements.functional.performance_requirements).length} defined
+                    {document.requirements?.functional?.performance_requirements 
+                      ? Object.keys(document.requirements.functional.performance_requirements).length 
+                      : 0
+                    } defined
                   </p>
                 </div>
               </CardContent>
@@ -501,24 +504,24 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Connection</p>
                   <div className="flex items-center gap-2">
-                    {document.requirements.technical.grid_connection ? (
+                    {document.requirements?.technical?.grid_connection ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <div className="h-4 w-4 rounded-full bg-red-200" />
                     )}
                     <span className="text-sm">
-                      {document.requirements.technical.grid_connection ? 'Required' : 'Not required'}
+                      {document.requirements?.technical?.grid_connection ? 'Required' : 'Not required'}
                     </span>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Voltage Level</p>
-                  <p className="text-sm">{document.requirements.technical.voltage_level || 'Not specified'}</p>
+                  <p className="text-sm">{document.requirements?.technical?.voltage_level || 'Not specified'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Frequency</p>
                   <p className="text-sm">
-                    {document.requirements.technical.frequency_hz 
+                    {document.requirements?.technical?.frequency_hz 
                       ? `${document.requirements.technical.frequency_hz} Hz`
                       : 'Not specified'
                     }
@@ -539,7 +542,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Codes</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {document.requirements.regulatory.grid_codes.map((code) => (
+                    {document.requirements?.regulatory?.grid_codes?.map((code) => (
                       <Badge key={code} variant="outline" className="text-xs">
                         {code}
                       </Badge>
@@ -549,7 +552,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Safety Standards</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {document.requirements.regulatory.safety_standards.map((standard) => (
+                    {document.requirements?.regulatory?.safety_standards?.map((standard) => (
                       <Badge key={standard} variant="outline" className="text-xs">
                         {standard}
                       </Badge>
@@ -559,7 +562,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Environmental Permits</p>
                   <p className="text-sm">
-                    {document.requirements.regulatory.environmental_permits.length 
+                    {document.requirements?.regulatory?.environmental_permits?.length 
                       ? `${document.requirements.regulatory.environmental_permits.length} required`
                       : 'None required'
                     }

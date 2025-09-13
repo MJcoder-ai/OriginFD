@@ -149,7 +149,7 @@ def init_database():
                     scale=ProjectScale.UTILITY,
                     status=ProjectStatus.ACTIVE,
                     location_name="Arizona, USA",
-                    total_capacity_kw="500000"
+                    total_capacity_kw=500000.0
                 ),
                 Project(
                     name="Commercial BESS Installation",
@@ -159,7 +159,7 @@ def init_database():
                     scale=ProjectScale.COMMERCIAL,
                     status=ProjectStatus.DRAFT,
                     location_name="California, USA",
-                    total_capacity_kw="2000"
+                    total_capacity_kw=2000.0
                 ),
                 Project(
                     name="Hybrid Microgrid Campus",
@@ -169,7 +169,7 @@ def init_database():
                     scale=ProjectScale.INDUSTRIAL,
                     status=ProjectStatus.UNDER_REVIEW,
                     location_name="Texas, USA",
-                    total_capacity_kw="10000"
+                    total_capacity_kw=10000.0
                 )
             ]
             

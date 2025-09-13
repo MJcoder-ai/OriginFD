@@ -26,8 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient
         .getCurrentUser()
         .then(setUser)
-        .catch(() => {
+        .catch((error) => {
+          console.warn('Failed to get current user:', error)
+          // Clear invalid tokens completely
           setTokens(null)
+          // Use logout to properly clear all tokens and storage
+          apiClient.logout()
         })
         .finally(() => {
           setIsLoading(false)
