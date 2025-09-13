@@ -1,0 +1,38 @@
+# Task queue and async processing
+celery[redis]
+redis
+
+# Database
+sqlalchemy
+alembic
+
+# HTTP client
+httpx
+requests
+
+# Authentication and security
+python-jose[cryptography]
+
+# Validation and serialization
+pydantic[email]
+pydantic-settings
+
+# Environment and configuration
+python-dotenv
+
+# Date and time utilities
+python-dateutil
+
+# AI/ML libraries for background processing
+openai
+anthropic
+numpy
+pandas
+
+# File processing
+pillow
+python-magic
+
+# Development tools
+pytest
+pytest-asyncio

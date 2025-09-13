@@ -1,0 +1,45 @@
+# FastAPI and web framework
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy
+alembic
+
+# Authentication and security
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Validation and serialization
+pydantic[email]
+pydantic-settings
+
+# Environment and configuration
+python-dotenv
+
+# Date and time utilities
+python-dateutil
+
+# HTTP client
+httpx
+requests
+
+# AI/ML libraries for orchestration
+openai
+anthropic
+numpy
+pandas
+
+# Graph and embedding libraries
+networkx
+faiss-cpu
+transformers
+sentence-transformers
+
+# Task queue and async processing
+celery[redis]
+redis
+
+# Development tools
+pytest
+pytest-asyncio
