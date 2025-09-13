@@ -23,9 +23,7 @@ USER appuser
 # Expose port for worker management
 EXPOSE 8002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)" || exit 1
+# No health check for workers service
 
 # Start the background workers
 CMD ["python", "main.py"]

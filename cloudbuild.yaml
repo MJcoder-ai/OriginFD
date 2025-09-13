@@ -21,6 +21,7 @@ steps:
       - '-c'
       - |
         echo "Enabling required Google Cloud APIs..."
+        gcloud services enable cloudresourcemanager.googleapis.com
         gcloud services enable redis.googleapis.com
         gcloud services enable vpcaccess.googleapis.com
         gcloud services enable secretmanager.googleapis.com
@@ -54,7 +55,7 @@ steps:
         
         gcloud compute networks subnets create ${_SUBNET} \
           --network=${_NETWORK} \
-          --range=10.0.0.0/24 \
+          --range=10.0.0.0/28 \
           --region=${_REGION} || echo "Subnet already exists"
         
         echo "Setting up Service Networking for private services..."
@@ -83,8 +84,8 @@ steps:
           --region=${_REGION} \
           --storage-type=SSD \
           --storage-size=20GB \
-          --network=${_NETWORK} \
-          --no-assign-ip \
+          --assign-ip \
+          --authorized-networks=0.0.0.0/0 \
           --deletion-protection || echo "Instance already exists"
         
         echo "Creating database..."
@@ -137,9 +138,9 @@ steps:
         echo -n "$$JWT_SECRET_VALUE" | gcloud secrets create jwt-secret-key --data-file=- || echo "JWT secret already exists"
         
         # Get database connection string
-        DB_CONNECTION_NAME=$$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(connectionName)")
+        DB_HOST=$$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(ipAddresses[0].ipAddress)")
         DB_PASSWORD=$$(openssl rand -base64 32)
-        DATABASE_URL="postgresql://originfd-user:$$DB_PASSWORD@/$$DB_CONNECTION_NAME/originfd"
+        DATABASE_URL="postgresql://originfd-user:$$DB_PASSWORD@$$DB_HOST:5432/originfd"
         echo -n "$$DATABASE_URL" | gcloud secrets create database-url --data-file=- || echo "Database URL secret already exists"
         
         # Update the user password to match what we store in the secret
@@ -213,8 +214,7 @@ steps:
           --concurrency=80 \
           --max-instances=10 \
           --set-env-vars="ENVIRONMENT=production,DEBUG=false,PORT=8000" \
-          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest" \
-          --add-cloudsql-instances=${_PROJECT_ID}:${_REGION}:${_POSTGRES_INSTANCE}
+          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: 'deploy-orchestrator'
@@ -287,10 +287,8 @@ steps:
         gcloud run jobs create db-migrate \
           --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA \
           --region=${_REGION} \
-          --vpc-connector=${_VPC_CONNECTOR} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
-          --add-cloudsql-instances=${_PROJECT_ID}:${_REGION}:${_POSTGRES_INSTANCE} \
           --task-timeout=600 \
           --replace || echo "Migration job already exists"
         
