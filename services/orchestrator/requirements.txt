@@ -24,17 +24,13 @@ python-dateutil
 httpx
 requests
 
-# AI/ML libraries for orchestration
+# AI/ML libraries for orchestration (lightweight versions)
 openai
 anthropic
 numpy
-pandas
 
-# Graph and embedding libraries
+# Graph libraries (lightweight)
 networkx
-faiss-cpu
-transformers
-sentence-transformers
 
 # Task queue and async processing
 celery[redis]

@@ -174,6 +174,8 @@ steps:
       - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$COMMIT_SHA'
       - '--cache=true'
       - '--cache-ttl=24h'
+      - '--compressed-caching=false'
+      - '--single-snapshot'
 
   - name: 'gcr.io/kaniko-project/executor:latest'
     id: 'build-workers'
@@ -336,7 +338,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
   substitution_option: ALLOW_LOOSE
   dynamic_substitutions: true
-  machineType: E2_HIGHCPU_8
+  machineType: E2_HIGHMEM_8
 
 timeout: 3600s # 1 hour timeout for complete deployment
 
