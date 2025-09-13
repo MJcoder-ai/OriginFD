@@ -105,25 +105,25 @@ steps:
         echo "Creating secrets in Secret Manager..."
         
         # Generate JWT secret
-        JWT_SECRET=$(openssl rand -base64 64)
-        echo -n "$JWT_SECRET" | gcloud secrets create jwt-secret-key --data-file=- || echo "JWT secret already exists"
+        JWT_SECRET_VALUE=$$(openssl rand -base64 64)
+        echo -n "$$JWT_SECRET_VALUE" | gcloud secrets create jwt-secret-key --data-file=- || echo "JWT secret already exists"
         
         # Get database connection string
-        DB_CONNECTION_NAME=$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(connectionName)")
-        DB_PASSWORD=$(openssl rand -base64 32)
-        DATABASE_URL="postgresql://originfd-user:$DB_PASSWORD@/$DB_CONNECTION_NAME/originfd"
-        echo -n "$DATABASE_URL" | gcloud secrets create database-url --data-file=- || echo "Database URL secret already exists"
+        DB_CONNECTION_NAME=$$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(connectionName)")
+        DB_PASSWORD=$$(openssl rand -base64 32)
+        DATABASE_URL="postgresql://originfd-user:$$DB_PASSWORD@/$$DB_CONNECTION_NAME/originfd"
+        echo -n "$$DATABASE_URL" | gcloud secrets create database-url --data-file=- || echo "Database URL secret already exists"
         
         # Update the user password to match what we store in the secret
         gcloud sql users set-password originfd-user \
           --instance=${_POSTGRES_INSTANCE} \
-          --password=$DB_PASSWORD || echo "Password already set"
+          --password=$$DB_PASSWORD || echo "Password already set"
         
         # Get Redis connection string  
-        REDIS_HOST=$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(host)")
-        REDIS_PORT=$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(port)")
-        REDIS_URL="redis://$REDIS_HOST:$REDIS_PORT/0"
-        echo -n "$REDIS_URL" | gcloud secrets create redis-url --data-file=- || echo "Redis URL secret already exists"
+        REDIS_HOST=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(host)")
+        REDIS_PORT=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(port)")
+        REDIS_URL="redis://$$REDIS_HOST:$$REDIS_PORT/0"
+        echo -n "$$REDIS_URL" | gcloud secrets create redis-url --data-file=- || echo "Redis URL secret already exists"
 
   # Step 2: Build and Push Docker Images
   - name: 'gcr.io/kaniko-project/executor:latest'
@@ -235,7 +235,7 @@ steps:
       - '-c'
       - |
         # Get API service URL for frontend configuration
-        API_URL=$(gcloud run services describe api --region=${_REGION} --format="value(status.url)")
+        API_URL=$$(gcloud run services describe api --region=${_REGION} --format="value(status.url)")
         
         gcloud run deploy web \
           --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA \
@@ -246,7 +246,7 @@ steps:
           --cpu=1 \
           --concurrency=100 \
           --max-instances=20 \
-          --set-env-vars="NEXT_PUBLIC_API_URL=$API_URL,NODE_ENV=production"
+          --set-env-vars="NEXT_PUBLIC_API_URL=$$API_URL,NODE_ENV=production"
 
   # Step 4: Database Migration and Setup
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
@@ -299,11 +299,11 @@ steps:
         gcloud compute addresses create originfd-ip --global || echo "IP already reserved"
         
         # Create forwarding rule
-        EXTERNAL_IP=$(gcloud compute addresses describe originfd-ip --global --format="value(address)")
+        EXTERNAL_IP=$$(gcloud compute addresses describe originfd-ip --global --format="value(address)")
         gcloud compute forwarding-rules create originfd-http-rule \
           --global \
           --target-http-proxy=originfd-http-proxy \
-          --address=$EXTERNAL_IP \
+          --address=$$EXTERNAL_IP \
           --ports=80 || echo "Forwarding rule already exists"
 
 options:
