@@ -16,9 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the API service code
 COPY services/api/ ./
 
-# Copy shared modules if any
-COPY shared/ ../shared/ 2>/dev/null || true
-
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser

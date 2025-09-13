@@ -13,6 +13,22 @@ substitutions:
   _SUBNET: originfd-subnet
 
 steps:
+  # Step 0: Enable Required APIs
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'enable-apis'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Enabling required Google Cloud APIs..."
+        gcloud services enable redis.googleapis.com
+        gcloud services enable vpcaccess.googleapis.com
+        gcloud services enable secretmanager.googleapis.com
+        gcloud services enable servicenetworking.googleapis.com
+        gcloud services enable sqladmin.googleapis.com
+        echo "APIs enabled successfully, waiting for propagation..."
+        sleep 30
+
   # Step 1: Setup Infrastructure
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: 'setup-artifact-registry'
@@ -40,6 +56,18 @@ steps:
           --network=${_NETWORK} \
           --range=10.0.0.0/24 \
           --region=${_REGION} || echo "Subnet already exists"
+        
+        echo "Setting up Service Networking for private services..."
+        gcloud compute addresses create google-managed-services-${_NETWORK} \
+          --global \
+          --purpose=VPC_PEERING \
+          --prefix-length=16 \
+          --network=${_NETWORK} || echo "Service networking range already exists"
+        
+        gcloud services vpc-peerings connect \
+          --service=servicenetworking.googleapis.com \
+          --ranges=google-managed-services-${_NETWORK} \
+          --network=${_NETWORK} || echo "VPC peering already connected"
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: 'setup-postgres'
