@@ -12,14 +12,10 @@
     }
   },
   "scripts": {
-    "build": "pnpm install && tsc",
+    "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit"
-  },
-  "peerDependencies": {
-    "react": "^18.2.0",
-    "@types/react": "^18.2.0"
   },
   "devDependencies": {
     "react": "^18.2.0",
@@ -27,6 +23,8 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "react": "^18.2.0",
+    "@types/react": "^18.2.0"
   }
 }
