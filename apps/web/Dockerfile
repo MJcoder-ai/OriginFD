@@ -10,7 +10,7 @@ RUN npm install -g pnpm
 FROM base AS deps
 # Install dependencies based on preferred package manager
 COPY turbo.json package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
-COPY apps/web/package.json ./apps/web/
+COPY apps/ ./apps/
 COPY packages/ ./packages/
 RUN pnpm install --frozen-lockfile
 

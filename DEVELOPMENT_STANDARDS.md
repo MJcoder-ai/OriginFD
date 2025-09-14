@@ -32,6 +32,13 @@ This document establishes mandatory development standards for OriginFD to ensure
 **External AI Analysis**: "The deps Stage copies only the files needed to install dependencies but forgot to copy the turbo.json file, which is Turborepo's main configuration file."
 **Correct Solution**: Include `turbo.json` in deps stage copy: `COPY turbo.json package.json pnpm-lock.yaml* pnpm-workspace.yaml ./`
 
+### Issue #6: Missing Source Files in Docker Dependencies Stage
+**Problem**: `Specified input file ./app/globals.css does not exist` error during Tailwind CSS build in Docker.
+**Root Cause**: Docker deps stage only copies `package.json` files but not source code directories (`app/`, `src/`, etc.), so build tools cannot find their input files in builder stage.
+**External AI Analysis**: "File path mismatch, suggests file is at `./src/app/globals.css`"
+**Investigation Result**: File exists at correct path locally, but Docker build context missing source directories.
+**Correct Solution**: Copy all source files in deps stage: `COPY apps/ ./apps/` and `COPY packages/ ./packages/`
+
 ## Mandatory Development Process for All AIs
 
 ### 1. Problem Analysis Phase
@@ -107,6 +114,8 @@ docker build -f apps/web/Dockerfile .
 - **ALWAYS** copy complete workspace from deps stage: `COPY --from=deps /app/ ./`
 - **NEVER** copy only node_modules: `COPY --from=deps /app/node_modules ./node_modules` (breaks pnpm symlinks)
 - **ALWAYS** include `turbo.json` in deps stage: `COPY turbo.json package.json pnpm-lock.yaml* pnpm-workspace.yaml ./`
+- **ALWAYS** copy all source files in deps stage: `COPY apps/ ./apps/` and `COPY packages/ ./packages/`
+- **NEVER** copy only package.json files without source code (breaks build tools like Tailwind CSS)
 - **NEVER** omit Turborepo configuration files in monorepo Docker builds
 - Preserve pnpm workspace structure to maintain package-level node_modules symlinks
 - Test monorepo builds locally before Cloud Build deployment
