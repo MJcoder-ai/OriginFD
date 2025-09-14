@@ -26,6 +26,12 @@ This document establishes mandatory development standards for OriginFD to ensure
 **External AI Analysis**: "Workspace node_modules symlinks lost in web image build - pnpm's per-package symlinks for workspaces aren't restored, so package builds run without their local node_modules."
 **Correct Solution**: Copy complete workspace from deps stage: `COPY --from=deps /app/ ./` instead of `COPY --from=deps /app/node_modules ./node_modules`.
 
+### Issue #5: Missing turbo.json in Docker Dependencies Stage
+**Problem**: `Could not find turbo.json` error during `pnpm turbo build --filter=web` in Docker builds.
+**Root Cause**: Docker deps stage only copies `package.json pnpm-lock.yaml* pnpm-workspace.yaml ./` but excludes `turbo.json`, so Turborepo configuration is missing in builder stage.
+**External AI Analysis**: "The deps Stage copies only the files needed to install dependencies but forgot to copy the turbo.json file, which is Turborepo's main configuration file."
+**Correct Solution**: Include `turbo.json` in deps stage copy: `COPY turbo.json package.json pnpm-lock.yaml* pnpm-workspace.yaml ./`
+
 ## Mandatory Development Process for All AIs
 
 ### 1. Problem Analysis Phase
@@ -100,6 +106,8 @@ docker build -f apps/web/Dockerfile .
 #### Docker Multi-Stage Build Requirements
 - **ALWAYS** copy complete workspace from deps stage: `COPY --from=deps /app/ ./`
 - **NEVER** copy only node_modules: `COPY --from=deps /app/node_modules ./node_modules` (breaks pnpm symlinks)
+- **ALWAYS** include `turbo.json` in deps stage: `COPY turbo.json package.json pnpm-lock.yaml* pnpm-workspace.yaml ./`
+- **NEVER** omit Turborepo configuration files in monorepo Docker builds
 - Preserve pnpm workspace structure to maintain package-level node_modules symlinks
 - Test monorepo builds locally before Cloud Build deployment
 
