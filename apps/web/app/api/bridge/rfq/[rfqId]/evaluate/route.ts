@@ -100,8 +100,8 @@ export async function POST(
 
     // Sort by total score (highest first) and assign rankings
     evaluations.sort((a, b) => b.total_score - a.total_score)
-    evaluations.forEach((eval, index) => {
-      eval.ranking = index + 1
+    evaluations.forEach((evaluation, index) => {
+      evaluation.ranking = index + 1
     })
 
     const evaluationResult = {
