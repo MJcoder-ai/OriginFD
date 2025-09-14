@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker caching
-COPY services/orchestrator/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ./shared-requirements.txt
+COPY services/orchestrator/requirements.txt ./service-requirements.txt
+RUN pip install --no-cache-dir -r shared-requirements.txt && \
+    pip install --no-cache-dir -r service-requirements.txt
 
 # Copy the orchestrator service code
 COPY services/orchestrator/ ./

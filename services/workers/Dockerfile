@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker caching
-COPY services/workers/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ./shared-requirements.txt
+COPY services/workers/requirements.txt ./service-requirements.txt
+RUN pip install --no-cache-dir -r shared-requirements.txt && \
+    pip install --no-cache-dir -r service-requirements.txt
 
 # Copy the workers service code
 COPY services/workers/ ./

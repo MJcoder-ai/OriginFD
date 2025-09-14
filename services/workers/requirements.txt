@@ -1,8 +1,5 @@
 # OriginFD Workers Service Dependencies
-# Inherits from shared requirements.txt at project root
-
-# Include shared dependencies
--r ../../requirements.txt
+# Service-specific dependencies only (shared deps installed separately)
 
 # Workers-specific dependencies
 pandas==2.1.4
