@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "pnpm install && tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit"

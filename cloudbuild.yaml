@@ -38,10 +38,10 @@ steps:
     args:
       - '-c'
       - |
-        echo "Granting Service Networking Admin role to Cloud Build service account..."
+        echo "Granting Compute Network Admin role to Cloud Build service account..."
         gcloud projects add-iam-policy-binding ${_PROJECT_ID} \
           --member="serviceAccount:${_CLOUDBUILD_SA}" \
-          --role="roles/servicenetworking.admin" || echo "Permission already exists"
+          --role="roles/compute.networkAdmin" || echo "Permission already exists"
 
   # Step 2: Setup Infrastructure
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
