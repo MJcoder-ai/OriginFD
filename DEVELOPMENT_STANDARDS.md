@@ -20,6 +20,12 @@ This document establishes mandatory development standards for OriginFD to ensure
 **Problem**: `ERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile"`
 **Solution**: Regenerate lockfile after package.json changes and commit to repository.
 
+### Issue #4: Docker Multi-Stage Build Breaking pnpm Workspace Symlinks
+**Problem**: `Cannot find module 'react'` and `node_modules missing` errors during Docker builds in monorepo.
+**Root Cause**: Docker builder stage only copied root `node_modules`, losing individual package `node_modules` symlinks that pnpm creates for workspace packages.
+**External AI Analysis**: "Workspace node_modules symlinks lost in web image build - pnpm's per-package symlinks for workspaces aren't restored, so package builds run without their local node_modules."
+**Correct Solution**: Copy complete workspace from deps stage: `COPY --from=deps /app/ ./` instead of `COPY --from=deps /app/node_modules ./node_modules`.
+
 ## Mandatory Development Process for All AIs
 
 ### 1. Problem Analysis Phase
@@ -90,6 +96,12 @@ pnpm test
 # Test Docker build locally before Cloud Build
 docker build -f apps/web/Dockerfile .
 ```
+
+#### Docker Multi-Stage Build Requirements
+- **ALWAYS** copy complete workspace from deps stage: `COPY --from=deps /app/ ./`
+- **NEVER** copy only node_modules: `COPY --from=deps /app/node_modules ./node_modules` (breaks pnpm symlinks)
+- Preserve pnpm workspace structure to maintain package-level node_modules symlinks
+- Test monorepo builds locally before Cloud Build deployment
 
 ### 4. Cloud Deployment Standards
 

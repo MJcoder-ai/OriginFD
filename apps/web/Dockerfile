@@ -17,14 +17,15 @@ RUN pnpm install --frozen-lockfile
 # Builder stage
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+
+# Copy the complete workspace from deps stage to preserve pnpm symlinks
+COPY --from=deps /app/ ./
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
-# Build the Next.js application
+# Build the Next.js application with complete workspace
 RUN pnpm turbo build --filter=web
 
 # Runner stage
