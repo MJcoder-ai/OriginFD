@@ -167,7 +167,33 @@ steps:
         REDIS_URL="redis://$$REDIS_HOST:$$REDIS_PORT/0"
         echo -n "$$REDIS_URL" | gcloud secrets create redis-url --data-file=- || echo "Redis URL secret already exists"
 
-  # Step 2: Build and Push Docker Images
+  # Step 2: Validate Dependencies Before Building
+  - name: 'python:3.11-slim'
+    id: 'validate-dependencies'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Validating all dependencies for conflicts..."
+        pip install --upgrade pip
+
+        # Test shared requirements
+        echo "Testing shared requirements.txt..."
+        pip install --dry-run -r requirements.txt || exit 1
+
+        # Test service-specific requirements with shared base
+        echo "Testing API service requirements..."
+        pip install --dry-run -r requirements.txt -r services/api/requirements.txt || exit 1
+
+        echo "Testing orchestrator service requirements..."
+        pip install --dry-run -r requirements.txt -r services/orchestrator/requirements.txt || exit 1
+
+        echo "Testing workers service requirements..."
+        pip install --dry-run -r requirements.txt -r services/workers/requirements.txt || exit 1
+
+        echo "All dependency validations passed!"
+
+  # Step 3: Build and Push Docker Images
   - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-api'
     args:

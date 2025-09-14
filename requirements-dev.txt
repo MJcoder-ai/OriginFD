@@ -1,0 +1,26 @@
+# Development dependencies for OriginFD
+# Separate from production to keep containers lean
+
+# Dependency management and lock file generation
+pip-tools==7.3.0
+
+# Dependency tree visualization and conflict detection
+pipdeptree==2.13.1
+
+# Security vulnerability scanning
+safety==2.3.5
+
+# Code quality tools
+black==23.12.1
+isort==5.13.2
+flake8==6.1.0
+
+# Type checking
+mypy==1.8.0
+
+# Testing tools
+pytest-cov==4.0.0
+pytest-mock==3.12.0
+
+# Local development
+watchdog==3.0.0
