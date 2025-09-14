@@ -9,7 +9,7 @@ RUN npm install -g pnpm
 # Dependencies stage
 FROM base AS deps
 # Install dependencies based on preferred package manager
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/ ./packages/
 RUN pnpm install --frozen-lockfile
