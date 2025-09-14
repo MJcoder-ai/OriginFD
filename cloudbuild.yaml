@@ -11,6 +11,7 @@ substitutions:
   _VPC_CONNECTOR: originfd-vpc-connector
   _NETWORK: originfd-network
   _SUBNET: originfd-subnet
+  _CLOUDBUILD_SA: 203727718263@cloudbuild.gserviceaccount.com
 
 steps:
   # Step 0: Enable Required APIs
@@ -30,7 +31,19 @@ steps:
         echo "APIs enabled successfully, waiting for propagation..."
         sleep 30
 
-  # Step 1: Setup Infrastructure
+  # Step 1: Grant Service Networking Permission
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'grant-peering-permission'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Granting Service Networking Admin role to Cloud Build service account..."
+        gcloud projects add-iam-policy-binding ${_PROJECT_ID} \
+          --member="serviceAccount:${_CLOUDBUILD_SA}" \
+          --role="roles/servicenetworking.admin" || echo "Permission already exists"
+
+  # Step 2: Setup Infrastructure
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: 'setup-artifact-registry'
     entrypoint: 'bash'
