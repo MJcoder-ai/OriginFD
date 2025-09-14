@@ -4,27 +4,25 @@ JWT Authentication utilities for OriginFD API
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
-# from passlib.context import CryptContext  # Temporarily disabled due to bcrypt issues
+from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
-# Password hashing - temporarily disabled due to bcrypt compatibility issues
-# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with bcrypt
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Simple hash function for now - replace with proper bcrypt once fixed
-def simple_hash(password: str) -> str:
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
+# Import settings
+from .config import get_settings
 
-def simple_verify(password: str, hashed: str) -> bool:
-    return simple_hash(password) == hashed
+# Initialize settings
+settings = get_settings()
 
-# JWT settings
-SECRET_KEY = "your-secret-key-here-change-in-production"  # TODO: Move to environment variable
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+# JWT settings from environment
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_MINUTES = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60
 
 # HTTP Bearer security scheme
 security = HTTPBearer()
@@ -38,12 +36,12 @@ class TokenData(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return simple_verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return simple_hash(password)
+    return pwd_context.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -114,48 +112,53 @@ def create_token_pair(user_data: dict) -> tuple[str, str]:
     return access_token, refresh_token
 
 
-# Mock user database for testing
-MOCK_USERS_DB = {
-    "admin@originfd.com": {
-        "id": "user-123",
-        "email": "admin@originfd.com",
-        "full_name": "Admin User",
-        "hashed_password": get_password_hash("admin"),
-        "is_active": True,
-        "roles": ["admin", "engineer"]
-    },
-    "user@originfd.com": {
-        "id": "user-456", 
-        "email": "user@originfd.com",
-        "full_name": "Regular User",
-        "hashed_password": get_password_hash("password"),
-        "is_active": True,
-        "roles": ["user"]
-    }
-}
-
-
+# TODO: Replace with real database authentication
+# These functions should integrate with your user database/ORM
 def authenticate_user(email: str, password: str) -> Optional[dict]:
-    """Authenticate user with email and password"""
-    user = MOCK_USERS_DB.get(email)
-    if not user:
-        return None
-    if not verify_password(password, user["hashed_password"]):
-        return None
-    return user
+    """Authenticate user with email and password
+
+    WARNING: This is a placeholder implementation for development only.
+    Replace with real database user authentication in production.
+    """
+    # For development only - remove in production
+    if settings.ENVIRONMENT == "development":
+        dev_users = {
+            "admin@originfd.com": {
+                "id": "dev-admin",
+                "email": "admin@originfd.com",
+                "full_name": "Development Admin",
+                "hashed_password": get_password_hash("admin"),
+                "is_active": True,
+                "roles": ["admin", "engineer"]
+            }
+        }
+        user = dev_users.get(email)
+        if user and verify_password(password, user["hashed_password"]):
+            return user
+
+    # Production: Query real user database here
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Real database authentication not implemented"
+    )
 
 
 def get_user_by_id(user_id: str) -> Optional[dict]:
-    """Get user by ID"""
-    for user in MOCK_USERS_DB.values():
-        if user["id"] == user_id:
-            return user
-    return None
+    """Get user by ID - integrate with real database"""
+    # TODO: Replace with real database query
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Real database user lookup not implemented"
+    )
 
 
 def get_user_by_email(email: str) -> Optional[dict]:
-    """Get user by email"""
-    return MOCK_USERS_DB.get(email)
+    """Get user by email - integrate with real database"""
+    # TODO: Replace with real database query
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Real database user lookup not implemented"
+    )
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
