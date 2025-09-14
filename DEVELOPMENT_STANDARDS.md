@@ -39,6 +39,13 @@ This document establishes mandatory development standards for OriginFD to ensure
 **Investigation Result**: File exists at correct path locally, but Docker build context missing source directories.
 **Correct Solution**: Copy all source files in deps stage: `COPY apps/ ./apps/` and `COPY packages/ ./packages/`
 
+### Issue #7: JavaScript Reserved Keywords in Variable Names
+**Problem**: `'eval' and 'arguments' cannot be used as a binding identifier in strict mode` error during Next.js build.
+**Root Cause**: Using JavaScript reserved keyword `eval` as parameter name in `forEach` loop breaks strict mode compilation.
+**Code Location**: `apps/web/app/api/bridge/rfq/[rfqId]/evaluate/route.ts:103`
+**Failing Code**: `evaluations.forEach((eval, index) => { eval.ranking = index + 1 })`
+**Correct Solution**: Rename reserved keyword variables to descriptive names: `evaluations.forEach((evaluation, index) => { evaluation.ranking = index + 1 })`
+
 ## Mandatory Development Process for All AIs
 
 ### 1. Problem Analysis Phase
@@ -141,6 +148,11 @@ docker build -f apps/web/Dockerfile .
 - No `any` types unless absolutely necessary
 - Proper interface definitions for all data structures
 - React types used correctly (React.ReactNode, React.ComponentType)
+
+#### JavaScript/TypeScript Code Standards
+- **NEVER** use JavaScript reserved keywords as variable names (`eval`, `arguments`, `function`, `class`, etc.)
+- Use descriptive variable names instead of abbreviations
+- Follow strict mode compliance for all code
 
 #### React Component Standards
 - Proper TypeScript prop interfaces
