@@ -3,9 +3,7 @@
  * Generated from Python Pydantic models
  */
 
-// Custom types for component props (React-compatible but independent)
-export type ReactChildrenLike = string | number | boolean | null | undefined | ReactChildrenLike[] | { [key: string]: any }
-export type ComponentLike<P = {}> = (props: P) => any
+import * as React from 'react'
 
 export type Domain = 'PV' | 'BESS' | 'HYBRID' | 'GRID' | 'MICROGRID'
 export type Scale = 'RESIDENTIAL' | 'COMMERCIAL' | 'INDUSTRIAL' | 'UTILITY' | 'HYPERSCALE'
@@ -316,7 +314,7 @@ export interface UseMutationOptions<TData, TVariables> {
 
 export interface BaseComponentProps {
   className?: string
-  children?: ReactChildrenLike
+  children?: React.ReactNode
 }
 
 export interface LoadingProps extends BaseComponentProps {
@@ -325,6 +323,6 @@ export interface LoadingProps extends BaseComponentProps {
 }
 
 export interface ErrorBoundaryProps extends BaseComponentProps {
-  fallback?: ComponentLike<{ error: Error; resetError: () => void }>
+  fallback?: React.ComponentType<{ error: Error; resetError: () => void }>
   onError?: (error: Error, errorInfo: any) => void
 }
