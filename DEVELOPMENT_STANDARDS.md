@@ -46,6 +46,30 @@ This document establishes mandatory development standards for OriginFD to ensure
 **Failing Code**: `evaluations.forEach((eval, index) => { eval.ranking = index + 1 })`
 **Correct Solution**: Rename reserved keyword variables to descriptive names: `evaluations.forEach((evaluation, index) => { evaluation.ranking = index + 1 })`
 
+### Issue #8: TypeScript Type System Fragmentation (CRITICAL)
+**Problem**: Production-breaking TypeScript compilation error during Cloud Run deployment:
+```
+./app/(app)/components/[id]/page.tsx:86:12
+Type error: Property 'dedupe_pending' does not exist on type '{ draft: string; parsed: string; ... }'
+```
+**Root Cause Analysis**:
+1. **Multiple Sources of Truth**: `ODLComponentStatus` defined in both `packages/ts/types-odl/src/index.ts` (authoritative, 25+ statuses) and `apps/web/src/lib/types.ts` (incomplete duplicate, missing 6 statuses)
+2. **Hardcoded UI Logic**: Components used hardcoded `statusColors` objects covering only 7 of 25+ possible statuses
+3. **Incomplete State Machines**: Local `statusTransitions` objects were simplified versions of comprehensive `ComponentLifecycleManager`
+
+**Impact**: Complete deployment failure - what works locally fails in production
+**Correct Solution**:
+1. Remove duplicate type definitions, use single source of truth from `@originfd/types-odl`
+2. Replace hardcoded status logic with `ComponentLifecycleManager`
+3. Update data access patterns to match actual API response structure
+4. Implement comprehensive type safety with proper fallbacks
+
+### Issue #9: Data Structure Assumption Mismatches
+**Problem**: UI components assumed flat data structure but API returns nested `ComponentResponse` with `component_management.status` hierarchy.
+**Failing Code**: `<Badge>{component.status}</Badge>`
+**Correct Code**: `<Badge>{component.component_management?.status || 'draft'}</Badge>`
+**Solution**: Always verify API response structure and use optional chaining with fallbacks
+
 ## Mandatory Development Process for All AIs
 
 ### 1. Problem Analysis Phase
@@ -154,6 +178,14 @@ docker build -f apps/web/Dockerfile .
 - Use descriptive variable names instead of abbreviations
 - Follow strict mode compliance for all code
 
+#### Type System Standards (CRITICAL)
+- **NEVER** duplicate type definitions across packages
+- **ALWAYS** import types from authoritative source (`@originfd/types-odl`)
+- **NEVER** hardcode enum/union values in UI logic
+- **ALWAYS** use centralized managers for business logic (`ComponentLifecycleManager`)
+- **ALWAYS** verify API response structure and use optional chaining
+- **ALWAYS** provide fallbacks for optional nested data
+
 #### React Component Standards
 - Proper TypeScript prop interfaces
 - Error boundaries for production applications
@@ -179,6 +211,10 @@ Before any code changes, AIs must verify:
 - [ ] No workarounds applied without justification
 - [ ] Dependency management follows standards
 - [ ] Build configuration is correct
+- [ ] Single source of truth maintained for all types
+- [ ] No hardcoded enum/union values in UI components
+- [ ] API response structure properly handled with optional chaining
+- [ ] All possible enum values handled (no missing cases)
 
 ### ✅ Verification Phase
 - [ ] Isolated build tests pass
@@ -217,4 +253,4 @@ This document should be updated whenever:
 - Industry standards evolve
 
 Last Updated: 2025-09-14
-Version: 1.0
+Version: 1.1 - Added TypeScript type system fragmentation standards

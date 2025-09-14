@@ -1,33 +1,9 @@
-# FastAPI and web framework
-fastapi
-uvicorn[standard]
+# OriginFD API Service Dependencies
+# Inherits from shared requirements.txt at project root
 
-# Database
-sqlalchemy
-alembic
+# Include shared dependencies
+-r ../../requirements.txt
 
-# Authentication and security
-python-jose[cryptography]
-passlib[bcrypt]
-python-multipart
-
-# Validation and serialization
-pydantic[email]
-pydantic-settings
-
-# Environment and configuration
-python-dotenv
-
-# Date and time utilities
-python-dateutil
-
-# HTTP client
-httpx
-requests
-
-# Crypto utilities
-cryptography
-
-# Development tools
-pytest
-pytest-asyncio
+# API-specific dependencies
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6

@@ -7,6 +7,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker caching
@@ -20,10 +21,11 @@ COPY services/workers/ ./
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port for worker management
-EXPOSE 8002
+# No port exposure needed for Celery workers
 
-# No health check for workers service
+# Health check using Celery inspect
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c \"import os; import redis; r = redis.Redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0')); r.ping()\" || exit 1"
 
-# Start the background workers
+# Start the Celery workers
 CMD ["python", "main.py"]

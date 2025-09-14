@@ -166,30 +166,8 @@ export interface ComponentAnalytics {
   }
 }
 
-// ODL-SD v4.1 Component Lifecycle Status
-export type ODLComponentStatus = 
-  | 'draft'
-  | 'parsed' 
-  | 'enriched'
-  | 'dedupe_pending'
-  | 'compliance_pending'
-  | 'approved'
-  | 'available'
-  | 'rfq_open'
-  | 'rfq_awarded'
-  | 'purchasing'
-  | 'ordered'
-  | 'shipped'
-  | 'received'
-  | 'installed'
-  | 'commissioned'
-  | 'operational'
-  | 'warranty_active'
-  | 'retired'
-  | 'archived'
-
-// Legacy status type for backward compatibility
-export type ComponentStatus = ODLComponentStatus
+// Legacy status type for backward compatibility - use ODLComponentStatus from @originfd/types-odl instead
+export type ComponentStatus = import('@originfd/types-odl').ODLComponentStatus
 
 // RFQ/Bidding Workflow Types for Phase 2
 export interface RFQRequest {

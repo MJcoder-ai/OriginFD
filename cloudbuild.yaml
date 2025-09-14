@@ -15,7 +15,7 @@ substitutions:
 
 steps:
   # Step 0: Enable Required APIs
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'enable-apis'
     entrypoint: 'bash'
     args:
@@ -32,7 +32,7 @@ steps:
         sleep 30
 
   # Step 1: Grant Service Networking Permission
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'grant-peering-permission'
     entrypoint: 'bash'
     args:
@@ -44,7 +44,7 @@ steps:
           --role="roles/compute.networkAdmin" || echo "Permission already exists"
 
   # Step 2: Setup Infrastructure
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-artifact-registry'
     entrypoint: 'bash'
     args:
@@ -56,7 +56,7 @@ steps:
           --location=${_REGION} \
           --description="OriginFD Docker images" || echo "Repository already exists"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-vpc-network'
     entrypoint: 'bash'
     args:
@@ -83,7 +83,7 @@ steps:
           --ranges=google-managed-services-${_NETWORK} \
           --network=${_NETWORK} || echo "VPC peering already connected"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-postgres'
     entrypoint: 'bash'
     args:
@@ -110,7 +110,7 @@ steps:
           --instance=${_POSTGRES_INSTANCE} \
           --password=temp-password || echo "User already exists"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-redis'
     entrypoint: 'bash'
     args:
@@ -123,7 +123,7 @@ steps:
           --network=${_NETWORK} \
           --redis-version=redis_7_0 || echo "Redis instance already exists"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-vpc-connector'
     entrypoint: 'bash'
     args:
@@ -138,7 +138,7 @@ steps:
           --max-instances=3 \
           --machine-type=e2-micro || echo "VPC connector already exists"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-secrets'
     entrypoint: 'bash'
     args:
@@ -168,7 +168,7 @@ steps:
         echo -n "$$REDIS_URL" | gcloud secrets create redis-url --data-file=- || echo "Redis URL secret already exists"
 
   # Step 2: Build and Push Docker Images
-  - name: 'gcr.io/kaniko-project/executor:latest'
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-api'
     args:
       - '--dockerfile=services/api/Dockerfile'
@@ -178,7 +178,7 @@ steps:
       - '--cache=true'
       - '--cache-ttl=24h'
 
-  - name: 'gcr.io/kaniko-project/executor:latest'
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-orchestrator'
     args:
       - '--dockerfile=services/orchestrator/Dockerfile'
@@ -190,7 +190,7 @@ steps:
       - '--compressed-caching=false'
       - '--single-snapshot'
 
-  - name: 'gcr.io/kaniko-project/executor:latest'
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-workers'
     args:
       - '--dockerfile=services/workers/Dockerfile'
@@ -200,7 +200,7 @@ steps:
       - '--cache=true'
       - '--cache-ttl=24h'
 
-  - name: 'gcr.io/kaniko-project/executor:latest'
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-web'
     args:
       - '--dockerfile=apps/web/Dockerfile'
@@ -211,7 +211,7 @@ steps:
       - '--cache-ttl=24h'
 
   # Step 3: Deploy to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-api'
     entrypoint: 'bash'
     args:
@@ -231,7 +231,7 @@ steps:
           --set-env-vars="ENVIRONMENT=production,DEBUG=false,PORT=8000" \
           --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-orchestrator'
     entrypoint: 'bash'
     args:
@@ -251,7 +251,7 @@ steps:
           --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
           --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-workers'
     entrypoint: 'bash'
     args:
@@ -271,7 +271,7 @@ steps:
           --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
           --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-web'
     entrypoint: 'bash'
     args:
@@ -292,7 +292,7 @@ steps:
           --set-env-vars="NEXT_PUBLIC_API_URL=$$API_URL,NODE_ENV=production"
 
   # Step 4: Database Migration and Setup
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'run-migrations'
     entrypoint: 'bash'
     args:
@@ -314,7 +314,7 @@ steps:
         gcloud run jobs delete db-migrate --region=${_REGION} --quiet || echo "Job cleanup failed"
 
   # Step 5: Setup Load Balancer and Custom Domain (Optional)
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'setup-load-balancer'
     entrypoint: 'bash'
     args:

@@ -16,8 +16,10 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+  Avatar,
+  AvatarFallback,
+  AvatarImage
+} from '@originfd/ui'
 
 export function AppHeader() {
   const router = useRouter()

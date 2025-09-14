@@ -1,38 +1,10 @@
-# Task queue and async processing
-celery[redis]
-redis
+# OriginFD Workers Service Dependencies
+# Inherits from shared requirements.txt at project root
 
-# Database
-sqlalchemy
-alembic
+# Include shared dependencies
+-r ../../requirements.txt
 
-# HTTP client
-httpx
-requests
-
-# Authentication and security
-python-jose[cryptography]
-
-# Validation and serialization
-pydantic[email]
-pydantic-settings
-
-# Environment and configuration
-python-dotenv
-
-# Date and time utilities
-python-dateutil
-
-# AI/ML libraries for background processing
-openai
-anthropic
-numpy
-pandas
-
-# File processing
-pillow
-python-magic
-
-# Development tools
-pytest
-pytest-asyncio
+# Workers-specific dependencies
+pandas==2.1.4
+pillow==10.1.0
+python-magic==0.4.27
