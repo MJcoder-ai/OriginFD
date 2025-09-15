@@ -43,6 +43,9 @@ class ComponentCreateRequest(BaseModel):
     warranty_status: Optional[str] = Field("inactive", max_length=50)
     rma_tracking: List[Dict[str, Any]] = Field(default_factory=list)
 
+    class Config:
+        extra = "forbid"  # Prevent mass assignment vulnerabilities
+
 
 class ComponentUpdateRequest(BaseModel):
     """Request model for updating components."""
@@ -56,6 +59,9 @@ class ComponentUpdateRequest(BaseModel):
     classification: Optional[Dict[str, Any]] = None
     warranty_status: Optional[str] = Field(None, max_length=50)
     rma_tracking: Optional[List[Dict[str, Any]]] = None
+
+    class Config:
+        extra = "forbid"  # Prevent mass assignment vulnerabilities
 
 
 class ComponentResponse(BaseModel):

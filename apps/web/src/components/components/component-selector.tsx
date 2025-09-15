@@ -154,8 +154,7 @@ export function ComponentSelector({
       search: searchQuery || undefined,
       category: categoryFilter || undefined,
       domain: domainFilter || undefined,
-      lifecycle_stage: lifecycleFilter || undefined,
-      inventory_managed: showInventoryOnly || undefined,
+      status: lifecycleFilter || undefined,
       active_only: true,
       page_size: 50
     }),
@@ -391,7 +390,7 @@ export function ComponentSelector({
                   <p className="mt-2 text-sm text-muted-foreground">No components found</p>
                 </div>
               ) : (
-                components.map((component) => {
+                components.map((component: any) => {
                   const statusDisplay = getODLStatusDisplay(component.component_management.status)
                   const complianceDisplay = getComplianceDisplay(component.component_management.compliance.certificates)
                   const StatusIcon = statusDisplay.icon

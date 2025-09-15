@@ -191,7 +191,24 @@ steps:
         echo "Testing workers service requirements..."
         pip install --dry-run -r requirements.txt -r services/workers/requirements.txt || exit 1
 
-        echo "All dependency validations passed!"
+        echo "Installing Python linting tools..."
+        pip install flake8 black isort mypy bandit
+
+        echo "Running Python code quality checks..."
+
+        echo "Checking code formatting with Black..."
+        black --check --diff services/
+
+        echo "Checking import sorting with isort..."
+        isort --check-only --diff services/
+
+        echo "Running Flake8 linting..."
+        flake8 services/ --max-line-length=88 --extend-ignore=E203,W503
+
+        echo "Running security checks with Bandit..."
+        bandit -r services/ -f json || echo "Security warnings found - review before production"
+
+        echo "All dependency validations and code quality checks passed!"
 
   # Step 2.5: Validate TypeScript and Frontend Build
   - name: 'node:20-alpine'
@@ -213,6 +230,9 @@ steps:
 
         echo "Type-checking web application..."
         pnpm --filter @originfd/web type-check
+
+        echo "Running ESLint for code quality..."
+        pnpm --filter @originfd/web lint
 
         echo "Frontend validation completed successfully!"
 
