@@ -90,7 +90,7 @@ export async function POST(
     // 6. Trigger component lifecycle status update
 
     console.log('RFQ awarded:', rfqId, 'to supplier:', mockBid.supplier_name)
-    
+
     return NextResponse.json(award, { status: 201 })
   } catch (error) {
     console.error('Error awarding RFQ:', error)
@@ -125,7 +125,7 @@ export async function GET(
       notes: 'Best overall value proposition',
       next_steps: [
         'Generate purchase order - Completed',
-        'Supplier acceptance - Completed', 
+        'Supplier acceptance - Completed',
         'Contract execution - In Progress',
         'Schedule delivery - Pending'
       ]

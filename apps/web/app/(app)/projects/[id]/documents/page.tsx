@@ -46,7 +46,7 @@ export default function ProjectDocumentsPage() {
       version: '1.2',
     },
     {
-      id: 'doc-2', 
+      id: 'doc-2',
       name: 'Installation Manual',
       description: 'Step-by-step installation procedures and guidelines',
       type: 'PDF',
@@ -234,8 +234,8 @@ export default function ProjectDocumentsPage() {
                     </div>
                   </div>
                 </div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation()

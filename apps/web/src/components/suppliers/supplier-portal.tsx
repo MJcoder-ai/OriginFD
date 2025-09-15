@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { RFQRequest, RFQBid, BidStatus, SpecificationCompliance } from '@/lib/types'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   Button,
   Badge,
@@ -81,9 +81,9 @@ const getRFQStatusBadgeVariant = (status: RFQRequest['status']) => {
   }
 }
 
-export default function SupplierPortal({ 
-  supplierId = 'sup_example_001', 
-  supplierName = 'Example Solar Co.' 
+export default function SupplierPortal({
+  supplierId = 'sup_example_001',
+  supplierName = 'Example Solar Co.'
 }: SupplierPortalProps) {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('open_rfqs')
@@ -119,19 +119,19 @@ export default function SupplierPortal({
       // For now, we'll filter from available RFQs
       const allRFQs = await fetch('/api/bridge/rfq').then(r => r.json())
       const bids: RFQBid[] = []
-      
+
       allRFQs.forEach((rfq: RFQRequest) => {
         rfq.bids.forEach(bid => {
           if (bid.supplier_id === supplierId) {
-            bids.push({ 
-              ...bid, 
-              rfq_title: rfq.title, 
-              rfq_status: rfq.status 
+            bids.push({
+              ...bid,
+              rfq_title: rfq.title,
+              rfq_status: rfq.status
             } as any) // Extended bid type with additional properties
           }
         })
       })
-      
+
       return bids
     }
   })
@@ -181,7 +181,7 @@ export default function SupplierPortal({
 
   const getSpecificationCompliance = (rfq: RFQRequest | null): SpecificationCompliance[] => {
     if (!rfq) return []
-    
+
     return rfq.specifications.map((spec, index) => ({
       specification_id: `spec_${index}`,
       compliant: true, // In real implementation, this would be based on form inputs
@@ -192,7 +192,7 @@ export default function SupplierPortal({
 
   const handleSubmitBid = () => {
     if (!selectedRFQ) return
-    
+
     submitBidMutation.mutate({
       rfqId: selectedRFQ.id,
       bidData: bidForm
@@ -269,7 +269,7 @@ export default function SupplierPortal({
                   className="max-w-sm"
                 />
               </div>
-              
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -284,14 +284,14 @@ export default function SupplierPortal({
                 </TableHeader>
                 <TableBody>
                   {availableRFQs
-                    .filter((rfq: RFQRequest) => 
+                    .filter((rfq: RFQRequest) =>
                       rfq.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                       rfq.description.toLowerCase().includes(searchTerm.toLowerCase())
                     )
                     .map((rfq: RFQRequest) => {
                       const daysRemaining = getDaysRemaining(rfq.response_deadline)
                       const hasExistingBid = supplierBids.some(bid => bid.rfq_id === rfq.id)
-                      
+
                       return (
                         <TableRow key={rfq.id}>
                           <TableCell>
@@ -324,7 +324,7 @@ export default function SupplierPortal({
                               <div>
                                 <p className="text-sm">{formatDate(rfq.response_deadline)}</p>
                                 <p className={`text-xs ${
-                                  daysRemaining <= 3 ? 'text-red-600' : 
+                                  daysRemaining <= 3 ? 'text-red-600' :
                                   daysRemaining <= 7 ? 'text-yellow-600' : 'text-green-600'
                                 }`}>
                                   {daysRemaining > 0 ? `${daysRemaining} days left` : 'Expired'}
@@ -339,8 +339,8 @@ export default function SupplierPortal({
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => setSelectedRFQ(rfq)}
                               >
@@ -476,7 +476,7 @@ export default function SupplierPortal({
           <DialogHeader>
             <DialogTitle>Submit Bid - {selectedRFQ?.title}</DialogTitle>
           </DialogHeader>
-          
+
           {selectedRFQ && (
             <div className="space-y-6">
               {/* RFQ Summary */}
@@ -503,7 +503,7 @@ export default function SupplierPortal({
                       <p className="text-red-600">{formatDate(selectedRFQ.response_deadline)}</p>
                     </div>
                   </div>
-                  
+
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Description</Label>
                     <p className="text-sm mt-1">{selectedRFQ.description}</p>
@@ -623,14 +623,14 @@ export default function SupplierPortal({
               </Card>
 
               <div className="flex justify-end gap-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setBidDialogOpen(false)}
                   disabled={submitBidMutation.isPending}
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSubmitBid}
                   disabled={submitBidMutation.isPending || !bidForm.unit_price || !bidForm.delivery_date}
                 >
@@ -659,7 +659,7 @@ export default function SupplierPortal({
             <DialogHeader>
               <DialogTitle>{selectedRFQ.title}</DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -669,14 +669,14 @@ export default function SupplierPortal({
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Budget Range</Label>
                   <p>
-                    {selectedRFQ.budget_range ? 
+                    {selectedRFQ.budget_range ?
                       `${formatCurrency(selectedRFQ.budget_range.min)} - ${formatCurrency(selectedRFQ.budget_range.max)}` :
                       'Not specified'
                     }
                   </p>
                 </div>
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Description</Label>
                 <p className="text-sm mt-1">{selectedRFQ.description}</p>

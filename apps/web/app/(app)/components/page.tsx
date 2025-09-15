@@ -2,11 +2,11 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
   Grid3x3,
   List,
   Sun,
@@ -24,12 +24,12 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   Input,
   Select,
@@ -296,13 +296,13 @@ export default function ComponentsPage() {
         </div>
       ) : (
         <div className={
-          viewMode === 'grid' 
+          viewMode === 'grid'
             ? 'grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             : 'space-y-4'
         }>
           {components.map((component: ComponentResponse) => {
             const CategoryIcon = getCategoryIcon()
-            
+
             if (viewMode === 'grid') {
               return (
                 <Card

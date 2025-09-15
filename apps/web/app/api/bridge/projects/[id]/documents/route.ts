@@ -51,7 +51,7 @@ const projectDocuments: { [projectId: string]: any[] } = {
   ],
   '2': [
     {
-      id: '2-main', 
+      id: '2-main',
       project_id: '2',
       document_type: 'ODL_SD',
       is_primary: true,
@@ -63,7 +63,7 @@ const projectDocuments: { [projectId: string]: any[] } = {
   '3': [
     {
       id: '3-main',
-      project_id: '3', 
+      project_id: '3',
       document_type: 'ODL_SD',
       is_primary: true,
       name: 'Main System Document (Legacy)',
@@ -78,12 +78,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const { id: projectId } = params
-  
+
   console.log('Fetching documents for project:', projectId)
-  
+
   // Find documents for this project
   const documents = projectDocuments[projectId] || []
-  
+
   console.log('Found', documents.length, 'documents for project', projectId)
   return NextResponse.json(documents)
 }

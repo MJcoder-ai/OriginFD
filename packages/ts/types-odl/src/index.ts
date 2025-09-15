@@ -15,7 +15,7 @@ export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
 // ODL-SD v4.1 Component Lifecycle Status
 export type ODLComponentStatus =
   | 'draft'
-  | 'parsed' 
+  | 'parsed'
   | 'enriched'
   | 'dedupe_pending'
   | 'compliance_pending'

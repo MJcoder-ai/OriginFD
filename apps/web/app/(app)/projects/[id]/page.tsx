@@ -3,12 +3,12 @@
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useRouter } from 'next/navigation'
-import { 
-  ArrowLeft, 
-  Settings, 
-  FileText, 
-  Activity, 
-  Users, 
+import {
+  ArrowLeft,
+  Settings,
+  FileText,
+  Activity,
+  Users,
   Calendar,
   MapPin,
   Zap,
@@ -19,12 +19,12 @@ import {
   MoreHorizontal
 } from 'lucide-react'
 
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   Tabs,
   TabsContent,
@@ -141,17 +141,17 @@ export default function ProjectDetailPage() {
 
     // Helper function to check if error is forbidden (403)
     const isForbidden = (error: any) => getErrorStatus(error) === 403
-    
+
     // Helper function to check if error is not found (404)
     const isNotFound = (error: any) => getErrorStatus(error) === 404
 
     // Determine error type for better user messaging
     let title = "Error Loading Project"
     let message = "An unexpected error occurred."
-    
+
     const projectStatus = projectError ? getErrorStatus(projectError) : null
     const documentStatus = documentError ? getErrorStatus(documentError) : null
-    
+
     if (projectError && documentError) {
       if (isForbidden(projectError) || isForbidden(documentError)) {
         title = "Access Denied"
@@ -186,7 +186,7 @@ export default function ProjectDetailPage() {
         message = "There was an issue loading the project document. You can still view project information."
       }
     }
-    
+
     // Log errors for debugging
     if (projectError) {
       console.error('Project loading error:', projectError, 'Status:', projectStatus)
@@ -194,7 +194,7 @@ export default function ProjectDetailPage() {
     if (documentError) {
       console.error('Document loading error:', documentError, 'Status:', documentStatus)
     }
-    
+
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
         <div className="text-center">
@@ -228,14 +228,14 @@ export default function ProjectDetailPage() {
         <div className="space-y-4">
           {/* Breadcrumb */}
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <button 
+            <button
               onClick={() => router.push('/dashboard')}
               className="hover:text-foreground transition-colors"
             >
               Dashboard
             </button>
             <span>/</span>
-            <button 
+            <button
               onClick={() => router.push('/projects')}
               className="hover:text-foreground transition-colors"
             >
@@ -308,13 +308,13 @@ export default function ProjectDetailPage() {
         <TabsContent value="overview" className="space-y-6">
           {/* System Architecture Diagram */}
           {document && document.instances && document.instances.length > 0 && (
-            <SystemDiagram 
+            <SystemDiagram
               instances={document.instances}
               connections={document.connections || []}
               className="mb-6"
             />
           )}
-          
+
           {/* Project Overview */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {/* Project Info */}
@@ -337,9 +337,9 @@ export default function ProjectDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Created</p>
                   <p className="text-sm">
-                    {document?.meta?.timestamps?.created_at 
+                    {document?.meta?.timestamps?.created_at
                       ? new Date(document.meta.timestamps.created_at).toLocaleDateString()
-                      : project?.created_at 
+                      : project?.created_at
                         ? new Date(project.created_at).toLocaleDateString()
                         : 'Unknown'
                     }
@@ -360,7 +360,7 @@ export default function ProjectDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Capacity</p>
                   <p className="text-sm">
-                    {document?.requirements?.functional?.capacity_kw 
+                    {document?.requirements?.functional?.capacity_kw
                       ? document.requirements.functional.capacity_kw >= 1000
                         ? `${(document.requirements.functional.capacity_kw / 1000).toFixed(1)} MW`
                         : `${document.requirements.functional.capacity_kw.toFixed(0)} kW`
@@ -371,7 +371,7 @@ export default function ProjectDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Annual Generation</p>
                   <p className="text-sm">
-                    {document?.requirements?.functional?.annual_generation_kwh 
+                    {document?.requirements?.functional?.annual_generation_kwh
                       ? `${(document.requirements.functional.annual_generation_kwh / 1000).toFixed(0)} MWh`
                       : 'TBD'
                     }
@@ -616,7 +616,7 @@ export default function ProjectDetailPage() {
           try {
             // TODO: Implement API call to add components to project
             console.log('Adding components to project:', selectedComponents)
-            
+
             // For now, just show success message
             // In real implementation, this would call the component integration API
             // await componentIntegrationAPI.addComponentsToProject({
@@ -629,10 +629,10 @@ export default function ProjectDetailPage() {
             //     notes: sc.notes
             //   }))
             // })
-            
+
             // Refetch project data to show updated components
             // refetch()
-            
+
           } catch (error) {
             console.error('Failed to add components:', error)
           }

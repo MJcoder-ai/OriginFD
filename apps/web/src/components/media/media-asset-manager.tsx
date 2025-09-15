@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   Button,
   Badge,
@@ -122,13 +122,13 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
     queryFn: async () => {
       let url = '/api/bridge/media'
       const params = new URLSearchParams()
-      
+
       if (componentId) params.append('component_id', componentId)
       if (typeFilter !== 'all') params.append('type', typeFilter)
       params.append('active_only', 'true')
-      
+
       if (params.toString()) url += `?${params.toString()}`
-      
+
       const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to fetch media assets')
       return response.json()
@@ -189,7 +189,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
 
   const handleUpload = () => {
     const tagsArray = uploadForm.tags.split(',').map(tag => tag.trim()).filter(Boolean)
-    
+
     uploadMutation.mutate({
       ...uploadForm,
       tags: tagsArray,
@@ -240,7 +240,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -276,8 +276,8 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
               <div>
                 <p className="text-sm font-medium">Documents</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {(statistics.by_type?.datasheet || 0) + 
-                   (statistics.by_type?.certificate || 0) + 
+                  {(statistics.by_type?.datasheet || 0) +
+                   (statistics.by_type?.certificate || 0) +
                    (statistics.by_type?.installation || 0)}
                 </p>
               </div>
@@ -334,7 +334,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
             <TableBody>
               {filteredAssets.map((asset: MediaAsset) => {
                 const Icon = getAssetTypeIcon(asset.type)
-                
+
                 return (
                   <TableRow key={asset.id}>
                     <TableCell>
@@ -381,15 +381,15 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setSelectedAsset(asset)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => window.open(asset.file_url, '_blank')}
                         >
@@ -429,7 +429,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
           <DialogHeader>
             <DialogTitle>Upload Media Asset</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="asset_type">Asset Type</Label>
@@ -495,14 +495,14 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
           </div>
 
           <div className="flex justify-end gap-4 mt-6">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setUploadDialogOpen(false)}
               disabled={uploadMutation.isPending}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleUpload}
               disabled={uploadMutation.isPending || !uploadForm.name || !uploadForm.component_id}
             >
@@ -529,7 +529,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
             <DialogHeader>
               <DialogTitle>{selectedAsset.name}</DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -549,7 +549,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                   <p>{selectedAsset.component_id}</p>
                 </div>
               </div>
-              
+
               {selectedAsset.description && (
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Description</Label>

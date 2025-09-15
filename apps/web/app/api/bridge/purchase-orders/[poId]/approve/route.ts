@@ -39,7 +39,7 @@ export async function POST(
           },
           {
             step_number: 2,
-            approver_role: 'Finance Director', 
+            approver_role: 'Finance Director',
             required: true,
             status: 'pending'
           }
@@ -77,19 +77,19 @@ export async function POST(
     if (approvalData.action === 'reject') {
       // If rejected, stop the workflow
       newStatus = 'cancelled'
-      overallStatus = 'rejected'
+      overallStatus = 'rejected' as any
     } else if (approvalData.action === 'approve') {
       // If approved, check if more steps are needed
       const hasMoreSteps = mockPO.approval_workflow.required_approvals
         .some(step => step.step_number > mockPO.approval_workflow.current_step)
-      
+
       if (hasMoreSteps) {
         nextStep = mockPO.approval_workflow.current_step + 1
         overallStatus = 'pending'
       } else {
         // All approvals complete
         newStatus = 'approved'
-        overallStatus = 'approved'
+        overallStatus = 'approved' as any
       }
     }
 
@@ -101,10 +101,10 @@ export async function POST(
         ...mockPO.approval_workflow,
         current_step: nextStep,
         overall_status: overallStatus,
-        approved_by: approvalData.action === 'approve' 
-          ? [...(mockPO.approval_workflow.approved_by || []), approvalData.approver_id]
-          : mockPO.approval_workflow.approved_by,
-        approved_at: overallStatus === 'approved' ? new Date().toISOString() : undefined,
+        approved_by: approvalData.action === 'approve'
+          ? [...((mockPO.approval_workflow as any).approved_by || []), approvalData.approver_id]
+          : (mockPO.approval_workflow as any).approved_by,
+        approved_at: (overallStatus as any) === 'approved' ? new Date().toISOString() : undefined,
         rejection_reason: approvalData.action === 'reject' ? approvalData.notes : undefined
       },
       next_actions: getNextActions(newStatus, overallStatus)
@@ -122,7 +122,7 @@ function getNextActions(status: string, approvalStatus: string): string[] {
   if (status === 'cancelled') {
     return ['Review rejection reason', 'Revise PO if needed', 'Resubmit for approval']
   }
-  
+
   if (status === 'approved') {
     return [
       'Send PO to supplier',
@@ -131,10 +131,10 @@ function getNextActions(status: string, approvalStatus: string): string[] {
       'Activate delivery schedule'
     ]
   }
-  
+
   if (approvalStatus === 'pending') {
     return ['Waiting for next level approval']
   }
-  
+
   return []
 }

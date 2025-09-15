@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Generic component seed data aligned with ODL-SD v4.1 Component Management Supplement
 function generateODLCompliantComponents() {
-  const components = []
+  const components: any[] = []
   let idCounter = 1
 
   // PV Module Components (Generation)
@@ -16,7 +16,7 @@ function generateODLCompliantComponents() {
     module.wattages.forEach((wattage) => {
       const componentId = `CMP:${module.brand.toUpperCase()}:${module.series}-${wattage}:${wattage}W:V1.0`
       const name = `${module.brand}_${module.series}-${wattage}_${wattage}W`
-      
+
       components.push({
         id: `comp_${String(idCounter).padStart(3, '0')}`,
         component_management: {
@@ -121,7 +121,7 @@ function generateODLCompliantComponents() {
               {
                 standard: "IEC 61730",
                 number: `IEC-${idCounter}-2024-S`,
-                issuer: "TUV Rheinland", 
+                issuer: "TUV Rheinland",
                 valid_until: "2029-12-31",
                 scope: "Safety qualification"
               }
@@ -140,7 +140,7 @@ function generateODLCompliantComponents() {
           audit: {
             created_by: "system",
             created_at: new Date().toISOString(),
-            updated_by: "system", 
+            updated_by: "system",
             updated_at: new Date().toISOString(),
             version: 1
           },
@@ -167,7 +167,7 @@ function generateODLCompliantComponents() {
     inverter.ratings.forEach(rating => {
       const componentId = `CMP:${inverter.brand.toUpperCase()}:${inverter.series}-${rating}:${rating}W:V1.0`
       const name = `${inverter.brand}_${inverter.series}-${rating}_${rating}W`
-      
+
       components.push({
         id: `comp_${String(idCounter).padStart(3, '0')}`,
         component_management: {
@@ -272,7 +272,7 @@ function generateODLCompliantComponents() {
               {
                 standard: "IEEE 1547",
                 number: `IEEE-${idCounter}-2024`,
-                issuer: "IEEE Standards", 
+                issuer: "IEEE Standards",
                 valid_until: "2029-12-31",
                 scope: "Grid interconnection requirements"
               }
@@ -318,7 +318,7 @@ function generateODLCompliantComponents() {
     battery.models.forEach(model => {
       const componentId = `CMP:${battery.brand.toUpperCase()}:${battery.series}-${model.kwh}:${model.w}W:V1.0`
       const name = `${battery.brand}_${battery.series}-${model.kwh}_${model.w}W`
-      
+
       components.push({
         id: `comp_${String(idCounter).padStart(3, '0')}`,
         component_management: {
@@ -513,25 +513,25 @@ function calculateStats() {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     // Check if this is a stats request
     if (request.url.includes('/stats')) {
       const stats = calculateStats()
       console.log('Fetching ODL-SD v4.1 compliant component stats:', stats.total_components, 'components')
       return NextResponse.json(stats)
     }
-    
+
     // Parse query parameters
     const page = parseInt(searchParams.get('page') || '1', 10)
     const pageSize = parseInt(searchParams.get('page_size') || '20', 10)
     const search = searchParams.get('search')
     const status = searchParams.get('status')
     const category = searchParams.get('category')
-    
+
     // Ensure data is loaded before filtering
     ensureDataLoaded()
     let filteredComponents = odlComponents
-    
+
     // Optimized filtering: Use single pass with early exits and pre-computed values
     const searchLower = search?.toLowerCase()
     const unspscMap = {
@@ -568,14 +568,14 @@ export async function GET(request: NextRequest) {
         return true
       })
     }
-    
+
     // Pagination
     const start = (page - 1) * pageSize
     const end = start + pageSize
     const paginatedComponents = filteredComponents.slice(start, end)
-    
+
     console.log(`Fetching ODL-SD v4.1 components: ${paginatedComponents.length} components (page ${page})`)
-    
+
     return NextResponse.json({
       components: paginatedComponents,
       total: filteredComponents.length,
@@ -583,7 +583,7 @@ export async function GET(request: NextRequest) {
       page_size: pageSize,
       total_pages: Math.ceil(filteredComponents.length / pageSize)
     })
-    
+
   } catch (error) {
     console.error('Error fetching components:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -593,11 +593,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Create new ODL-SD v4.1 compliant component
     const componentId = body.component_id || `CMP:${body.brand}:${body.part_number}:${body.rating_w}W:V1.0`
     const name = `${body.brand}_${body.part_number}_${body.rating_w}W`
-    
+
     const newComponent = {
       id: `comp_${Date.now()}`,
       component_management: {
@@ -694,11 +694,11 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    
+
     console.log('Created new ODL-SD v4.1 component:', componentId)
-    
+
     return NextResponse.json(newComponent, { status: 201 })
-    
+
   } catch (error) {
     console.error('Error creating component:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

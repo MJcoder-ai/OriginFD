@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
       total_assets: filteredAssets.length,
       assets: filteredAssets,
       assets_by_component: assetsByComponent,
-      available_types: [...new Set(mockMediaAssets.map(a => a.type))],
+      available_types: Array.from(new Set(mockMediaAssets.map(a => a.type))),
       statistics: {
         by_type: mockMediaAssets.reduce((acc, asset) => {
           acc[asset.type] = (acc[asset.type] || 0) + 1
@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const assetData = await request.json()
-    
+
     // In real implementation, this would:
     // 1. Upload file to cloud storage (AWS S3, Azure Blob, etc.)
     // 2. Calculate file checksum
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
 
     mockMediaAssets.push(newAsset)
     console.log('Created new media asset:', newAsset.id, 'for component:', newAsset.component_id)
-    
+
     return NextResponse.json({
       success: true,
       asset: newAsset,

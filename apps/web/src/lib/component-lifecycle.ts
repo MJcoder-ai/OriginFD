@@ -243,10 +243,10 @@ export class ComponentLifecycleManager {
       'ordered', 'shipped', 'received', 'installed', 'commissioned',
       'operational', 'warranty_active', 'retired', 'archived'
     ]
-    
+
     const index = statusOrder.indexOf(status)
     if (index === -1) return 0
-    
+
     return Math.round((index / (statusOrder.length - 1)) * 100)
   }
 
@@ -265,13 +265,13 @@ export class ComponentLifecycleManager {
           reason: `Requires ${path.length - 1} intermediate transitions`
         }
       }
-      
+
       return {
         allowed: false,
         reason: `No valid transition path from ${currentStatus} to ${targetStatus}`
       }
     }
-    
+
     return { allowed: true }
   }
 
@@ -279,21 +279,21 @@ export class ComponentLifecycleManager {
     if (from === to) {
       return [...path, to]
     }
-    
+
     if (visited.has(from) || path.length > 10) { // Prevent infinite loops and excessive paths
       return []
     }
-    
+
     visited.add(from)
     const currentPath = [...path, from]
-    
+
     for (const nextStatus of this.getValidTransitions(from)) {
       const result = this.findTransitionPath(nextStatus, to, new Set(visited), currentPath)
       if (result.length > 0) {
         return result
       }
     }
-    
+
     return []
   }
 }

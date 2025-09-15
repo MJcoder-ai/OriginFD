@@ -21,10 +21,10 @@ async def get_current_user_from_token(
     Dependency to get current user from JWT token
     """
     token = credentials.credentials
-    
+
     # Verify the token
     payload = verify_token(token, token_type="access")
-    
+
     # Extract user ID from token
     user_id = payload.get("sub")
     if user_id is None:
@@ -32,7 +32,7 @@ async def get_current_user_from_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token: missing user ID"
         )
-    
+
     # Get user from database
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
@@ -40,13 +40,13 @@ async def get_current_user_from_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
-    
+
     # Convert to dict for compatibility
     return {
         "id": user.id,
@@ -73,16 +73,16 @@ def require_roles(*required_roles: str):
     """
     def role_checker(current_user: Annotated[dict, Depends(get_current_active_user)]) -> dict:
         user_roles = current_user.get("roles", [])
-        
+
         # Check if user has any of the required roles
         if not any(role in user_roles for role in required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required roles: {', '.join(required_roles)}"
             )
-        
+
         return current_user
-    
+
     return role_checker
 
 

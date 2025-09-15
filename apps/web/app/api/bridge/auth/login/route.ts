@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Login successful for:', email)
-    
+
     return NextResponse.json(tokenResponse)
   } catch (error) {
     console.error('Login error:', error)

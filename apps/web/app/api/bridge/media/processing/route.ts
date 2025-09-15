@@ -144,7 +144,7 @@ function simulateJobProcessing(job: MediaProcessingJob) {
     job.status = 'completed'
     job.progress_percentage = 100
     job.completed_at = new Date().toISOString()
-    
+
     // Generate mock output based on job type
     job.output_metadata = {
       ...job.output_metadata,

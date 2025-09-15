@@ -326,7 +326,7 @@ export function SystemDiagram({
                     className={`${getComponentColor(pos.type)} rounded`}
                     rx="4"
                   />
-                  
+
                   {/* Component name */}
                   <text
                     x={pos.x}
@@ -336,7 +336,7 @@ export function SystemDiagram({
                   >
                     {componentName}
                   </text>
-                  
+
                   {/* Component capacity */}
                   {capacity && (
                     <text

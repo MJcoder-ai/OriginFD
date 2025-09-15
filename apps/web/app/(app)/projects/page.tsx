@@ -134,8 +134,8 @@ export default function ProjectsPage() {
             <p className="text-muted-foreground mb-4">
               There was an error connecting to the server. Please check your connection and try again.
             </p>
-            <Button 
-              onClick={() => window.location.reload()} 
+            <Button
+              onClick={() => window.location.reload()}
               variant="outline"
             >
               Try Again
@@ -168,8 +168,8 @@ export default function ProjectsPage() {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation()
@@ -190,7 +190,7 @@ export default function ProjectsPage() {
                     <span className="text-muted-foreground">Status</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       project.is_active
-                        ? 'bg-green-100 text-green-800' 
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
                       {project.is_active ? 'Active' : 'Inactive'}

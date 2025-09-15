@@ -20,7 +20,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://localhost:3001", 
+        "http://localhost:3001",
         "http://localhost:3002",
         "http://localhost:3003",
         "http://localhost:3004",
@@ -94,7 +94,7 @@ async def login(login_request: LoginRequest):
             detail="Invalid credentials"
         )
 
-@app.get("/auth/me", response_model=UserResponse)  
+@app.get("/auth/me", response_model=UserResponse)
 async def get_current_user():
     """Test current user endpoint."""
     return UserResponse(
@@ -111,24 +111,24 @@ async def list_projects():
         "projects": [
             {
                 "id": "proj-1",
-                "name": "Solar Farm Arizona Phase 1", 
+                "name": "Solar Farm Arizona Phase 1",
                 "domain": "PV",
                 "scale": "UTILITY",
                 "status": "ACTIVE",
                 "created_at": "2024-01-15T10:00:00Z"
             },
             {
-                "id": "proj-2", 
+                "id": "proj-2",
                 "name": "Commercial BESS Installation",
                 "domain": "BESS",
-                "scale": "COMMERCIAL", 
+                "scale": "COMMERCIAL",
                 "status": "DRAFT",
                 "created_at": "2024-01-18T14:30:00Z"
             },
             {
                 "id": "proj-3",
                 "name": "Hybrid Microgrid Campus",
-                "domain": "HYBRID", 
+                "domain": "HYBRID",
                 "scale": "INDUSTRIAL",
                 "status": "UNDER_REVIEW",
                 "created_at": "2024-01-22T09:15:00Z"
@@ -144,7 +144,7 @@ async def create_project(project_data: ProjectCreateRequest):
     """Test project creation endpoint."""
     import uuid
     from datetime import datetime
-    
+
     return ProjectResponse(
         id=str(uuid.uuid4()),
         name=project_data.name,
@@ -155,13 +155,13 @@ async def create_project(project_data: ProjectCreateRequest):
         created_at=datetime.utcnow().isoformat() + "Z"
     )
 
-@app.get("/projects/stats/summary") 
+@app.get("/projects/stats/summary")
 async def get_project_stats():
     """Test project statistics endpoint."""
     return {
         "total_projects": 3,
         "active_projects": 1,
-        "pv_projects": 1, 
+        "pv_projects": 1,
         "bess_projects": 1,
         "hybrid_projects": 1
     }
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     print("Available at: http://localhost:8000")
     print("API docs at: http://localhost:8000/docs")
     print("Demo credentials: admin@originfd.com / admin")
-    
+
     uvicorn.run(
         "test_api:app",
         host="0.0.0.0",

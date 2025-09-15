@@ -480,16 +480,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const { id } = params
-  
+
   console.log('Fetching document with ID:', id)
-  
+
   // First, try to find document in shared data store (includes newly created documents)
   let document = findDocument(id)
-  
+
   if (document) {
     console.log('Found document in shared data:', document)
     // If it's a simple document from shared data, wrap in ODL format
-    if (!document.$schema) {
+    if (!(document as any).$schema) {
       return NextResponse.json({
         $schema: 'https://odl-sd.org/schemas/v4.1/document.json',
         schema_version: '4.1',
@@ -519,22 +519,22 @@ export async function GET(
             id: `portfolio-${document.project_id}`,
             name: document.project_name,
             total_capacity_gw: 0.001,
-            description: document.document_data?.description || `${document.project_name} project document`,
-            location: document.document_data?.location || 'TBD',
+            description: (document.document_data as any)?.description || `${document.project_name} project document`,
+            location: (document.document_data as any)?.location || 'TBD',
             regions: {},
           }
         },
         requirements: {
           functional: {
-            capacity_kw: document.document_data?.capacity_kw || 1000,
-            annual_generation_kwh: document.document_data?.annual_generation_kwh || 0,
+            capacity_kw: (document.document_data as any)?.capacity_kw || 1000,
+            annual_generation_kwh: (document.document_data as any)?.annual_generation_kwh || 0,
           },
           technical: {
             grid_connection: true,
           },
         },
         libraries: {
-          components: document.document_data?.components || [],
+          components: (document.document_data as any)?.components || [],
         },
         instances: [],
         connections: [],
@@ -552,7 +552,7 @@ export async function GET(
       return NextResponse.json(document)
     }
   }
-  
+
   // Fall back to legacy mock documents for backward compatibility
   if (id.includes('-main')) {
     // New format: project-id-main (primary document)
@@ -569,7 +569,7 @@ export async function GET(
     document = legacyMockDocuments[id]
     console.log('Looking for legacy document:', id)
   }
-  
+
   if (!document) {
     console.log('Document not found:', id)
     return NextResponse.json(
@@ -577,7 +577,7 @@ export async function GET(
       { status: 404 }
     )
   }
-  
-  console.log('Found legacy document for project:', document.meta?.project || 'unknown')
+
+  console.log('Found legacy document for project:', (document as any).meta?.project || 'unknown')
   return NextResponse.json(document)
 }

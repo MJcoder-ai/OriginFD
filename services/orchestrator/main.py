@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting OriginFD AI Orchestrator...")
     settings = get_settings()
-    
+
     # Initialize AI orchestrator
     orchestrator = AIOrchestrator()
     await orchestrator.initialize()
@@ -49,9 +49,9 @@ async def lifespan(app: FastAPI):
     app.state.graph_store = graph_store
 
     logger.info("AI Orchestrator startup complete")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down OriginFD AI Orchestrator...")
     if hasattr(app.state, 'orchestrator'):
@@ -110,7 +110,7 @@ async def root():
         "status": "operational",
         "capabilities": [
             "task_planning",
-            "tool_execution", 
+            "tool_execution",
             "graph_rag_grounding",
             "policy_routing",
             "batch_processing"

@@ -14,7 +14,7 @@ const MOCK_USER = {
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    
+
     // Check for valid token (mock validation)
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    
+
     // Mock token validation - accept any mock token
     if (!token.startsWith('mock-access-token-')) {
       return NextResponse.json(
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('User info requested for token:', token.substring(0, 20) + '...')
-    
+
     return NextResponse.json(MOCK_USER)
   } catch (error) {
     console.error('Get user error:', error)

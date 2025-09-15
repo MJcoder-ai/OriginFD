@@ -40,7 +40,7 @@ Base = declarative_base()
 # Enhanced models with ODL-SD document storage
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
@@ -50,7 +50,7 @@ class User(Base):
     role = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+
     @property
     def roles(self) -> List[str]:
         user_roles = []
@@ -64,7 +64,7 @@ class User(Base):
 
 class Project(Base):
     __tablename__ = "projects"
-    
+
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -84,7 +84,7 @@ class Project(Base):
 
 class DocumentVersion(Base):
     __tablename__ = "document_versions"
-    
+
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(CHAR(36), nullable=False, index=True)
     version_number = Column(String(20), nullable=False)
@@ -106,7 +106,7 @@ def get_db():
 def init_db():
     print("Creating database tables with ODL-SD support...")
     Base.metadata.create_all(bind=engine)
-    
+
     db = SessionLocal()
     try:
         admin_user = db.query(User).filter(User.email == "admin@originfd.com").first()
@@ -121,9 +121,9 @@ def init_db():
                 role="engineer"
             )
             db.add(admin_user)
-            
+
             regular_user = User(
-                email="user@originfd.com", 
+                email="user@originfd.com",
                 hashed_password=get_password_hash("password"),
                 full_name="Regular User",
                 is_active=True,
@@ -131,7 +131,7 @@ def init_db():
             )
             db.add(regular_user)
             db.commit()
-            
+
             print("Creating sample projects with ODL-SD documents...")
             projects_data = [
                 {
@@ -147,7 +147,7 @@ def init_db():
                     "description": "Battery energy storage system",
                     "domain": "BESS",
                     "scale": "COMMERCIAL",
-                    "location": "California, USA", 
+                    "location": "California, USA",
                     "capacity": 2000.0
                 },
                 {
@@ -159,7 +159,7 @@ def init_db():
                     "capacity": 10000.0
                 }
             ]
-            
+
             for i, proj_data in enumerate(projects_data):
                 # Generate ODL-SD document
                 odl_doc = DocumentGenerator.create_project_document(
@@ -171,7 +171,7 @@ def init_db():
                     capacity_kw=proj_data["capacity"],
                     user_id=admin_user.id if i < 2 else regular_user.id
                 )
-                
+
                 project = Project(
                     name=proj_data["name"],
                     description=proj_data["description"],
@@ -185,7 +185,7 @@ def init_db():
                     document_hash=odl_doc.meta.versioning.content_hash
                 )
                 db.add(project)
-            
+
             db.commit()
             print("Database initialized successfully with ODL-SD documents!")
         else:
@@ -221,14 +221,14 @@ app.add_middleware(
 if COMPONENTS_AVAILABLE:
     app.include_router(components_router, prefix="/components", tags=["components"])
     print("[SUCCESS] Component API routes registered at /components")
-    
+
     # Debug endpoint to test router integration
     @app.get("/debug/components-test")
     async def test_components():
         return {"status": "Components router integrated successfully", "available": True}
 else:
     print("[WARNING] Component API routes not available")
-    
+
     @app.get("/debug/components-test")
     async def test_components():
         return {"status": "Components router not available", "available": False}
@@ -305,28 +305,28 @@ async def health(db: Session = Depends(get_db)):
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """Login with email and password"""
     user = db.query(User).filter(User.email == request.email).first()
-    
+
     if not user or not verify_password(request.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
-    
+
     # Create tokens
     token_data = {
         "sub": user.id,
         "email": user.email,
         "roles": user.roles
     }
-    
+
     access_token, refresh_token = create_token_pair(token_data)
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -337,10 +337,10 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 async def get_current_user_info(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get current user information"""
     user = db.query(User).filter(User.id == current_user["sub"]).first()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return UserResponse(
         id=user.id,
         email=user.email,
@@ -353,7 +353,7 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user), 
 async def list_projects(db: Session = Depends(get_db)):
     """List all projects with ODL-SD document status"""
     projects = db.query(Project).filter(Project.is_archived == False).all()
-    
+
     result = []
     for project in projects:
         result.append({
@@ -368,17 +368,17 @@ async def list_projects(db: Session = Depends(get_db)):
             "created_at": project.created_at.isoformat() + "Z",
             "updated_at": project.updated_at.isoformat() + "Z"
         })
-    
+
     return {"projects": result}
 
-@app.get("/projects/{project_id}")  
+@app.get("/projects/{project_id}")
 async def get_project(project_id: str, db: Session = Depends(get_db)):
     """Get specific project with ODL-SD document info"""
     project = db.query(Project).filter(Project.id == project_id).first()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
+
     return {
         "id": project.id,
         "project_name": project.name,
@@ -399,7 +399,7 @@ async def create_project(request: ProjectCreateRequest, db: Session = Depends(ge
     first_user = db.query(User).first()
     if not first_user:
         raise HTTPException(status_code=400, detail="No users found")
-    
+
     # Generate ODL-SD document
     odl_doc = DocumentGenerator.create_project_document(
         project_name=request.project_name,
@@ -410,15 +410,15 @@ async def create_project(request: ProjectCreateRequest, db: Session = Depends(ge
         capacity_kw=request.capacity_kw,
         user_id=first_user.id
     )
-    
+
     # Validate the generated document
     is_valid, errors = odl_doc.validate_document()
     if not is_valid:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Generated ODL-SD document is invalid: {'; '.join(errors)}"
         )
-    
+
     new_project = Project(
         name=request.project_name,
         description=request.description,
@@ -430,11 +430,11 @@ async def create_project(request: ProjectCreateRequest, db: Session = Depends(ge
         odl_document=json.dumps(odl_doc.to_dict(), indent=2),
         document_hash=odl_doc.meta.versioning.content_hash
     )
-    
+
     db.add(new_project)
     db.commit()
     db.refresh(new_project)
-    
+
     return ProjectResponse(
         id=new_project.id,
         project_name=new_project.name,
@@ -452,13 +452,13 @@ async def create_project(request: ProjectCreateRequest, db: Session = Depends(ge
 async def get_document(document_id: str, db: Session = Depends(get_db)):
     """Get full ODL-SD document"""
     project = db.query(Project).filter(Project.id == document_id).first()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     if not project.odl_document:
         raise HTTPException(status_code=404, detail="ODL-SD document not generated for this project")
-    
+
     try:
         odl_doc_dict = json.loads(project.odl_document)
         return odl_doc_dict
@@ -469,18 +469,18 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
 async def validate_document(document_id: str, db: Session = Depends(get_db)):
     """Validate ODL-SD document against schema"""
     project = db.query(Project).filter(Project.id == document_id).first()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     if not project.odl_document:
         raise HTTPException(status_code=404, detail="ODL-SD document not found")
-    
+
     try:
         odl_doc_dict = json.loads(project.odl_document)
         odl_doc = OdlSdDocument(**odl_doc_dict)
         is_valid, errors = odl_doc.validate_document()
-        
+
         return DocumentValidationResponse(
             is_valid=is_valid,
             errors=errors,
@@ -499,19 +499,19 @@ async def validate_document(document_id: str, db: Session = Depends(get_db)):
 async def export_document(document_id: str, format: str = "json", db: Session = Depends(get_db)):
     """Export ODL-SD document in various formats"""
     project = db.query(Project).filter(Project.id == document_id).first()
-    
+
     if not project:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     if not project.odl_document:
         raise HTTPException(status_code=404, detail="ODL-SD document not found")
-    
+
     if format.lower() not in ["json", "yaml"]:
         raise HTTPException(status_code=400, detail="Unsupported format. Use 'json' or 'yaml'")
-    
+
     try:
         odl_doc_dict = json.loads(project.odl_document)
-        
+
         if format.lower() == "json":
             from fastapi.responses import JSONResponse
             return JSONResponse(
@@ -542,7 +542,7 @@ if __name__ == "__main__":
     print("  - Document versioning")
     print("  - Export (JSON/YAML)")
     print("Demo credentials: admin@originfd.com / admin")
-    
+
     uvicorn.run(
         "odl_sd_api:app",
         host="0.0.0.0",

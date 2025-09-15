@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const rfqData = await request.json()
-    
+
     const newRFQ: RFQRequest = {
       id: `rfq_${Date.now()}`,
       ...rfqData,
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     mockRFQs.push(newRFQ)
     console.log('Created new RFQ:', newRFQ.id)
-    
+
     return NextResponse.json(newRFQ, { status: 201 })
   } catch (error) {
     console.error('Error creating RFQ:', error)

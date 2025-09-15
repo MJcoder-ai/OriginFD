@@ -25,9 +25,9 @@ import { componentAPI } from '@/lib/api-client'
 import type { ComponentResponse } from '@/lib/types'
 
 // Inline UI components for missing dependencies
-const Badge = ({ children, variant = "secondary", className = "" }: { 
-  children: React.ReactNode; 
-  variant?: "secondary" | "outline"; 
+const Badge = ({ children, variant = "secondary", className = "" }: {
+  children: React.ReactNode;
+  variant?: "secondary" | "outline";
   className?: string;
 }) => (
   <span className={cn(
@@ -89,18 +89,18 @@ const getComplianceDisplay = (certificates?: Array<{standard: string, valid_unti
   if (!certificates || certificates.length === 0) {
     return { icon: AlertCircle, color: 'text-red-600', label: 'No Certificates' }
   }
-  
+
   const now = new Date()
   const expiringSoon = certificates.some(cert => {
     const validUntil = new Date(cert.valid_until)
     const monthsUntilExpiry = (validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
     return monthsUntilExpiry < 6
   })
-  
+
   if (expiringSoon) {
     return { icon: AlertCircle, color: 'text-orange-600', label: 'Expiring Soon' }
   }
-  
+
   return { icon: CheckCircle, color: 'text-green-600', label: `${certificates.length} Certs` }
 }
 
@@ -420,27 +420,27 @@ export function ComponentSelector({
                                 {identity.brand} {identity.part_number}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {identity.rating_w}W • {identity.classification?.unspsc ? 
+                                {identity.rating_w}W • {identity.classification?.unspsc ?
                                   (identity.classification.unspsc === '26111704' ? 'PV Modules' :
                                    identity.classification.unspsc === '26111705' ? 'Inverters' :
                                    identity.classification.unspsc === '26111706' ? 'Batteries' : 'Component')
                                   : 'Component'}
                               </p>
-                              
+
                               {/* ODL-SD v4.1 status indicators */}
                               <div className="flex items-center gap-2 mt-1">
                                 <div className={cn("flex items-center gap-1 px-1.5 py-0.5 rounded text-xs", statusDisplay.bg)}>
                                   <StatusIcon className={cn("h-3 w-3", statusDisplay.color)} />
                                   <span className={statusDisplay.color}>{statusDisplay.label}</span>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-1">
                                   <ComplianceIcon className={cn("h-3 w-3", complianceDisplay.color)} />
                                   <span className={cn("text-xs", complianceDisplay.color)}>
                                     {complianceDisplay.label}
                                   </span>
                                 </div>
-                                
+
                                 {hasInventory && (
                                   <div className="flex items-center gap-1">
                                     <Warehouse className="h-3 w-3 text-blue-600" />
@@ -450,7 +450,7 @@ export function ComponentSelector({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                             {component.component_management.warranty.terms.duration_years > 0 && (
                               <Badge variant="outline" className="text-xs">

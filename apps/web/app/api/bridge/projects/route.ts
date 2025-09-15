@@ -10,11 +10,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Generate a new project ID using UUID format
     const newId = `proj_${crypto.randomUUID()}`
     const now = new Date().toISOString()
-    
+
     const newProject = {
       id: newId,
       project_name: body.project_name,
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
       created_at: now,
       updated_at: now,
     }
-    
+
     // Add to shared data store
     addProject(newProject)
-    
+
     // Simulate successful creation
     return NextResponse.json(newProject, { status: 201 })
   } catch (error) {

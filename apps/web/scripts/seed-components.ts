@@ -3,7 +3,7 @@ import { join } from 'path'
 
 // Component data generator
 function generateComponents() {
-  const components = []
+  const components: any[] = []
   let idCounter = 1
 
   // Solar Panels (Generation)
@@ -68,7 +68,7 @@ function generateComponents() {
         component_id: `${inverter.series}_${rating}W`,
         brand: inverter.brand,
         part_number: `${inverter.series}-${rating}TL`,
-        category: "conversion", 
+        category: "conversion",
         status: Math.random() > 0.15 ? "available" : "draft",
         domain: "PV",
         rating_w: rating,
@@ -111,7 +111,7 @@ function generateComponents() {
         brand: battery.brand,
         part_number: `${battery.series}-${Math.floor(rating/1000)}`,
         category: "storage",
-        status: Math.random() > 0.2 ? "available" : "draft", 
+        status: Math.random() > 0.2 ? "available" : "draft",
         domain: "BESS",
         rating_w: rating,
         voltage_v: parseFloat(voltage.toFixed(1)),
@@ -187,7 +187,7 @@ function generateComponents() {
         brand: protector.brand,
         part_number: `${protector.series}-40-${rating}-P`,
         category: "protection",
-        status: "available", 
+        status: "available",
         domain: "PV",
         rating_w: rating,
         voltage_v: rating,
@@ -218,7 +218,7 @@ const stats = {
   total_components: allComponents.length,
   active_components: allComponents.filter(c => c.status === "available").length,
   draft_components: allComponents.filter(c => c.status === "draft").length,
-  categories: {}
+  categories: {} as Record<string, number>
 }
 
 // Count categories

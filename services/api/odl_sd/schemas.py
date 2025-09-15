@@ -36,7 +36,7 @@ class Timestamps(BaseModel):
     """Document timestamps"""
     created_at: str = Field(description="ISO 8601 timestamp")
     updated_at: str = Field(description="ISO 8601 timestamp")
-    
+
     @validator('created_at', 'updated_at')
     def validate_iso_timestamp(cls, v):
         """Validate ISO 8601 timestamp format"""
@@ -117,7 +117,7 @@ class ComponentInstance(BaseModel):
 
 class Connection(BaseModel):
     """System connection definition"""
-    id: str = Field(description="Unique connection identifier") 
+    id: str = Field(description="Unique connection identifier")
     from_component: str = Field(description="Source component ID")
     to_component: str = Field(description="Target component ID")
     connection_type: str = Field(description="Connection type")
@@ -157,7 +157,7 @@ class OdlSdDocument(BaseModel):
     analysis: List[AnalysisResult] = Field(default_factory=list, description="Analysis results")
     audit: List[AuditEntry] = Field(default_factory=list, description="Audit trail")
     data_management: DataManagement = Field(default_factory=DataManagement, description="Data management config")
-    
+
     class Config:
         validate_by_name = True
         json_encoders = {
@@ -170,16 +170,16 @@ class OdlSdDocument(BaseModel):
         Returns: (is_valid, error_messages)
         """
         errors = []
-        
+
         try:
             # Validate required fields
             if not self.meta.project:
                 errors.append("Project name is required")
-            
+
             # Validate hierarchy structure
             if not self.hierarchy:
                 errors.append("Hierarchy definition is required")
-            
+
             # Validate instance references
             instance_ids = {inst.id for inst in self.instances}
             for connection in self.connections:
@@ -187,9 +187,9 @@ class OdlSdDocument(BaseModel):
                     errors.append(f"Connection references unknown component: {connection.from_component}")
                 if connection.to_component not in instance_ids:
                     errors.append(f"Connection references unknown component: {connection.to_component}")
-            
+
             return len(errors) == 0, errors
-            
+
         except Exception as e:
             errors.append(f"Validation error: {str(e)}")
             return False, errors

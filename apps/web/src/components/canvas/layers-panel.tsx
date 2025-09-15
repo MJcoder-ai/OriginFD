@@ -12,10 +12,10 @@ export function LayersPanel({
     onChange(active.includes(k) ? active.filter(x => x !== k) : [...active, k])
   }
   const Chip = ({ k, label }: { k: LayerKey; label: string }) => (
-    <Button 
-      size="sm" 
-      variant={active.includes(k) ? 'default' : 'outline'} 
-      onClick={() => toggle(k)} 
+    <Button
+      size="sm"
+      variant={active.includes(k) ? 'default' : 'outline'}
+      onClick={() => toggle(k)}
       className="h-6 px-2 text-xs"
     >
       {label}

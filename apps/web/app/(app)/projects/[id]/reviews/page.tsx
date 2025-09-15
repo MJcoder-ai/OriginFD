@@ -35,7 +35,7 @@ export default function ProjectReviewsPage() {
       type: 'Design Review',
     },
     {
-      id: 'review-2', 
+      id: 'review-2',
       title: 'Safety Compliance Check',
       description: 'Review safety protocols and regulatory compliance',
       status: 'In Progress',
@@ -200,8 +200,8 @@ export default function ProjectReviewsPage() {
                     </div>
                   </div>
                 </div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -252,9 +252,9 @@ export default function ProjectReviewsPage() {
                     Review
                   </Button>
                 </div>
-                
+
                 {/* Review Actions Component */}
-                <ReviewActions 
+                <ReviewActions
                   projectId={projectId}
                   source={review.assignee}
                   target={review.reviewer}

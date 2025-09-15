@@ -103,7 +103,7 @@ export class OriginFDClient {
 
   private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
     const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
@@ -121,14 +121,14 @@ export class OriginFDClient {
     if (!response.ok) {
       const errorText = await response.text()
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-      
+
       try {
         const errorData = JSON.parse(errorText)
         errorMessage = errorData.detail || errorMessage
       } catch {
         // Use default message if JSON parsing fails
       }
-      
+
       throw new ApiError(errorMessage, response.status, errorText)
     }
 
@@ -244,7 +244,7 @@ export class OriginFDClient {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
-    
+
     this.authTokens = {
       accessToken: response.access_token,
       refreshToken: response.refresh_token,
@@ -336,13 +336,13 @@ export class OriginFDClient {
     status?: string;
   } = {}): Promise<any> {
     const searchParams = new URLSearchParams()
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         searchParams.append(key, String(value))
       }
     })
-    
+
     const query = searchParams.toString()
     return this.request(`components${query ? '?' + query : ''}`)
   }

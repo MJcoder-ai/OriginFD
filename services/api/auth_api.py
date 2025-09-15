@@ -28,7 +28,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://localhost:3001", 
+        "http://localhost:3001",
         "http://localhost:3002",
         "http://localhost:3003",
         "http://localhost:3004",
@@ -107,24 +107,24 @@ async def health():
 async def login(login_request: LoginRequest):
     """Login with email and password"""
     user = authenticate_user(login_request.email, login_request.password)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Create token data
     token_data = {
         "sub": user["id"],
         "email": user["email"],
         "roles": user["roles"]
     }
-    
+
     # Create token pair
     access_token, refresh_token = create_token_pair(token_data)
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -138,32 +138,32 @@ async def refresh_token(refresh_request: RefreshRequest):
     try:
         # Verify refresh token
         payload = verify_token(refresh_request.refresh_token, token_type="refresh")
-        
+
         user_id = payload.get("sub")
         user = get_user_by_id(user_id)
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found"
             )
-        
+
         # Create new token data
         token_data = {
             "sub": user["id"],
             "email": user["email"],
             "roles": user["roles"]
         }
-        
+
         # Create new token pair
         access_token, new_refresh_token = create_token_pair(token_data)
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=new_refresh_token,
             expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
-        
+
     except HTTPException:
         raise
     except Exception:
@@ -201,7 +201,7 @@ async def list_projects(current_user: CurrentUser):
     projects = [
         {
             "id": "proj-1",
-            "project_name": "Solar Farm Arizona Phase 1", 
+            "project_name": "Solar Farm Arizona Phase 1",
             "domain": "PV",
             "scale": "UTILITY",
             "current_version": 3,
@@ -211,10 +211,10 @@ async def list_projects(current_user: CurrentUser):
             "updated_at": "2024-01-20T14:30:00Z"
         },
         {
-            "id": "proj-2", 
+            "id": "proj-2",
             "project_name": "Commercial BESS Installation",
             "domain": "BESS",
-            "scale": "COMMERCIAL", 
+            "scale": "COMMERCIAL",
             "current_version": 1,
             "content_hash": "def456",
             "is_active": True,
@@ -224,7 +224,7 @@ async def list_projects(current_user: CurrentUser):
         {
             "id": "proj-3",
             "project_name": "Hybrid Microgrid Campus",
-            "domain": "HYBRID", 
+            "domain": "HYBRID",
             "scale": "INDUSTRIAL",
             "current_version": 2,
             "content_hash": "ghi789",
@@ -233,7 +233,7 @@ async def list_projects(current_user: CurrentUser):
             "updated_at": "2024-01-23T11:45:00Z"
         }
     ]
-    
+
     return {"projects": projects}
 
 
@@ -256,12 +256,12 @@ async def get_project(project_id: str, current_user: CurrentUser):
 
 @app.post("/projects", response_model=ProjectResponse)
 async def create_project(
-    project_data: ProjectCreateRequest, 
+    project_data: ProjectCreateRequest,
     current_user: EngineerUser
 ):
     """Create new project (requires engineer role)"""
     import uuid
-    
+
     return ProjectResponse(
         id=str(uuid.uuid4()),
         project_name=project_data.project_name,
@@ -302,7 +302,7 @@ async def get_document(document_id: str, current_user: CurrentUser):
 async def list_users(admin_user: AdminUser):
     """List all users (admin only)"""
     from core.auth import MOCK_USERS_DB
-    
+
     users = []
     for user_data in MOCK_USERS_DB.values():
         users.append({
@@ -312,7 +312,7 @@ async def list_users(admin_user: AdminUser):
             "is_active": user_data["is_active"],
             "roles": user_data["roles"]
         })
-    
+
     return {"users": users}
 
 
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     print("Demo credentials:")
     print("  Admin: admin@originfd.com / admin")
     print("  User:  user@originfd.com / password")
-    
+
     uvicorn.run(
         "auth_api:app",
         host="0.0.0.0",

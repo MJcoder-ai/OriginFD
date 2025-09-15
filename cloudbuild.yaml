@@ -65,19 +65,19 @@ steps:
         echo "Creating VPC network and subnet..."
         gcloud compute networks create ${_NETWORK} \
           --subnet-mode=custom || echo "Network already exists"
-        
+
         gcloud compute networks subnets create ${_SUBNET} \
           --network=${_NETWORK} \
           --range=10.0.0.0/28 \
           --region=${_REGION} || echo "Subnet already exists"
-        
+
         echo "Setting up Service Networking for private services..."
         gcloud compute addresses create google-managed-services-${_NETWORK} \
           --global \
           --purpose=VPC_PEERING \
           --prefix-length=16 \
           --network=${_NETWORK} || echo "Service networking range already exists"
-        
+
         gcloud services vpc-peerings connect \
           --service=servicenetworking.googleapis.com \
           --ranges=google-managed-services-${_NETWORK} \
@@ -100,10 +100,10 @@ steps:
           --assign-ip \
           --authorized-networks=0.0.0.0/0 \
           --deletion-protection || echo "Instance already exists"
-        
+
         echo "Creating database..."
         gcloud sql databases create originfd --instance=${_POSTGRES_INSTANCE} || echo "Database already exists"
-        
+
         echo "Setting up database user..."
         # User will be created with password in secrets setup step
         gcloud sql users create originfd-user \
@@ -145,23 +145,23 @@ steps:
       - '-c'
       - |
         echo "Creating secrets in Secret Manager..."
-        
+
         # Generate JWT secret
         JWT_SECRET_VALUE=$$(openssl rand -base64 64)
         echo -n "$$JWT_SECRET_VALUE" | gcloud secrets create jwt-secret-key --data-file=- || echo "JWT secret already exists"
-        
+
         # Get database connection string
         DB_HOST=$$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(ipAddresses[0].ipAddress)")
         DB_PASSWORD=$$(openssl rand -base64 32)
         DATABASE_URL="postgresql://originfd-user:$$DB_PASSWORD@$$DB_HOST:5432/originfd"
         echo -n "$$DATABASE_URL" | gcloud secrets create database-url --data-file=- || echo "Database URL secret already exists"
-        
+
         # Update the user password to match what we store in the secret
         gcloud sql users set-password originfd-user \
           --instance=${_POSTGRES_INSTANCE} \
           --password=$$DB_PASSWORD || echo "Password already set"
-        
-        # Get Redis connection string  
+
+        # Get Redis connection string
         REDIS_HOST=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(host)")
         REDIS_PORT=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(port)")
         REDIS_URL="redis://$$REDIS_HOST:$$REDIS_PORT/0"
@@ -328,7 +328,7 @@ steps:
       - |
         # Get API service URL for frontend configuration
         API_URL=$$(gcloud run services describe api --region=${_REGION} --format="value(status.url)")
-        
+
         gcloud run deploy web \
           --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA \
           --region=${_REGION} \
@@ -355,10 +355,10 @@ steps:
           --set-env-vars="ENVIRONMENT=production" \
           --task-timeout=600 \
           --replace || echo "Migration job already exists"
-        
+
         # Execute the migration job
         gcloud run jobs execute db-migrate --region=${_REGION} --wait
-        
+
         # Clean up the migration job after completion
         gcloud run jobs delete db-migrate --region=${_REGION} --quiet || echo "Job cleanup failed"
 
@@ -370,24 +370,24 @@ steps:
       - '-c'
       - |
         echo "Setting up Cloud Load Balancer..."
-        
+
         # Create backend service for web frontend
         gcloud compute backend-services create originfd-web-backend \
           --global \
           --load-balancing-scheme=EXTERNAL_MANAGED \
           --protocol=HTTP || echo "Backend service already exists"
-        
+
         # Create URL map
         gcloud compute url-maps create originfd-url-map \
           --default-backend-service=originfd-web-backend || echo "URL map already exists"
-        
+
         # Create HTTP(S) proxy
         gcloud compute target-http-proxies create originfd-http-proxy \
           --url-map=originfd-url-map || echo "HTTP proxy already exists"
-        
+
         # Reserve external IP
         gcloud compute addresses create originfd-ip --global || echo "IP already reserved"
-        
+
         # Create forwarding rule
         EXTERNAL_IP=$$(gcloud compute addresses describe originfd-ip --global --format="value(address)")
         gcloud compute forwarding-rules create originfd-http-rule \
@@ -406,7 +406,7 @@ timeout: 3600s # 1 hour timeout for complete deployment
 
 # Required IAM permissions for Cloud Build service account:
 # - Cloud SQL Admin
-# - Redis Admin  
+# - Redis Admin
 # - VPC Access Admin
 # - Cloud Run Admin
 # - Artifact Registry Writer
@@ -419,7 +419,7 @@ timeout: 3600s # 1 hour timeout for complete deployment
 # gcloud projects add-iam-policy-binding originfd \
 #   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
 #   --role="roles/cloudsql.admin"
-# 
+#
 # gcloud projects add-iam-policy-binding originfd \
 #   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
 #   --role="roles/redis.admin"

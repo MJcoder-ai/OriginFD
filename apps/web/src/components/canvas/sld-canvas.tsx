@@ -53,15 +53,15 @@ export function SLDCanvas({
     (document?.instances?.length ? { instances: document.instances, connections: (document.connections ?? []) } : deriveFromLibraries(document))
 
   // Filter by AC/DC layer selections
-  const filtered = connections.filter(c => (c.connection_type?.startsWith('ac') ? activeLayers.includes('ac') : true)
+  const filtered = connections.filter((c: any) => (c.connection_type?.startsWith('ac') ? activeLayers.includes('ac') : true)
     && (c.connection_type?.startsWith('dc') ? activeLayers.includes('dc') : true))
 
   // Compute layout positions
   const [positions, setPositions] = React.useState<Record<string, { x: number; y: number }>>({})
   React.useEffect(() => {
     computeLayout(
-      instances.map(i => ({ id: i.id, width: 140, height: 56, type: (i as any).type })),
-      filtered.map(e => ({ id: e.id, from_instance_id: e.from_instance_id, to_instance_id: e.to_instance_id, connection_type: (e as any).connection_type })),
+      instances.map((i: any) => ({ id: i.id, width: 140, height: 56, type: (i as any).type })),
+      filtered.map((e: any) => ({ id: e.id, from_instance_id: e.from_instance_id, to_instance_id: e.to_instance_id, connection_type: (e as any).connection_type })),
       layoutEngine
     ).then(setPositions)
   }, [instances, filtered, layoutEngine])

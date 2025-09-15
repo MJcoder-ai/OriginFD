@@ -6,10 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
-import { 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
   Check,
   Upload,
   Zap,
@@ -48,8 +48,7 @@ import {
   TabsList,
   TabsTrigger
 } from '@originfd/ui'
-import { componentAPI, ComponentCreateRequest } from '@/lib/api-client'
-import type { ComponentCategory, ComponentDomain, ComponentScale } from '@/lib/types'
+import { componentAPI } from '@/lib/api-client'
 
 const componentSchema = z.object({
   brand: z.string().min(1, 'Brand is required').max(64, 'Brand must be less than 64 characters'),
@@ -126,7 +125,7 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
 
   const createComponentMutation = useMutation({
     mutationFn: async (data: ComponentFormData) => {
-      const request: ComponentCreateRequest = {
+      const request: any = {
         brand: data.brand,
         part_number: data.part_number,
         rating_w: data.rating_w,
@@ -185,13 +184,13 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
     try {
       // TODO: Integrate with AI orchestrator for datasheet parsing
       await new Promise(resolve => setTimeout(resolve, 3000)) // Mock delay
-      
+
       // Mock AI-extracted data
       form.setValue('rating_w', 400)
       form.setValue('category', 'generation')
       form.setValue('subcategory', 'pv_module')
       form.setValue('classification.unspsc', '26111701')
-      
+
       toast.success('Datasheet parsed successfully! Review the extracted information.')
     } catch (error) {
       toast.error('Failed to parse datasheet')
@@ -215,8 +214,8 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
           {steps.map((step, index) => (
             <div key={index} className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                index <= currentStep 
-                  ? 'bg-primary border-primary text-primary-foreground' 
+                index <= currentStep
+                  ? 'bg-primary border-primary text-primary-foreground'
                   : 'border-muted-foreground text-muted-foreground'
               }`}>
                 {index < currentStep ? <Check className="w-4 h-4" /> : index + 1}
@@ -299,7 +298,7 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
                         className={`cursor-pointer transition-colors ${
                           isSelected ? 'ring-2 ring-primary' : 'hover:bg-muted/50'
                         }`}
-                        onClick={() => form.setValue('category', option.value as ComponentCategory)}
+                        onClick={() => form.setValue('category', option.value as any)}
                       >
                         <CardContent className="p-3">
                           <div className="flex items-center space-x-2">
@@ -330,7 +329,7 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
                   <Label>Domain</Label>
                   <Select
                     value={form.watch('domain') || ''}
-                    onValueChange={(value) => form.setValue('domain', value as ComponentDomain)}
+                    onValueChange={(value) => form.setValue('domain', value as any)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select domain" />
@@ -355,7 +354,7 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
                   <Label>Scale</Label>
                   <Select
                     value={form.watch('scale') || ''}
-                    onValueChange={(value) => form.setValue('scale', value as ComponentScale)}
+                    onValueChange={(value) => form.setValue('scale', value as any)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select scale" />
@@ -508,7 +507,7 @@ export function ComponentCreationWizard({ open, onOpenChange }: ComponentCreatio
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Category</Label>

@@ -55,11 +55,11 @@ interface LoadingStateProps {
   className?: string
 }
 
-export const LoadingState = ({ 
-  isLoading, 
-  children, 
+export const LoadingState = ({
+  isLoading,
+  children,
   fallback,
-  className 
+  className
 }: LoadingStateProps) => {
   if (isLoading) {
     return (

@@ -47,7 +47,7 @@ function generateInventoryData(componentIds: string[]) {
       const available = Math.floor(Math.random() * 100) + 1
       const reserved = Math.floor(Math.random() * 20)
       const onOrder = Math.floor(Math.random() * 50)
-      
+
       inventoryRecords.push({
         component_id: componentId,
         warehouse_location: warehouse,
@@ -102,25 +102,25 @@ let mockTransactionData: InventoryTransaction[] = []
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     // Check if this is a transactions request
     if (request.url.includes('/transactions')) {
       if (!mockTransactionData.length) {
         mockTransactionData = generateTransactionData()
       }
-      
+
       const componentId = searchParams.get('component_id')
       let filteredTransactions = mockTransactionData
-      
+
       if (componentId) {
         filteredTransactions = mockTransactionData.filter(t => t.component_id === componentId)
       }
-      
+
       const page = parseInt(searchParams.get('page') || '1', 10)
       const pageSize = parseInt(searchParams.get('page_size') || '20', 10)
       const start = (page - 1) * pageSize
       const end = start + pageSize
-      
+
       return NextResponse.json({
         transactions: filteredTransactions.slice(start, end),
         total: filteredTransactions.length,
@@ -129,38 +129,38 @@ export async function GET(request: NextRequest) {
         total_pages: Math.ceil(filteredTransactions.length / pageSize)
       })
     }
-    
+
     // Generate inventory data if not exists
     if (!mockInventoryData.length) {
       const componentIds = Array.from({length: 115}, (_, i) => `comp_${String(i + 1).padStart(3, '0')}`)
       mockInventoryData = generateInventoryData(componentIds)
     }
-    
+
     const componentId = searchParams.get('component_id')
     const warehouse = searchParams.get('warehouse')
     const lowStock = searchParams.get('low_stock') === 'true'
-    
+
     let filteredInventory = mockInventoryData
-    
+
     if (componentId) {
       filteredInventory = filteredInventory.filter(inv => inv.component_id === componentId)
     }
-    
+
     if (warehouse) {
       filteredInventory = filteredInventory.filter(inv => inv.warehouse_location === warehouse)
     }
-    
+
     if (lowStock) {
       filteredInventory = filteredInventory.filter(inv => inv.quantity_available <= inv.reorder_level)
     }
-    
+
     const page = parseInt(searchParams.get('page') || '1', 10)
     const pageSize = parseInt(searchParams.get('page_size') || '20', 10)
     const start = (page - 1) * pageSize
     const end = start + pageSize
-    
+
     console.log(`Fetching inventory: ${filteredInventory.length} records (page ${page})`)
-    
+
     return NextResponse.json({
       inventory: filteredInventory.slice(start, end),
       total: filteredInventory.length,
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
       page_size: pageSize,
       total_pages: Math.ceil(filteredInventory.length / pageSize)
     })
-    
+
   } catch (error) {
     console.error('Error fetching inventory:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Check if this is a transaction creation
     if (body.transaction_type) {
       const newTransaction = {
@@ -194,9 +194,9 @@ export async function POST(request: NextRequest) {
         created_by: body.created_by || 'user',
         created_at: new Date().toISOString()
       }
-      
+
       mockTransactionData.unshift(newTransaction)
-      
+
       // Update inventory quantities based on transaction
       const inventoryRecord = mockInventoryData.find(inv => inv.component_id === body.component_id)
       if (inventoryRecord) {
@@ -213,11 +213,11 @@ export async function POST(request: NextRequest) {
         }
         inventoryRecord.last_updated = new Date().toISOString()
       }
-      
+
       console.log('Created inventory transaction:', newTransaction.id)
       return NextResponse.json(newTransaction, { status: 201 })
     }
-    
+
     // Create new inventory record
     const newInventory = {
       component_id: body.component_id,
@@ -231,12 +231,12 @@ export async function POST(request: NextRequest) {
       last_updated: new Date().toISOString(),
       location_details: body.location_details || {}
     }
-    
+
     mockInventoryData.push(newInventory)
-    
+
     console.log('Created inventory record for component:', newInventory.component_id)
     return NextResponse.json(newInventory, { status: 201 })
-    
+
   } catch (error) {
     console.error('Error creating inventory record:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -249,29 +249,29 @@ export async function PUT(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const componentId = searchParams.get('component_id')
     const warehouse = searchParams.get('warehouse')
-    
+
     if (!componentId) {
       return NextResponse.json({ error: 'Component ID required' }, { status: 400 })
     }
-    
-    const inventoryIndex = mockInventoryData.findIndex(inv => 
-      inv.component_id === componentId && 
+
+    const inventoryIndex = mockInventoryData.findIndex(inv =>
+      inv.component_id === componentId &&
       (!warehouse || inv.warehouse_location === warehouse)
     )
-    
+
     if (inventoryIndex === -1) {
       return NextResponse.json({ error: 'Inventory record not found' }, { status: 404 })
     }
-    
+
     mockInventoryData[inventoryIndex] = {
       ...mockInventoryData[inventoryIndex],
       ...body,
       last_updated: new Date().toISOString()
     }
-    
+
     console.log('Updated inventory record for component:', componentId)
     return NextResponse.json(mockInventoryData[inventoryIndex])
-    
+
   } catch (error) {
     console.error('Error updating inventory:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

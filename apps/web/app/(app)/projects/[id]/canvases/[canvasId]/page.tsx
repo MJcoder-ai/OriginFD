@@ -76,27 +76,27 @@ export default function CanvasPage() {
           <div className="h-4 w-px bg-border mx-3" />
           <LayersPanel active={layers} onChange={setLayers} />
         </div>
-        
+
         <div className="absolute right-4 flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowShortcuts(!showShortcuts)}
             title="Keyboard Shortcuts"
           >
             <Keyboard className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowInspector(!showInspector)}
             title="Toggle Inspector"
           >
             <Settings className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={async () => {
               if (!containerRef.current) return
               await exportCanvasSVGToPDF(containerRef.current, `${type}-${canvasId}.pdf`)
@@ -114,7 +114,7 @@ export default function CanvasPage() {
         <div className="flex-1 relative bg-card" ref={containerRef}>
           {/* Canvas Grid Overlay */}
           {showGrid && (
-            <div 
+            <div
               className="absolute inset-0 pointer-events-none opacity-20"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='grid' width='20' height='20' patternUnits='userSpaceOnUse'%3e%3cpath d='M 20 0 L 0 0 0 20' fill='none' stroke='%23d1d5db' stroke-width='1'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100%25' height='100%25' fill='url(%23grid)' /%3e%3c/svg%3e")`,
@@ -125,11 +125,11 @@ export default function CanvasPage() {
           <ErrorBoundary>
             <CanvasBusProvider>
               {type === 'sld' ? (
-                <SLDCanvas 
-                  projectId={projectId} 
-                  document={doc} 
-                  scope={canvasId.replace('sld-', '')} 
-                  activeLayers={layers.filter((l): l is 'ac'|'dc' => l === 'ac' || l === 'dc')} 
+                <SLDCanvas
+                  projectId={projectId}
+                  document={doc}
+                  scope={canvasId.replace('sld-', '')}
+                  activeLayers={layers.filter((l): l is 'ac'|'dc' => l === 'ac' || l === 'dc')}
                 />
               ) : (
                 <SiteCanvas projectId={projectId} document={doc} activeLayers={layers} />
@@ -150,27 +150,27 @@ export default function CanvasPage() {
 
           {/* Floating Zoom Controls */}
           <div className="absolute bottom-4 right-4 bg-card border border-border rounded-lg shadow-md flex flex-col z-10">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setZoom(Math.min(200, zoom + 25))}
               className="h-8 w-8 p-0 rounded-b-none border-b hover:bg-muted transition-colors"
               title="Zoom In (Ctrl + +)"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setZoom(100)}
               className="h-8 w-8 p-0 rounded-none border-b text-xs font-medium hover:bg-muted transition-colors"
               title="Reset to 100% (Ctrl + 0)"
             >
               <span className="text-xs font-mono">{zoom}%</span>
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setZoom(Math.max(25, zoom - 25))}
               className="h-8 w-8 p-0 rounded-t-none hover:bg-muted transition-colors"
               title="Zoom Out (Ctrl + -)"
@@ -188,15 +188,15 @@ export default function CanvasPage() {
             </div>
             <div className="w-full h-14 bg-gradient-to-br from-background to-muted rounded border border-border relative overflow-hidden cursor-pointer hover:border-primary transition-colors">
               {/* Grid pattern background */}
-              <div 
+              <div
                 className="absolute inset-0 opacity-30"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3csvg width='8' height='8' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='grid' width='8' height='8' patternUnits='userSpaceOnUse'%3e%3cpath d='M 8 0 L 0 0 0 8' fill='none' stroke='%23a8a8a8' stroke-width='0.5'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100%25' height='100%25' fill='url(%23grid)' /%3e%3c/svg%3e")`,
                 }}
               />
-              
+
               {/* Current view indicator */}
-              <div 
+              <div
                 className="absolute bg-primary/20 border border-primary rounded-sm"
                 style={{
                   left: '20%',
@@ -206,7 +206,7 @@ export default function CanvasPage() {
                 }}
                 title="Current View"
               />
-              
+
               {/* Component indicators */}
               <div className="absolute w-1 h-1 bg-blue-600 rounded-full shadow-sm" style={{left: '35%', top: '40%'}} />
               <div className="absolute w-1 h-1 bg-green-600 rounded-full shadow-sm" style={{left: '55%', top: '35%'}} />
@@ -220,9 +220,9 @@ export default function CanvasPage() {
               <div className="bg-card rounded-lg shadow-xl border border-border p-6 max-w-md w-full mx-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-foreground">Keyboard Shortcuts</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowShortcuts(false)}
                     className="h-6 w-6 p-0"
                   >
@@ -285,9 +285,9 @@ export default function CanvasPage() {
           <div className="w-80 border-l border-border bg-card flex flex-col">
             <div className="flex items-center justify-between p-3 border-b border-border">
               <h3 className="text-sm font-medium text-foreground">Inspector</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowInspector(false)}
                 className="h-6 w-6 p-0"
               >
@@ -299,11 +299,11 @@ export default function CanvasPage() {
             </div>
           </div>
         )}
-        
+
         {/* Inspector Toggle Button (when hidden) */}
         {!showInspector && (
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => setShowInspector(true)}
             className="absolute top-4 right-4 h-8 w-8 p-0 bg-card border border-border shadow-sm z-10"

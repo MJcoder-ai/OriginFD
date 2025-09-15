@@ -56,12 +56,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     """Create JWT access token."""
     settings = get_settings()
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -102,7 +102,7 @@ async def get_current_user(
     """Get current authenticated user."""
     token = credentials.credentials
     payload = decode_token(token)
-    
+
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
@@ -110,7 +110,7 @@ async def get_current_user(
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # TODO: Get user from database
     # user = db.query(User).filter(User.id == user_id).first()
     # if user is None:
@@ -118,7 +118,7 @@ async def get_current_user(
     #         status_code=status.HTTP_401_UNAUTHORIZED,
     #         detail="User not found"
     #     )
-    
+
     # Mock user for now
     return {
         "id": user_id,
@@ -135,7 +135,7 @@ async def login(login_request: LoginRequest, db: Session = Depends(SessionDep)):
     """
     # Get user from database
     user = db.query(User).filter(User.email == login_request.email).first()
-    
+
     # Check if user exists and password is correct
     if not user or not verify_password(login_request.password, user.hashed_password):
         # Check for demo credentials as fallback
@@ -157,28 +157,28 @@ async def login(login_request: LoginRequest, db: Session = Depends(SessionDep)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account is deactivated"
             )
-        
+
         # Check if account is locked
         if user.is_locked():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account is temporarily locked"
             )
-        
+
         # Update last login
         user.update_last_login()
         db.commit()
-        
+
         user_data = {
             "sub": str(user.id),
             "email": user.email,
             "roles": user.roles
         }
-    
+
     settings = get_settings()
     access_token = create_access_token(user_data)
     refresh_token = create_refresh_token({"sub": user_data["sub"]})
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -196,20 +196,20 @@ async def refresh_token(
     """
     token = credentials.credentials
     payload = decode_token(token)
-    
+
     if payload.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token"
         )
-    
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token"
         )
-    
+
     # TODO: Get user from database and verify they're still active
     # user = db.query(User).filter(User.id == user_id).first()
     # if not user or not user.is_active:
@@ -217,18 +217,18 @@ async def refresh_token(
     #         status_code=status.HTTP_401_UNAUTHORIZED,
     #         detail="User not found or inactive"
     #     )
-    
+
     # Mock user data for now
     user_data = {
         "sub": user_id,
         "email": "admin@originfd.com",
         "roles": ["admin", "engineer"]
     }
-    
+
     settings = get_settings()
     access_token = create_access_token(user_data)
     new_refresh_token = create_refresh_token({"sub": user_id})
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=new_refresh_token,

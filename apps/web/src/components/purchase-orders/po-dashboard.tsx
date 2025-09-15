@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { PurchaseOrder, POStatus, ApprovalStep } from '@/lib/types'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   Button,
   Badge,
@@ -101,12 +101,12 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
     queryFn: async () => {
       let url = '/api/bridge/purchase-orders'
       const params = new URLSearchParams()
-      
+
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (searchTerm) params.append('search', searchTerm)
-      
+
       if (params.toString()) url += `?${params.toString()}`
-      
+
       const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to fetch purchase orders')
       return response.json()
@@ -167,7 +167,7 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
 
   const handleApproval = () => {
     if (!selectedPO) return
-    
+
     approvalMutation.mutate({
       poId: selectedPO.id,
       action: approvalAction,
@@ -206,8 +206,8 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
   const stats = getStatusStats()
 
   const getPendingApprovals = () => {
-    return purchaseOrders.filter((po: PurchaseOrder) => 
-      po.status === 'pending_approval' && 
+    return purchaseOrders.filter((po: PurchaseOrder) =>
+      po.status === 'pending_approval' &&
       po.approval_workflow.current_step <= po.approval_workflow.required_approvals.length
     )
   }
@@ -262,7 +262,7 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
             <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
@@ -448,7 +448,7 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
                                       <div><strong>Status:</strong> <Badge variant="outline">{po.supplier.status}</Badge></div>
                                     </CardContent>
                                   </Card>
-                                  
+
                                   <Card>
                                     <CardHeader>
                                       <CardTitle className="text-sm">Order Details</CardTitle>
@@ -576,7 +576,7 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
                                     <Label>PO Number</Label>
                                     <div className="text-sm text-muted-foreground">{po.po_number}</div>
                                   </div>
-                                  
+
                                   <div>
                                     <Label>Action</Label>
                                     <Select value={approvalAction} onValueChange={(value) => setApprovalAction(value as 'approve' | 'reject')}>
@@ -589,7 +589,7 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  
+
                                   <div>
                                     <Label htmlFor="approvalNotes">Notes</Label>
                                     <Textarea
@@ -599,10 +599,10 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
                                       onChange={(e) => setApprovalNotes(e.target.value)}
                                     />
                                   </div>
-                                  
+
                                   <div className="flex justify-end space-x-2">
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       onClick={() => {
                                         setApprovalDialogOpen(false)
                                         setSelectedPO(null)
@@ -610,12 +610,12 @@ export default function PODashboard({ userRole = 'procurement' }: PODashboardPro
                                     >
                                       Cancel
                                     </Button>
-                                    <Button 
+                                    <Button
                                       onClick={handleApproval}
                                       disabled={!approvalNotes.trim() || approvalMutation.isPending}
                                       variant={approvalAction === 'approve' ? 'default' : 'destructive'}
                                     >
-                                      {approvalMutation.isPending ? 'Processing...' : 
+                                      {approvalMutation.isPending ? 'Processing...' :
                                        approvalAction === 'approve' ? 'Approve' : 'Reject'}
                                     </Button>
                                   </div>

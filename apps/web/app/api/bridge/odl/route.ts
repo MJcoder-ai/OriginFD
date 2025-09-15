@@ -4,12 +4,12 @@ import { addProject, addDocument } from '../shared-data'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Generate UUID-format project ID (to match new format)
     const projectUuid = `proj_${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
     const now = new Date().toISOString()
     const contentHash = `sha256:${Math.random().toString(36).substring(2)}`
-    
+
     const newProject = {
       id: projectUuid,
       project_name: body.project_name,
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       created_at: now,
       updated_at: now,
     }
-    
+
     // Create corresponding document
     const newDocument = {
       id: `${projectUuid}-main`,
@@ -40,14 +40,14 @@ export async function POST(request: NextRequest) {
         status: 'draft'
       }
     }
-    
+
     // Persist in mock data
     addProject(newProject)
     addDocument(newDocument)
-    
+
     console.log('Created and persisted new project:', newProject)
     console.log('Created and persisted new document:', newDocument)
-    
+
     // Return project with document reference
     return NextResponse.json({
       ...newProject,

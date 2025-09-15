@@ -122,8 +122,8 @@
 ---
 
 ## 9) Channels & Connectors
-Inbound: Chat (web), WhatsApp, Email, Google Forms/Sheets, CSV, VoIP IVR.  
-Outbound: Emails/WhatsApp, Sheets sync, CRM updates, webhooks to ERP/PSCAD/IFC.  
+Inbound: Chat (web), WhatsApp, Email, Google Forms/Sheets, CSV, VoIP IVR.
+Outbound: Emails/WhatsApp, Sheets sync, CRM updates, webhooks to ERP/PSCAD/IFC.
 Maps & Canvas: roof segmentation, geo‑anchors, **auto‑layout** & **auto‑route** with DRC.
 
 ---
@@ -135,19 +135,19 @@ Maps & Canvas: roof segmentation, geo‑anchors, **auto‑layout** & **auto‑ro
 ---
 
 ## 11) Implementation Roadmap (100 days)
-**Phase 0 (Weeks 1–2): Foundations & risk checks.**  
+**Phase 0 (Weeks 1–2): Foundations & risk checks.**
 Schemas, Patch pipeline, RBAC, audit, SIEM, Tool Registry (7 core), privacy/residency audit, golden samples.
 
-**Phase 1 (Weeks 3–6): MVP grounding & agents.**  
+**Phase 1 (Weeks 3–6): MVP grounding & agents.**
 Graph‑RAG projection; DesignEngineerAgent + SalesAdvisorAgent; CAG store; Planner Trace v1.
 
-**Phase 2 (Weeks 7–10): Sourcing & Ops.**  
+**Phase 2 (Weeks 7–10): Sourcing & Ops.**
 RFQ→PO→EPCIS; OpsSustainabilityAgent; media governance; autoroute/auto‑layout beta.
 
-**Phase 3 (Weeks 11–14): Growth.**  
+**Phase 3 (Weeks 11–14): Growth.**
 MarketingCRMAgent + RevenueOptimizerAgent; Scheduler; xAI lead gen; A/B model swaps; NPS loops.
 
-**Phase 4 (Weeks 15–16): Hardening.**  
+**Phase 4 (Weeks 15–16): Hardening.**
 Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort reporting.
 
 ---

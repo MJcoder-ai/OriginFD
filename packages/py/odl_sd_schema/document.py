@@ -74,7 +74,7 @@ class DocumentMeta(BaseModel):
     units: Units = Field(default_factory=Units)
     timestamps: Timestamps
     versioning: Versioning
-    
+
     @validator("project")
     def validate_project_name(cls, v):
         """Validate project name format."""
@@ -92,7 +92,7 @@ class DataManagement(BaseModel):
     external_refs_enabled: bool = False
     streaming_enabled: bool = False
     max_document_size_mb: int = 100
-    
+
     class Config:
         extra = "allow"
 
@@ -107,7 +107,7 @@ class OdlDocument(BaseModel):
         alias="$schema"
     )
     schema_version: str = Field(default="4.1")
-    
+
     # Core sections
     meta: DocumentMeta
     hierarchy: Optional[Hierarchy] = None
@@ -115,7 +115,7 @@ class OdlDocument(BaseModel):
     libraries: Optional[Dict[str, ComponentLibrary]] = Field(default_factory=dict)
     instances: List[ComponentInstance] = Field(default_factory=list)
     connections: List[Connection] = Field(default_factory=list)
-    
+
     # Extended sections
     structures: Optional[Dict[str, Any]] = Field(default_factory=dict)
     physical: Optional[Dict[str, Any]] = Field(default_factory=dict)
@@ -125,28 +125,28 @@ class OdlDocument(BaseModel):
     operations: Optional[Operations] = None
     esg: Optional[ESG] = None
     governance: Optional[Governance] = None
-    
+
     # External integrations
     external_models: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    
+
     # System sections
     audit: List[Dict[str, Any]] = Field(default_factory=list)
     data_management: DataManagement = Field(default_factory=DataManagement)
-    
+
     class Config:
         allow_population_by_field_name = True
         extra = "forbid"
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-    
+
     @validator("schema_version")
     def validate_schema_version(cls, v):
         """Ensure schema version is supported."""
         if v != "4.1":
             raise ValueError("Only schema version 4.1 is supported")
         return v
-    
+
     @validator("instances")
     def validate_instances_unique_ids(cls, v):
         """Ensure all instance IDs are unique."""
@@ -154,27 +154,27 @@ class OdlDocument(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("Instance IDs must be unique")
         return v
-    
+
     @validator("connections")
     def validate_connections_reference_instances(cls, v, values):
         """Ensure connections reference valid instances."""
         if "instances" not in values:
             return v
-        
+
         instance_ids = {instance.id for instance in values["instances"]}
-        
+
         for connection in v:
             if connection.from_instance_id not in instance_ids:
                 raise ValueError(f"Connection references unknown instance: {connection.from_instance_id}")
             if connection.to_instance_id not in instance_ids:
                 raise ValueError(f"Connection references unknown instance: {connection.to_instance_id}")
-        
+
         return v
-    
+
     def get_version(self) -> int:
         """Get document version number for optimistic concurrency."""
         return len(self.audit)
-    
+
     def add_audit_entry(self, action: str, actor: str, details: Optional[Dict] = None):
         """Add audit entry for document changes."""
         entry = {
@@ -186,11 +186,11 @@ class OdlDocument(BaseModel):
         }
         self.audit.append(entry)
         self.meta.timestamps.updated_at = datetime.utcnow()
-    
+
     def save_to_dict(self) -> Dict[str, Any]:
         """Export document to dictionary format."""
         return self.dict(by_alias=True, exclude_none=True)
-    
+
     @classmethod
     def load_from_dict(cls, data: Dict[str, Any]) -> "OdlDocument":
         """Load document from dictionary format."""

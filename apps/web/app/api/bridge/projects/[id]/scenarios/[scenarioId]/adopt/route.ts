@@ -10,8 +10,8 @@ export async function POST(
   const { id, scenarioId } = params
   const project = findProject(id)
   if (project) {
-    project.adopted_scenario = scenarioId
-    project.updated_at = new Date().toISOString()
+    (project as any).adopted_scenario = scenarioId;
+    (project as any).updated_at = new Date().toISOString()
   }
 
   // lookup scenario data to store audit

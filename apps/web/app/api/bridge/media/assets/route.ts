@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (tags && tags.length > 0) {
-      filteredAssets = filteredAssets.filter(asset => 
+      filteredAssets = filteredAssets.filter(asset =>
         tags.some(tag => asset.tags.includes(tag.trim()))
       )
     }

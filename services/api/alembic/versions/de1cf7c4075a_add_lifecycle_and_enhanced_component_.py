@@ -30,12 +30,12 @@ def upgrade() -> None:
     op.add_column('components', sa.Column('weight_kg', sa.Float(), nullable=True))
     op.add_column('components', sa.Column('certification', sa.JSON(), nullable=True))
     op.add_column('components', sa.Column('warranty_years', sa.Integer(), nullable=True))
-    
+
     # Add indexes for new fields
     op.create_index('ix_components_lifecycle_stage', 'components', ['lifecycle_stage'])
     op.create_index('ix_components_inventory_managed', 'components', ['inventory_managed'])
     op.create_index('ix_components_compliance_status', 'components', ['compliance_status'])
-    
+
     # Create component_inventory table for detailed inventory tracking
     op.create_table('component_inventory',
         sa.Column('id', sa.UUID(), nullable=False),
@@ -53,12 +53,12 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Add indexes for component_inventory
     op.create_index('ix_component_inventory_component_id', 'component_inventory', ['component_id'])
     op.create_index('ix_component_inventory_warehouse', 'component_inventory', ['warehouse_location'])
     op.create_index('ix_component_inventory_low_stock', 'component_inventory', ['quantity_available', 'reorder_level'])
-    
+
     # Create inventory_transactions table for tracking inventory movements
     op.create_table('inventory_transactions',
         sa.Column('id', sa.UUID(), nullable=False),
@@ -74,7 +74,7 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Add indexes for inventory_transactions
     op.create_index('ix_inventory_transactions_component_id', 'inventory_transactions', ['component_id'])
     op.create_index('ix_inventory_transactions_type', 'inventory_transactions', ['transaction_type'])
@@ -85,12 +85,12 @@ def downgrade() -> None:
     # Drop new tables
     op.drop_table('inventory_transactions')
     op.drop_table('component_inventory')
-    
+
     # Drop indexes
     op.drop_index('ix_components_compliance_status', 'components')
     op.drop_index('ix_components_inventory_managed', 'components')
     op.drop_index('ix_components_lifecycle_stage', 'components')
-    
+
     # Drop columns from components table
     op.drop_column('components', 'warranty_years')
     op.drop_column('components', 'certification')

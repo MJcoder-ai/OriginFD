@@ -28,12 +28,12 @@ export default function AppLayout({
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <AppSidebar />
-      
+
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <AppHeader />
-        
+
         {/* Page content */}
         <main className="flex-1 overflow-auto p-6">
           {children}

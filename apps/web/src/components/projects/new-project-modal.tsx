@@ -132,7 +132,7 @@ const scaleOptions = [
 export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjectModalProps) {
   const queryClient = useQueryClient()
   const router = useRouter()
-  
+
   const form = useForm<NewProjectFormData>({
     resolver: zodResolver(newProjectSchema),
     defaultValues: {
@@ -224,8 +224,8 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
 
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={onOpenChange}
     >
         <DialogContent className="sm:max-w-[600px]">

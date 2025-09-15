@@ -65,7 +65,7 @@ MOCK_COMPONENTS = [
         updated_at=datetime.now().isoformat()
     ),
     ComponentResponse(
-        id="2", 
+        id="2",
         component_id="BESS_001",
         brand="Tesla",
         part_number="Powerwall-2",
@@ -79,7 +79,7 @@ MOCK_COMPONENTS = [
     ),
     ComponentResponse(
         id="3",
-        component_id="INV_001", 
+        component_id="INV_001",
         brand="Enphase",
         part_number="IQ7PLUS-72-M-US",
         rating_w=290.0,
@@ -104,37 +104,37 @@ async def list_components(
     active_only: bool = Query(True)
 ):
     """List components with filtering and pagination"""
-    
+
     # Filter mock data
     filtered_components = MOCK_COMPONENTS.copy()
-    
+
     if status:
         filtered_components = [c for c in filtered_components if c.status == status]
-    
+
     if category:
         filtered_components = [c for c in filtered_components if c.category == category]
-        
+
     if domain:
         filtered_components = [c for c in filtered_components if c.domain == domain]
-        
+
     if brand:
         filtered_components = [c for c in filtered_components if brand.lower() in c.brand.lower()]
-        
+
     if search:
         search_lower = search.lower()
         filtered_components = [
-            c for c in filtered_components 
+            c for c in filtered_components
             if search_lower in c.brand.lower() or search_lower in c.part_number.lower()
         ]
-        
+
     if active_only:
         filtered_components = [c for c in filtered_components if c.is_active]
-    
+
     # Pagination
     start_idx = (page - 1) * page_size
     end_idx = start_idx + page_size
     paginated_components = filtered_components[start_idx:end_idx]
-    
+
     return ComponentListResponse(
         components=paginated_components,
         total=len(filtered_components),
@@ -169,7 +169,7 @@ async def create_component(request: ComponentCreateRequest):
         updated_at=datetime.now().isoformat(),
         created_by="system"
     )
-    
+
     MOCK_COMPONENTS.append(new_component)
     return new_component
 
@@ -197,15 +197,15 @@ async def get_search_suggestions(q: str = Query(...)):
     """Get search suggestions for brands and part numbers"""
     brands = set()
     part_numbers = set()
-    
+
     q_lower = q.lower()
-    
+
     for component in MOCK_COMPONENTS:
         if q_lower in component.brand.lower():
             brands.add(component.brand)
         if q_lower in component.part_number.lower():
             part_numbers.add(component.part_number)
-    
+
     return {
         "brands": list(brands)[:10],
         "part_numbers": list(part_numbers)[:10]

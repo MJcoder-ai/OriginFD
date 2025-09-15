@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -84,8 +84,8 @@ export default function RFQCreationWizard({ open, onOpenChange, selectedComponen
   const [formData, setFormData] = useState<RFQFormData>(() => ({
     ...initialFormData,
     component_id: selectedComponent?.id || '',
-    title: selectedComponent 
-      ? `RFQ for ${selectedComponent.component_management?.component_identity?.brand} ${selectedComponent.component_management?.component_identity?.part_number}` 
+    title: selectedComponent
+      ? `RFQ for ${selectedComponent.component_management?.component_identity?.brand} ${selectedComponent.component_management?.component_identity?.part_number}`
       : ''
   }))
 
@@ -149,7 +149,7 @@ export default function RFQCreationWizard({ open, onOpenChange, selectedComponen
   const updateSpecification = (index: number, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      specifications: prev.specifications.map((spec, i) => 
+      specifications: prev.specifications.map((spec, i) =>
         i === index ? { ...spec, [field]: value } : spec
       )
     }))
@@ -344,7 +344,7 @@ export default function RFQCreationWizard({ open, onOpenChange, selectedComponen
                       <span className="text-muted-foreground">Rating:</span> {selectedComponentData.component_management?.component_identity?.rating_w}W
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Status:</span> 
+                      <span className="text-muted-foreground">Status:</span>
                       <Badge variant="outline" className="ml-2">
                         {selectedComponentData.component_management?.status}
                       </Badge>
@@ -448,9 +448,9 @@ export default function RFQCreationWizard({ open, onOpenChange, selectedComponen
                         </div>
                       </div>
                       {formData.specifications.length > 1 && (
-                        <Button 
-                          onClick={() => removeSpecification(index)} 
-                          size="sm" 
+                        <Button
+                          onClick={() => removeSpecification(index)}
+                          size="sm"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
                         >
@@ -519,28 +519,28 @@ export default function RFQCreationWizard({ open, onOpenChange, selectedComponen
 
         {/* Navigation */}
         <div className="flex items-center justify-between pt-4 border-t">
-          <Button 
-            variant="outline" 
-            onClick={prevStep} 
+          <Button
+            variant="outline"
+            onClick={prevStep}
             disabled={currentStep === 1}
           >
             Previous
           </Button>
-          
+
           <div className="text-sm text-muted-foreground">
             Step {currentStep} of 4
           </div>
-          
+
           {currentStep < 4 ? (
-            <Button 
-              onClick={nextStep} 
+            <Button
+              onClick={nextStep}
               disabled={!validateStep(currentStep)}
             >
               Next
             </Button>
           ) : (
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={!validateStep(4) || createRFQMutation.isPending}
             >
               {createRFQMutation.isPending ? 'Creating...' : 'Create RFQ'}

@@ -290,8 +290,8 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow" 
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -312,8 +312,8 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow" 
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -334,8 +334,8 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow" 
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()

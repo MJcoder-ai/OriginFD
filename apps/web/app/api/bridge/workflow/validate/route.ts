@@ -499,7 +499,7 @@ function calculateWorkflowCompletion(currentStatus: ODLComponentStatus): number 
 
 function getNextPossibleStages(currentStatus: ODLComponentStatus): WorkflowStep[] {
   // This would reference the same transition rules from the lifecycle API
-  const transitionMap: Record<ODLComponentStatus, ODLComponentStatus[]> = {
+  const transitionMap: Partial<Record<ODLComponentStatus, ODLComponentStatus[]>> = {
     'draft': ['approved', 'cancelled'],
     'approved': ['available', 'draft', 'cancelled'],
     'available': ['sourcing', 'draft', 'archived'],
@@ -526,7 +526,7 @@ function getNextPossibleStages(currentStatus: ODLComponentStatus): WorkflowStep[
 export async function POST(request: NextRequest) {
   try {
     const validationRequest: WorkflowValidationRequest = await request.json()
-    
+
     const currentStage = findWorkflowStage(validationRequest.current_status)
     if (!currentStage) {
       return NextResponse.json({
@@ -584,13 +584,13 @@ export async function POST(request: NextRequest) {
       workflow_completion: workflowCompletion,
       missing_prerequisites: missingPrerequisites,
       recommendations,
-      warnings: missingPrerequisites.length > 0 ? 
+      warnings: missingPrerequisites.length > 0 ?
         [`${missingPrerequisites.length} prerequisite(s) not met for current stage`] : [],
       integration_status: integrationStatus
     }
 
     console.log(`Workflow validation for component ${validationRequest.component_id} at stage ${validationRequest.current_status}`)
-    
+
     return NextResponse.json(result)
   } catch (error) {
     console.error('Error validating workflow:', error)
@@ -643,7 +643,7 @@ export async function GET(request: NextRequest) {
         success_rate: 94.5,
         average_total_duration: '180 days'
       }
-      
+
       return NextResponse.json({
         ...workflowOverview,
         metrics: mockMetrics

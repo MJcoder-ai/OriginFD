@@ -114,7 +114,7 @@ export let mockDocuments = [
           placement: { location: 'Array Block A1' }
         },
         {
-          id: 'comp_002', 
+          id: 'comp_002',
           part_number: 'STP-25000TL-30',
           brand: 'SMA',
           category: 'inverter',
@@ -134,7 +134,7 @@ export let mockDocuments = [
         {
           id: 'comp_004',
           part_number: 'OVR-PV-40-1000-P',
-          brand: 'ABB', 
+          brand: 'ABB',
           category: 'protection',
           rating_w: 1000,
           status: 'selected',
@@ -153,7 +153,7 @@ export let mockDocuments = [
           id: 'comp_006',
           part_number: 'SYMO-15000TL-10',
           brand: 'Fronius',
-          category: 'inverter', 
+          category: 'inverter',
           rating_w: 15000,
           status: 'candidate',
           placement: { location: 'Inverter Skid 2' }

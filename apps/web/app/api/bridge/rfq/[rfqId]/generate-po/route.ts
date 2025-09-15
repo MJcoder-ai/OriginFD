@@ -285,7 +285,7 @@ export async function POST(
     }
 
     console.log(`Generated PO ${poNumber} from RFQ ${rfqId} award ${poData.award_id}`)
-    
+
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
     console.error('Error generating purchase order from RFQ:', error)
@@ -299,7 +299,7 @@ export async function GET(
 ) {
   try {
     const { rfqId } = params
-    
+
     // Check if PO was already generated for this RFQ
     // In real implementation, query database for existing POs linked to this RFQ
     const existingPO = {
@@ -308,7 +308,7 @@ export async function GET(
       po_number: null,
       status: null
     }
-    
+
     return NextResponse.json({
       rfq_id: rfqId,
       po_generation_status: existingPO,

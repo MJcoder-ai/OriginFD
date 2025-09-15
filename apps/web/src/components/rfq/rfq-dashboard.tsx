@@ -5,10 +5,10 @@ import { useQuery } from '@tanstack/react-query'
 import { RFQRequest, RFQStatus, BidStatus } from '@/lib/types'
 import RFQCreationWizard from './rfq-creation-wizard'
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@originfd/ui'
-import { 
-  CalendarIcon, 
-  DollarSignIcon, 
-  PackageIcon, 
+import {
+  CalendarIcon,
+  DollarSignIcon,
+  PackageIcon,
   TruckIcon,
   BarChart3,
   AwardIcon
@@ -67,7 +67,7 @@ export default function RFQDashboard({ userRole = 'procurement' }: RFQDashboardP
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(rfq => 
+      filtered = filtered.filter(rfq =>
         rfq.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rfq.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -107,7 +107,7 @@ export default function RFQDashboard({ userRole = 'procurement' }: RFQDashboardP
 
   const getBestBid = (rfq: RFQRequest) => {
     if (rfq.bids.length === 0) return null
-    return rfq.bids.reduce((best, current) => 
+    return rfq.bids.reduce((best, current) =>
       current.evaluation_score && best.evaluation_score
         ? current.evaluation_score > best.evaluation_score ? current : best
         : current.total_price < best.total_price ? current : best
@@ -133,7 +133,7 @@ export default function RFQDashboard({ userRole = 'procurement' }: RFQDashboardP
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">

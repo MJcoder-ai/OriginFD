@@ -83,9 +83,9 @@ export async function GET(
       access_info: {
         direct_download_url: asset.file_url,
         preview_available: asset.type === 'image' || asset.type === 'video',
-        thumbnail_url: asset.type === 'image' ? 
+        thumbnail_url: asset.type === 'image' ?
           asset.file_url.replace(/\.[^.]+$/, '_thumb.jpg') : null,
-        streaming_url: asset.type === 'video' ? 
+        streaming_url: asset.type === 'video' ?
           asset.file_url.replace('.mp4', '.m3u8') : null
       },
       usage_stats: {
@@ -96,7 +96,7 @@ export async function GET(
     }
 
     if (!includeVersions) {
-      delete response.versions
+      delete (response as any).versions
     }
 
     return NextResponse.json(response)
@@ -133,7 +133,7 @@ export async function PUT(
     }
 
     console.log(`Updated media asset ${assetId}:`, Object.keys(updateData))
-    
+
     return NextResponse.json({
       success: true,
       asset: updatedAsset,
@@ -165,7 +165,7 @@ export async function DELETE(
       // 2. Delete file from storage
       // 3. Remove database record
       // 4. Clean up associated thumbnails/previews
-      
+
       console.log(`Hard deleted media asset ${assetId}`)
       return NextResponse.json({
         success: true,

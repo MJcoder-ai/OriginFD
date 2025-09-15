@@ -88,21 +88,21 @@ export class OriginFDClient {
                 throw new ApiError('Authentication failed', 401)
               }
             }
-            
+
             if (!response.ok) {
               const errorText = await response.text()
               let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-              
+
               try {
                 const errorData = JSON.parse(errorText)
                 errorMessage = errorData.detail || errorMessage
               } catch {
                 // Use default message if JSON parsing fails
               }
-              
+
               throw new ApiError(errorMessage, response.status, errorText)
             }
-            
+
             return response
           },
         ],
@@ -131,7 +131,7 @@ export class OriginFDClient {
   // Authentication
   async login(credentials: LoginRequest): Promise<UserResponse> {
     const response = await this.api.post('auth/login', { json: credentials }).json<TokenResponse>()
-    
+
     this.authTokens = {
       accessToken: response.access_token,
       refreshToken: response.refresh_token,
@@ -294,7 +294,7 @@ export class OriginFDClient {
       limit: limit.toString(),
       offset: offset.toString(),
     }
-    
+
     if (status) {
       searchParams.status = status
     }

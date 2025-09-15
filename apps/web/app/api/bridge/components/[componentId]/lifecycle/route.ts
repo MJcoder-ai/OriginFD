@@ -236,7 +236,7 @@ export async function POST(
     }
 
     console.log(`Component ${componentId} transitioned from ${transitionRequest.from_status} to ${transitionRequest.to_status}`)
-    
+
     return NextResponse.json(result)
   } catch (error) {
     console.error('Error processing lifecycle transition:', error)

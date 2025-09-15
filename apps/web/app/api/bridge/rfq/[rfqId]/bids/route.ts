@@ -28,7 +28,7 @@ export async function POST(
 
     if (rfq.status !== 'receiving_bids') {
       return NextResponse.json(
-        { error: 'RFQ is not accepting bids' }, 
+        { error: 'RFQ is not accepting bids' },
         { status: 400 }
       )
     }
@@ -38,7 +38,7 @@ export async function POST(
     const now = new Date()
     if (now > deadline) {
       return NextResponse.json(
-        { error: 'Bid submission deadline has passed' }, 
+        { error: 'Bid submission deadline has passed' },
         { status: 400 }
       )
     }
@@ -53,7 +53,7 @@ export async function POST(
 
     // In real implementation, save to database
     console.log('Created new bid:', newBid.id, 'for RFQ:', rfqId)
-    
+
     return NextResponse.json(newBid, { status: 201 })
   } catch (error) {
     console.error('Error creating bid:', error)

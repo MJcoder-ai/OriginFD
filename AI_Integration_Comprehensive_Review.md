@@ -114,19 +114,19 @@ class DesignEngineerAgent(BaseAgent):
     """
     tools = [
         "validate_odl_sd",
-        "optimize_layout", 
+        "optimize_layout",
         "check_wiring",
         "simulate_energy",
         "suggest_improvements"
     ]
-    
+
     capabilities = [
         "Design validation",
-        "Performance optimization", 
+        "Performance optimization",
         "Code compliance checking",
         "Cost reduction suggestions"
     ]
-    
+
     rbac_scope = ["design_read", "design_write", "simulation_run"]
 ```
 
@@ -143,14 +143,14 @@ class SalesAdvisorAgent(BaseAgent):
         "create_proposal",
         "analyze_competition"
     ]
-    
+
     capabilities = [
         "ROI calculations",
         "Proposal generation",
         "Incentive optimization",
         "Competitive analysis"
     ]
-    
+
     rbac_scope = ["sales_read", "finance_read", "proposal_create"]
 ```
 
@@ -162,19 +162,19 @@ class SourcingGrowthAgent(BaseAgent):
     """
     tools = [
         "create_rfq",
-        "analyze_bids", 
+        "analyze_bids",
         "match_suppliers",
         "track_shipments",
         "optimize_inventory"
     ]
-    
+
     capabilities = [
         "Automated RFQ generation",
         "Supplier evaluation",
         "Logistics optimization",
         "Inventory management"
     ]
-    
+
     rbac_scope = ["procurement_read", "procurement_write", "supplier_manage"]
 ```
 
@@ -187,18 +187,18 @@ class OpsSustainabilityAgent(BaseAgent):
     tools = [
         "commission_system",
         "diagnose_faults",
-        "schedule_maintenance", 
+        "schedule_maintenance",
         "generate_esg_report",
         "optimize_performance"
     ]
-    
+
     capabilities = [
         "System commissioning",
         "Predictive maintenance",
         "Performance optimization",
         "ESG compliance"
     ]
-    
+
     rbac_scope = ["ops_read", "ops_write", "maintenance_schedule"]
 ```
 
@@ -215,14 +215,14 @@ class MarketingCRMAgent(BaseAgent):
         "track_engagement",
         "generate_referrals"
     ]
-    
+
     capabilities = [
         "Lead identification",
         "Automated nurturing",
-        "Engagement tracking", 
+        "Engagement tracking",
         "Referral generation"
     ]
-    
+
     rbac_scope = ["marketing_read", "crm_write", "email_send"]
 ```
 
@@ -239,14 +239,14 @@ class RevenueOptimizerAgent(BaseAgent):
         "track_conversions",
         "forecast_revenue"
     ]
-    
+
     capabilities = [
         "Dynamic pricing",
         "Margin optimization",
         "Upsell recommendations",
         "Revenue forecasting"
     ]
-    
+
     rbac_scope = ["finance_read", "pricing_write", "analytics_read"]
 ```
 
@@ -257,12 +257,12 @@ class AgentHandoverProtocol:
     """
     Manages communication between specialized agents.
     """
-    
+
     def __init__(self):
         self.shared_scratchpad = {}
         self.plan_cards = []
         self.context_transfer = {}
-    
+
     async def handover(self, from_agent: str, to_agent: str, context: Dict[str, Any]):
         """
         Transfer context and control between agents.
@@ -270,15 +270,15 @@ class AgentHandoverProtocol:
         handover_record = {
             "timestamp": datetime.utcnow().isoformat(),
             "from_agent": from_agent,
-            "to_agent": to_agent, 
+            "to_agent": to_agent,
             "context": context,
             "shared_state": self.shared_scratchpad.get(from_agent, {}),
             "plan_progress": self.get_plan_progress(from_agent)
         }
-        
+
         # Update shared context
         self.context_transfer[to_agent] = handover_record
-        
+
         # Log handover for audit
         await self.log_handover(handover_record)
 ```
@@ -294,7 +294,7 @@ class AIToolCreator:
     """
     Framework for creating and managing AI tools.
     """
-    
+
     def create_tool(self, specification: Dict[str, Any]) -> BaseTool:
         """
         Create a new AI tool from specification.
@@ -312,13 +312,13 @@ class AIToolCreator:
             execution_time_estimate_ms=specification.get("execution_time_estimate_ms", 1000),
             psu_cost_estimate=specification.get("psu_cost_estimate", 1)
         )
-    
+
     def register_tool(self, tool: BaseTool):
         """
         Register tool in the global registry.
         """
         self.tool_registry.register_tool(tool)
-        
+
     def version_tool(self, tool_name: str, new_version: str, changes: Dict[str, Any]):
         """
         Create a new version of an existing tool.
@@ -333,7 +333,7 @@ class AIToolCreator:
 #### **✅ Component Management Tools (Implemented)**
 - `ParseDatasheetTool` - Extract specifications from PDFs
 - `ComponentDeduplicationTool` - Find duplicate components
-- `ComponentClassificationTool` - Auto-classify components  
+- `ComponentClassificationTool` - Auto-classify components
 - `ComponentRecommendationTool` - Suggest alternatives
 
 #### **🚧 Design & Engineering Tools (Framework Ready)**
@@ -375,15 +375,15 @@ class AIToolCreator:
 interface AICopilot {
   // Chat Interface
   sendMessage(message: string, context?: any): Promise<AIResponse>
-  
-  // Voice Interface  
+
+  // Voice Interface
   processVoiceInput(audio: Blob): Promise<AIResponse>
   synthesizeSpeech(text: string): Promise<Blob>
-  
+
   // Contextual Assistance
   getContextualHelp(page: string, element?: string): Promise<AIResponse>
   suggestNextActions(currentState: any): Promise<AIAction[]}
-  
+
   // Proactive Assistance
   analyzeUserBehavior(): Promise<AIInsight[]]
   suggestOptimizations(): Promise<AIRecommendation[]}
@@ -398,24 +398,24 @@ interface AICopilot {
 export function AIChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isTyping, setIsTyping] = useState(false)
-  
+
   const sendMessage = async (content: string) => {
     setIsTyping(true)
-    
+
     const response = await aiCopilot.sendMessage(content, {
       currentPage: router.pathname,
       projectContext: currentProject,
       userRole: user.role
     })
-    
-    setMessages(prev => [...prev, 
+
+    setMessages(prev => [...prev,
       { role: 'user', content },
       { role: 'assistant', content: response.content, actions: response.actions }
     ])
-    
+
     setIsTyping(false)
   }
-  
+
   return (
     <ChatContainer>
       <MessageList messages={messages} />
@@ -432,28 +432,28 @@ export function AIChatInterface() {
 export function VoiceAssistant() {
   const [isListening, setIsListening] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  
+
   const startListening = async () => {
     setIsListening(true)
     const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true })
     const recorder = new MediaRecorder(audioStream)
-    
+
     recorder.ondataavailable = async (event) => {
       setIsProcessing(true)
       const response = await aiCopilot.processVoiceInput(event.data)
       await handleVoiceResponse(response)
       setIsProcessing(false)
     }
-    
+
     recorder.start()
   }
-  
+
   const handleVoiceResponse = async (response: AIResponse) => {
     // Execute any actions
     if (response.actions) {
       await executeActions(response.actions)
     }
-    
+
     // Speak response
     if (response.content) {
       const speech = await aiCopilot.synthesizeSpeech(response.content)
@@ -469,16 +469,16 @@ export function VoiceAssistant() {
 export function ContextualAIHelp({ page, element }: { page: string, element?: string }) {
   const [help, setHelp] = useState<AIResponse | null>(null)
   const [isVisible, setIsVisible] = useState(false)
-  
+
   useEffect(() => {
     const getContextualHelp = async () => {
       const helpResponse = await aiCopilot.getContextualHelp(page, element)
       setHelp(helpResponse)
     }
-    
+
     getContextualHelp()
   }, [page, element])
-  
+
   return (
     <HelpOverlay visible={isVisible}>
       {help && (
@@ -508,19 +508,19 @@ export function ContextualAIHelp({ page, element }: { page: string, element?: st
 // Proactive AI Suggestions
 export function ProactiveAIAssistant() {
   const [suggestions, setSuggestions] = useState<AIRecommendation[]>([])
-  
+
   useEffect(() => {
     const analyzeBehavior = async () => {
       const insights = await aiCopilot.analyzeUserBehavior()
       const recommendations = await aiCopilot.suggestOptimizations()
       setSuggestions(recommendations)
     }
-    
+
     // Analyze behavior periodically
     const interval = setInterval(analyzeBehavior, 30000) // Every 30 seconds
     return () => clearInterval(interval)
   }, [])
-  
+
   return (
     <SuggestionPanel>
       {suggestions.map(suggestion => (
@@ -551,12 +551,12 @@ class AIScheduler:
     """
     Manages autonomous AI workflows and scheduled tasks.
     """
-    
+
     def __init__(self):
         self.scheduled_jobs = {}
         self.event_triggers = {}
         self.agent_workflows = {}
-    
+
     def schedule_autonomous_job(self, job_spec: Dict[str, Any]):
         """
         Schedule autonomous AI jobs (daily lead gen, price updates, etc.)
@@ -569,10 +569,10 @@ class AIScheduler:
             parameters=job_spec.get("parameters", {}),
             rbac_scope=job_spec["rbac_scope"]
         )
-        
+
         self.scheduled_jobs[job.name] = job
         self.register_cron_job(job)
-    
+
     def register_event_trigger(self, event: str, workflow: Dict[str, Any]):
         """
         Register event-driven AI workflows.
@@ -584,16 +584,16 @@ class AIScheduler:
             actions=workflow["actions"],
             priority=workflow.get("priority", "normal")
         )
-        
+
         self.event_triggers[event] = trigger
-    
+
     async def process_event(self, event: str, data: Dict[str, Any]):
         """
         Process events and trigger appropriate AI workflows.
         """
         if event in self.event_triggers:
             trigger = self.event_triggers[event]
-            
+
             # Check conditions
             if self.evaluate_conditions(trigger.conditions, data):
                 # Execute AI workflow
@@ -620,7 +620,7 @@ lead_gen_job = {
 # RFQ Award Processing
 rfq_award_workflow = {
     "event": "rfq_awarded",
-    "agent": "SourcingGrowthAgent", 
+    "agent": "SourcingGrowthAgent",
     "conditions": [
         {"field": "award_amount", "operator": ">", "value": 10000}
     ],
@@ -657,13 +657,13 @@ class AIObservability:
     """
     Comprehensive AI performance monitoring and observability.
     """
-    
+
     def __init__(self):
         self.metrics_collector = MetricsCollector()
         self.trace_recorder = TraceRecorder()
         self.cost_tracker = CostTracker()
         self.quality_evaluator = QualityEvaluator()
-    
+
     async def track_ai_interaction(self, interaction: AIInteraction):
         """
         Track comprehensive AI interaction metrics.
@@ -680,12 +680,12 @@ class AIObservability:
             "user_satisfaction": interaction.user_satisfaction,
             "error_count": interaction.error_count
         }
-        
+
         await self.metrics_collector.record(metrics)
         await self.trace_recorder.record_trace(interaction.trace)
         await self.cost_tracker.track_costs(interaction.costs)
         await self.quality_evaluator.evaluate(interaction.outputs)
-    
+
     async def generate_ai_dashboard(self) -> Dict[str, Any]:
         """
         Generate comprehensive AI performance dashboard.
@@ -708,38 +708,38 @@ class AIQualityAssurance:
     """
     Ensures AI outputs meet quality and safety standards.
     """
-    
+
     def __init__(self):
         self.hallucination_detector = HallucinationDetector()
         self.bias_checker = BiasChecker()
         self.safety_validator = SafetyValidator()
         self.accuracy_evaluator = AccuracyEvaluator()
-    
+
     async def validate_ai_output(self, output: AIOutput) -> QualityReport:
         """
         Comprehensive quality validation of AI outputs.
         """
         report = QualityReport()
-        
+
         # Check for hallucinations
         hallucination_score = await self.hallucination_detector.check(output)
         report.hallucination_risk = hallucination_score
-        
+
         # Check for bias
         bias_score = await self.bias_checker.analyze(output)
         report.bias_score = bias_score
-        
+
         # Validate safety
         safety_score = await self.safety_validator.validate(output)
         report.safety_score = safety_score
-        
+
         # Evaluate accuracy
         accuracy_score = await self.accuracy_evaluator.evaluate(output)
         report.accuracy_score = accuracy_score
-        
+
         # Overall quality score
         report.overall_quality = self.calculate_overall_quality(report)
-        
+
         return report
 ```
 

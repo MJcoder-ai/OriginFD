@@ -61,6 +61,7 @@
     "@types/d3": "^7.4.3",
     "@types/dagre": "^0.7.53",
     "@types/node": "^20.10.0",
+    "@types/nprogress": "^0.2.3",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.16",

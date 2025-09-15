@@ -18,7 +18,7 @@ def test_create_and_delete_model():
     payload = {
         "name": "test-model",
         "provider": "test",
-        "region": "eu", 
+        "region": "eu",
         "cost_per_1k_tokens": 0.01,
         "latency_ms": 100,
         "eval_score": 0.5,

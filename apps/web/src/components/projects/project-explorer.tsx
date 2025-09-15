@@ -3,12 +3,12 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  FolderOpen, 
-  Loader2, 
-  ChevronRight, 
-  FileText, 
-  Layers, 
+import {
+  FolderOpen,
+  Loader2,
+  ChevronRight,
+  FileText,
+  Layers,
   Database,
   CheckSquare,
   Sun,
@@ -38,7 +38,7 @@ const projectSubItems: ProjectSubItem[] = [
 
 export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
   const [expandedProjects, setExpandedProjects] = React.useState<string[]>([])
-  
+
   const {
     data: projects = [],
     isLoading,
@@ -50,8 +50,8 @@ export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
   const toggleProject = (projectId: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setExpandedProjects(prev => 
-      prev.includes(projectId) 
+    setExpandedProjects(prev =>
+      prev.includes(projectId)
         ? prev.filter(id => id !== projectId)
         : [...prev, projectId]
     )
@@ -98,7 +98,7 @@ export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
   }
 
   // Filter out legacy projects to avoid duplicates
-  const uniqueProjects = projects.filter((project: any) => 
+  const uniqueProjects = projects.filter((project: any) =>
     !project.project_name.includes('(Legacy)')
   )
 
@@ -107,7 +107,7 @@ export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
       {uniqueProjects.map((project: any) => {
         const isExpanded = expandedProjects.includes(project.id)
         const DomainIcon = getDomainIcon(project.domain)
-        
+
         return (
           <div key={project.id}>
             {/* Project Header */}
@@ -130,7 +130,7 @@ export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
                 <span className="truncate">{project.project_name}</span>
               </div>
             </div>
-            
+
             {/* Project Sub-items */}
             {isExpanded && (
               <div className="ml-6 space-y-1">

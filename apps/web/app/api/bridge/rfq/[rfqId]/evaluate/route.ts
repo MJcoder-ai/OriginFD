@@ -25,7 +25,7 @@ function calculateBidScore(bid: RFQBid, criteria: EvaluationCriteria, allBids: R
   const prices = allBids.map(b => b.unit_price)
   const minPrice = Math.min(...prices)
   const maxPrice = Math.max(...prices)
-  const priceScore = maxPrice === minPrice ? 100 : 
+  const priceScore = maxPrice === minPrice ? 100 :
     ((maxPrice - bid.unit_price) / (maxPrice - minPrice)) * 100
 
   // Delivery scoring (earlier is better)
@@ -94,7 +94,7 @@ export async function POST(
     }
 
     // Calculate scores for all bids
-    const evaluations = evaluationData.bids.map(bid => 
+    const evaluations = evaluationData.bids.map(bid =>
       calculateBidScore(bid, evaluationData.criteria, evaluationData.bids)
     )
 

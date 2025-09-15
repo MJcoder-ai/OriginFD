@@ -1,4 +1,4 @@
-# **OriginFD Canonical Development Guide** 
+# **OriginFD Canonical Development Guide**
 
 This is the **single source of truth** for how the OriginFD codebase is structured, how new features are added, and how the ODL-SD AI architecture and marketplace rules are enforced in code. It is opinionated and exhaustive so that humans and code-gen AIs produce **consistent** code with zero duplication.
 
@@ -20,106 +20,106 @@ Deploy target: **Google Cloud Run** (GCP-first), repo: `github.com/MJcoder-ai/Or
 
 # **0\) Monorepo layout (100% canonical tree)**
 
-`originfd/`  
-`├─ apps/`  
-`│  ├─ web/                           # Next.js 14 (App Router), SSR, Edge-safe`  
-`│  │  ├─ app/`  
-`│  │  │  ├─ (marketing)/...`  
-`│  │  │  ├─ (app)/dashboard/...`  
-`│  │  │  ├─ api/bridge/[service]/route.ts      # thin BFF -> services/api`  
-`│  │  │  └─ layout.tsx`  
-`│  │  ├─ src/`  
-`│  │  │  ├─ components/               # shadcn/ui + headless composites`  
-`│  │  │  ├─ hooks/`  
-`│  │  │  ├─ lib/odl/                  # TS types mirroring ODL-SD v4.1`  
-`│  │  │  ├─ lib/rbac/                 # client-side guards (read-only)`  
-`│  │  │  └─ styles/`  
-`│  │  ├─ public/`  
-`│  │  ├─ next.config.mjs`  
-`│  │  └─ package.json`  
-`│  ├─ mobile-tech/                    # React Native (Expo) – Field Tech app`  
-`│  │  ├─ app/(tabs)/{work,scan,qc}/...`  
-`│  │  ├─ src/features/workorders/`  
-`│  │  ├─ src/lib/epcis.ts             # scan→EPCIS event upload (ship/install)`  
-`│  │  └─ app.json`  
-`│  ├─ mobile-customer/                # Customer app (status, quotes, ledger)`  
-`│  │  └─ ...`  
-`│  └─ mobile-logistics/               # Delivery & stock management`  
-`│     └─ ...`  
-`│`  
-`├─ services/`  
-`│  ├─ api/                            # FastAPI gateway (REST+Webhooks)`  
-`│  │  ├─ main.py`  
-`│  │  ├─ api/routers/{projects,docs,auth,marketplace}.py`  
-`│  │  ├─ core/{config.py,security.py,db.py,rbac.py}`  
-`│  │  ├─ domain_handlers/             # binds packages/domain logic to HTTP`  
-`│  │  └─ alembic/                     # DB migrations`  
-`│  ├─ orchestrator/                   # AI L1 Orchestrator (Planner/Router)`  
-`│  │  ├─ main.py`  
-`│  │  ├─ planner/{planner.py,critic.py,policy_router.py,region_router.py}`  
-`│  │  ├─ tools/registry/              # JSON Schemas + adapters for tools`  
-`│  │  ├─ memory/{cag_store.py,episodic.py,semantic.py}`  
-`│  │  └─ workers/{celery.py,tasks.py}`  
-`│  ├─ ingest/                         # Webhooks (payments, emails, 3rd parties)`  
-`│  │  └─ main.py`  
-`│  ├─ workers/                        # Celery/RQ worker pod (background jobs)`  
-`│  │  ├─ celery_app.py`  
-`│  │  ├─ tasks/{sim,doc_pack,epcis,emails}.py`  
-`│  │  └─ schedules.py`  
-`│  └─ exporter/                       # doc_pack, SLD exports, invoices, etc.`  
-`│     └─ main.py`  
-`│`  
-`├─ domains/                           # PURE logic (no frameworks)`  
-`│  ├─ pv/                             # PV sizing, strings, layouts`  
-`│  ├─ bess/                           # BESS sizing, safety envelopes`  
-`│  ├─ grid/                           # grid code checks, protection`  
-`│  ├─ scada/                          # points, alarms, KPIs`  
-`│  ├─ finance/                        # IRR/NPV/tariff models`  
-`│  └─ commerce/                       # orders/escrow, handovers, payouts`  
-`│`  
-`├─ packages/`  
-`│  ├─ py/                             # Python libs (poetry/uv)`  
-`│  │  ├─ odl_sd_schema/               # pydantic models for ODL-SD v4.1`  
-`│  │  ├─ odl_sd_rbac/                 # roles, phase gates, approver checks`  
-`│  │  ├─ odl_sd_tools/                # tool I/O dataclasses & validation`  
-`│  │  ├─ odl_sd_patch/                # JSON-Patch apply/validate/rollback`  
-`│  │  ├─ graph_rag/                   # ODL-SD Graph-RAG projection`  
-`│  │  ├─ ai_core/                     # ModelSelector, Guardrails, Tracing`  
-`│  │  ├─ commerce_core/               # Plans/PSU metering, escrow logic`  
-`│  │  └─ utils_common/`  
-`│  └─ ts/                             # TypeScript shared packages (pnpm)`  
-`│     ├─ ui/                          # shared React components (web/mobile)`  
-`│     ├─ types-odl/                   # TS types generated from schemas`  
-`│     └─ http-client/                 # typed client for services/api`  
-`│`  
-`├─ infra/`  
-`│  ├─ gcp/terraform/                  # Cloud Run, Cloud SQL (Postgres), Pub/Sub,`  
-`│  │  ├─ modules/{run,sql,artifact,secrets,workflows,memstore,lb,cdn}`  
-`│  │  └─ envs/{dev,staging,prod}`  
-`│  ├─ docker/                         # base images, multi-stage builds`  
-`│  ├─ cloudbuild/                     # triggers for CI/CD deployments`  
-`│  └─ k8s/                            # optional (GKE) manifests if needed later`  
-`│`  
-`├─ docs/`  
-`│  ├─ adr/                            # architecture decision records`  
-`│  ├─ api/openapi.yaml                # generated from FastAPI`  
-`│  ├─ tools/schemas/                  # JSON Schemas (versioned, semver)`  
-`│  ├─ governance/                     # RBAC tables, approver matrices`  
-`│  └─ runbooks/                       # SLO/SLA, incident, red-team, DPA`  
-`│`  
-`├─ ops/`  
-`│  ├─ workflows/                      # GitHub Actions, lint, test, deploy`  
-`│  ├─ scripts/                        # one-shot ops tasks`  
-`│  └─ observability/                  # dashboards, alerts, budgets`  
-`│`  
-`├─ examples/`  
-`│  ├─ golden/odl_sd_docs/             # golden sample docs for tests & demos`  
-`│  └─ patches/                        # safe patch examples & inverse patches`  
-`│`  
-`├─ .github/workflows/`  
-`├─ pyproject.toml / poetry.lock (or uv.lock)`  
-`├─ package.json / pnpm-workspace.yaml`  
-`├─ turbo.json                         # monorepo tasks`  
+`originfd/`
+`├─ apps/`
+`│  ├─ web/                           # Next.js 14 (App Router), SSR, Edge-safe`
+`│  │  ├─ app/`
+`│  │  │  ├─ (marketing)/...`
+`│  │  │  ├─ (app)/dashboard/...`
+`│  │  │  ├─ api/bridge/[service]/route.ts      # thin BFF -> services/api`
+`│  │  │  └─ layout.tsx`
+`│  │  ├─ src/`
+`│  │  │  ├─ components/               # shadcn/ui + headless composites`
+`│  │  │  ├─ hooks/`
+`│  │  │  ├─ lib/odl/                  # TS types mirroring ODL-SD v4.1`
+`│  │  │  ├─ lib/rbac/                 # client-side guards (read-only)`
+`│  │  │  └─ styles/`
+`│  │  ├─ public/`
+`│  │  ├─ next.config.mjs`
+`│  │  └─ package.json`
+`│  ├─ mobile-tech/                    # React Native (Expo) – Field Tech app`
+`│  │  ├─ app/(tabs)/{work,scan,qc}/...`
+`│  │  ├─ src/features/workorders/`
+`│  │  ├─ src/lib/epcis.ts             # scan→EPCIS event upload (ship/install)`
+`│  │  └─ app.json`
+`│  ├─ mobile-customer/                # Customer app (status, quotes, ledger)`
+`│  │  └─ ...`
+`│  └─ mobile-logistics/               # Delivery & stock management`
+`│     └─ ...`
+`│`
+`├─ services/`
+`│  ├─ api/                            # FastAPI gateway (REST+Webhooks)`
+`│  │  ├─ main.py`
+`│  │  ├─ api/routers/{projects,docs,auth,marketplace}.py`
+`│  │  ├─ core/{config.py,security.py,db.py,rbac.py}`
+`│  │  ├─ domain_handlers/             # binds packages/domain logic to HTTP`
+`│  │  └─ alembic/                     # DB migrations`
+`│  ├─ orchestrator/                   # AI L1 Orchestrator (Planner/Router)`
+`│  │  ├─ main.py`
+`│  │  ├─ planner/{planner.py,critic.py,policy_router.py,region_router.py}`
+`│  │  ├─ tools/registry/              # JSON Schemas + adapters for tools`
+`│  │  ├─ memory/{cag_store.py,episodic.py,semantic.py}`
+`│  │  └─ workers/{celery.py,tasks.py}`
+`│  ├─ ingest/                         # Webhooks (payments, emails, 3rd parties)`
+`│  │  └─ main.py`
+`│  ├─ workers/                        # Celery/RQ worker pod (background jobs)`
+`│  │  ├─ celery_app.py`
+`│  │  ├─ tasks/{sim,doc_pack,epcis,emails}.py`
+`│  │  └─ schedules.py`
+`│  └─ exporter/                       # doc_pack, SLD exports, invoices, etc.`
+`│     └─ main.py`
+`│`
+`├─ domains/                           # PURE logic (no frameworks)`
+`│  ├─ pv/                             # PV sizing, strings, layouts`
+`│  ├─ bess/                           # BESS sizing, safety envelopes`
+`│  ├─ grid/                           # grid code checks, protection`
+`│  ├─ scada/                          # points, alarms, KPIs`
+`│  ├─ finance/                        # IRR/NPV/tariff models`
+`│  └─ commerce/                       # orders/escrow, handovers, payouts`
+`│`
+`├─ packages/`
+`│  ├─ py/                             # Python libs (poetry/uv)`
+`│  │  ├─ odl_sd_schema/               # pydantic models for ODL-SD v4.1`
+`│  │  ├─ odl_sd_rbac/                 # roles, phase gates, approver checks`
+`│  │  ├─ odl_sd_tools/                # tool I/O dataclasses & validation`
+`│  │  ├─ odl_sd_patch/                # JSON-Patch apply/validate/rollback`
+`│  │  ├─ graph_rag/                   # ODL-SD Graph-RAG projection`
+`│  │  ├─ ai_core/                     # ModelSelector, Guardrails, Tracing`
+`│  │  ├─ commerce_core/               # Plans/PSU metering, escrow logic`
+`│  │  └─ utils_common/`
+`│  └─ ts/                             # TypeScript shared packages (pnpm)`
+`│     ├─ ui/                          # shared React components (web/mobile)`
+`│     ├─ types-odl/                   # TS types generated from schemas`
+`│     └─ http-client/                 # typed client for services/api`
+`│`
+`├─ infra/`
+`│  ├─ gcp/terraform/                  # Cloud Run, Cloud SQL (Postgres), Pub/Sub,`
+`│  │  ├─ modules/{run,sql,artifact,secrets,workflows,memstore,lb,cdn}`
+`│  │  └─ envs/{dev,staging,prod}`
+`│  ├─ docker/                         # base images, multi-stage builds`
+`│  ├─ cloudbuild/                     # triggers for CI/CD deployments`
+`│  └─ k8s/                            # optional (GKE) manifests if needed later`
+`│`
+`├─ docs/`
+`│  ├─ adr/                            # architecture decision records`
+`│  ├─ api/openapi.yaml                # generated from FastAPI`
+`│  ├─ tools/schemas/                  # JSON Schemas (versioned, semver)`
+`│  ├─ governance/                     # RBAC tables, approver matrices`
+`│  └─ runbooks/                       # SLO/SLA, incident, red-team, DPA`
+`│`
+`├─ ops/`
+`│  ├─ workflows/                      # GitHub Actions, lint, test, deploy`
+`│  ├─ scripts/                        # one-shot ops tasks`
+`│  └─ observability/                  # dashboards, alerts, budgets`
+`│`
+`├─ examples/`
+`│  ├─ golden/odl_sd_docs/             # golden sample docs for tests & demos`
+`│  └─ patches/                        # safe patch examples & inverse patches`
+`│`
+`├─ .github/workflows/`
+`├─ pyproject.toml / poetry.lock (or uv.lock)`
+`├─ package.json / pnpm-workspace.yaml`
+`├─ turbo.json                         # monorepo tasks`
 `└─ README.md`
 
 **Why this shape?**
@@ -154,41 +154,41 @@ Deploy target: **Google Cloud Run** (GCP-first), repo: `github.com/MJcoder-ai/Or
 
 **`services/api/main.py`**
 
-`from fastapi import FastAPI, Depends, HTTPException, Request`  
-`from pydantic import BaseModel`  
-`from core.config import Settings, get_settings`  
-`from core.security import require_scope, user_from_jwt`  
-`from core.db import SessionDep`  
-`from core.rbac import guard_patch`  
-`from odl_sd_patch import apply_patch, inverse_patch`  
+`from fastapi import FastAPI, Depends, HTTPException, Request`
+`from pydantic import BaseModel`
+`from core.config import Settings, get_settings`
+`from core.security import require_scope, user_from_jwt`
+`from core.db import SessionDep`
+`from core.rbac import guard_patch`
+`from odl_sd_patch import apply_patch, inverse_patch`
 `from odl_sd_schema import OdlDocument, validate_document`
 
 `app = FastAPI(title="OriginFD API")`
 
-`@app.on_event("startup")`  
-`async def _startup():`  
-    `# warm caches, load tool registry, etc.`  
+`@app.on_event("startup")`
+`async def _startup():`
+    `# warm caches, load tool registry, etc.`
     `...`
 
-`class PatchRequest(BaseModel):`  
-    `doc_id: str`  
-    `doc_version: int`  
-    `patch: list[dict]  # RFC6902`  
+`class PatchRequest(BaseModel):`
+    `doc_id: str`
+    `doc_version: int`
+    `patch: list[dict]  # RFC6902`
     `evidence: list[str] = []`
 
-`@app.post("/odl/patch")`  
-`async def patch_doc(body: PatchRequest,`  
-                    `db: SessionDep,`  
-                    `user=Depends(user_from_jwt),`  
-                    `settings: Settings = Depends(get_settings)):`  
-    `# enforce RBAC + phase gates before any write`  
-    `guard_patch(user=user, doc_id=body.doc_id, patch=body.patch, db=db)   # RBAC & approvals`  
-    `doc: OdlDocument = OdlDocument.load(db, body.doc_id)`  
-    `if doc.version != body.doc_version:`  
-        `raise HTTPException(409, "version_conflict")`  
-    `new_doc = apply_patch(doc, body.patch, evidence=body.evidence)`  
-    `validate_document(new_doc)  # schema v4.1 validation`  
-    `new_doc.save(db, actor=user)`  
+`@app.post("/odl/patch")`
+`async def patch_doc(body: PatchRequest,`
+                    `db: SessionDep,`
+                    `user=Depends(user_from_jwt),`
+                    `settings: Settings = Depends(get_settings)):`
+    `# enforce RBAC + phase gates before any write`
+    `guard_patch(user=user, doc_id=body.doc_id, patch=body.patch, db=db)   # RBAC & approvals`
+    `doc: OdlDocument = OdlDocument.load(db, body.doc_id)`
+    `if doc.version != body.doc_version:`
+        `raise HTTPException(409, "version_conflict")`
+    `new_doc = apply_patch(doc, body.patch, evidence=body.evidence)`
+    `validate_document(new_doc)  # schema v4.1 validation`
+    `new_doc.save(db, actor=user)`
     `return {"ok": True, "doc_version": new_doc.version, "inverse": inverse_patch(body.patch)}`
 
 * **JSON-Patch** is the only write path; tool outputs are authoritative.
@@ -199,13 +199,13 @@ Deploy target: **Google Cloud Run** (GCP-first), repo: `github.com/MJcoder-ai/Or
 
 `from odl_sd_rbac import has_rights, requires_approver, phase_gate_locked`
 
-`def guard_patch(user, doc_id, patch, db):`  
-    `if phase_gate_locked(doc_id, patch, db):`  
-        `raise PermissionError("phase_gate_locked")`  
-    `# deny library/compliance writes unless role has P/A/W per table`  
-    `if not has_rights(user, doc_id, patch):`  
-        `raise PermissionError("insufficient_rights")`  
-    `if requires_approver(patch) and not user.has_any(["expert","project_manager","asset_owner","super_user"]):`  
+`def guard_patch(user, doc_id, patch, db):`
+    `if phase_gate_locked(doc_id, patch, db):`
+        `raise PermissionError("phase_gate_locked")`
+    `# deny library/compliance writes unless role has P/A/W per table`
+    `if not has_rights(user, doc_id, patch):`
+        `raise PermissionError("insufficient_rights")`
+    `if requires_approver(patch) and not user.has_any(["expert","project_manager","asset_owner","super_user"]):`
         `raise PermissionError("approver_required")`
 
 RBAC/phase-gate semantics are implemented from the **User & Access Structure** (mandatory MFA roles, scope inheritance, approvals).
@@ -216,21 +216,21 @@ RBAC/phase-gate semantics are implemented from the **User & Access Structure** (
 
 **`planner/planner.py`**
 
-`from ai_core.model_selector import select_model`  
-`from tools.registry import load_tool, ToolError`  
-`from policy_router import enforce_psu_budget`  
+`from ai_core.model_selector import select_model`
+`from tools.registry import load_tool, ToolError`
+`from policy_router import enforce_psu_budget`
 `from graph_rag import ground_query`
 
-`async def plan_and_execute(task):`  
-    `evidence = await ground_query(task)         # Ground-Before-Generate`  
-    `enforce_psu_budget(task.org_id, estimate=task.estimate)`  
-    `model = select_model(task.kind, region=task.region)  # RegionRouter aware`  
-    `plan = await model.propose_plan(task, evidence=evidence)`  
-    `for step in plan.steps:`  
-        `tool = load_tool(step.tool)`  
-        `out = await tool.run(step.inputs)       # deterministic tool call`  
-        `step.attach_output(out)`  
-    `# Critic/Verifier gate can veto; only then emit JSON-Patches`  
+`async def plan_and_execute(task):`
+    `evidence = await ground_query(task)         # Ground-Before-Generate`
+    `enforce_psu_budget(task.org_id, estimate=task.estimate)`
+    `model = select_model(task.kind, region=task.region)  # RegionRouter aware`
+    `plan = await model.propose_plan(task, evidence=evidence)`
+    `for step in plan.steps:`
+        `tool = load_tool(step.tool)`
+        `out = await tool.run(step.inputs)       # deterministic tool call`
+        `step.attach_output(out)`
+    `# Critic/Verifier gate can veto; only then emit JSON-Patches`
     `return plan.to_patches()`
 
 * Grounding via **Graph-RAG** of ODL-SD; tools are typed & versioned; **CAG store** caches prompts, embeddings, tool outputs.
@@ -241,8 +241,8 @@ RBAC/phase-gate semantics are implemented from the **User & Access Structure** (
 
 **`services/workers/celery.py`**
 
-`from celery import Celery`  
-`celery = Celery(__name__, broker="redis://redis:6379/0", backend="redis://redis:6379/1")`  
+`from celery import Celery`
+`celery = Celery(__name__, broker="redis://redis:6379/0", backend="redis://redis:6379/1")`
 `celery.conf.beat_schedule = {"daily-reflection": {"task":"tasks.reflection.run", "schedule": 60*60*24}}`
 
 **`tasks/sim.py`** binds to tool schemas (energy/finance/QC), producing typed outputs that become patches or attachments.
@@ -257,10 +257,10 @@ RBAC/phase-gate semantics are implemented from the **User & Access Structure** (
 
 **Technician scan → EPCIS event (example)**
 
-`// apps/mobile-tech/src/lib/epcis.ts`  
-`export async function postEpcisEvent(ev: EPCISEvent) {`  
-  `return fetch("/api/bridge/ingest", { method:"POST", body: JSON.stringify(ev) });`  
-`}`  
+`// apps/mobile-tech/src/lib/epcis.ts`
+`export async function postEpcisEvent(ev: EPCISEvent) {`
+  `return fetch("/api/bridge/ingest", { method:"POST", body: JSON.stringify(ev) });`
+`}`
 `// Events: pickup, departed, arrived, delivered, install, service, etc.  (EPCIS 2.0)`
 
 The required logistics and media capture steps and EPCIS fields are defined in the **Component Management Supplement** (shipments, SSCC, events) and the **Media/Symbols & Imaging** framework.
@@ -305,10 +305,10 @@ Typed I/O schemas for tools (`validate_odl_sd`, `simulate_energy`, `simulate_fin
 
 **Example tool adapter**
 
-`class SimulateEnergyIn(BaseModel): ...  # from schema`  
-`class SimulateEnergyOut(BaseModel): ...`  
-`async def simulate_energy(inp: SimulateEnergyIn) -> SimulateEnergyOut:`  
-    `# pure compute; no free-text writes`  
+`class SimulateEnergyIn(BaseModel): ...  # from schema`
+`class SimulateEnergyOut(BaseModel): ...`
+`async def simulate_energy(inp: SimulateEnergyIn) -> SimulateEnergyOut:`
+    `# pure compute; no free-text writes`
     `return SimulateEnergyOut(...)`
 
 ## **5.4 `odl_sd_patch/`**
@@ -385,12 +385,12 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 
 **Registering a tool (`services/orchestrator/tools/registry/*.py`)**
 
-`TOOL = {`  
-  `"name": "simulate_finance@1.0.0",`  
-  `"inputs_schema": "schemas/simulate_finance.input.json",`  
-  `"outputs_schema": "schemas/simulate_finance.output.json",`  
-  `"side_effects": "none",`  
-  `"rbac_scope": ["finance_editor","financial_analyst"]`  
+`TOOL = {`
+  `"name": "simulate_finance@1.0.0",`
+  `"inputs_schema": "schemas/simulate_finance.input.json",`
+  `"outputs_schema": "schemas/simulate_finance.output.json",`
+  `"side_effects": "none",`
+  `"rbac_scope": ["finance_editor","financial_analyst"]`
 `}`
 
 ---
@@ -411,37 +411,37 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 
 ## **11.1 SQLAlchemy session & RLS**
 
-`from sqlalchemy import create_engine`  
-`from sqlalchemy.orm import sessionmaker`  
-`engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)`  
+`from sqlalchemy import create_engine`
+`from sqlalchemy.orm import sessionmaker`
+`engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)`
 `SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)`
 
-`def db_session(tenant_id: str):`  
-    `db = SessionLocal()`  
-    `db.execute("SET app.current_tenant = :tid", {"tid": tenant_id})`  
-    `try:`  
-        `yield db`  
-    `finally:`  
+`def db_session(tenant_id: str):`
+    `db = SessionLocal()`
+    `db.execute("SET app.current_tenant = :tid", {"tid": tenant_id})`
+    `try:`
+        `yield db`
+    `finally:`
         `db.close()`
 
 ## **11.2 Celery task calling a tool**
 
-`@celery.task(name="tasks.energy.run")`  
-`def run_energy(doc_id: str, scope: str, period: dict):`  
-    `from odl_sd_tools.energy import SimulateEnergyIn, SimulateEnergyOut`  
-    `inp = SimulateEnergyIn(doc_id=doc_id, scope=scope, period=period, granularity="hourly")`  
-    `out: SimulateEnergyOut = simulate_energy(inp)`  
+`@celery.task(name="tasks.energy.run")`
+`def run_energy(doc_id: str, scope: str, period: dict):`
+    `from odl_sd_tools.energy import SimulateEnergyIn, SimulateEnergyOut`
+    `inp = SimulateEnergyIn(doc_id=doc_id, scope=scope, period=period, granularity="hourly")`
+    `out: SimulateEnergyOut = simulate_energy(inp)`
     `return out.model_dump()`
 
 ## **11.3 Frontend patch helper (BFF)**
 
-`export async function applyPatch(docId: string, version: number, patch: any[]) {`  
-  `const res = await fetch("/api/bridge/api/odl/patch", {`  
-    `method: "POST", headers: {"content-type":"application/json"},`  
-    `body: JSON.stringify({doc_id: docId, doc_version: version, patch})`  
-  `});`  
-  `if (!res.ok) throw new Error(await res.text());`  
-  `return res.json();`  
+`export async function applyPatch(docId: string, version: number, patch: any[]) {`
+  `const res = await fetch("/api/bridge/api/odl/patch", {`
+    `method: "POST", headers: {"content-type":"application/json"},`
+    `body: JSON.stringify({doc_id: docId, doc_version: version, patch})`
+  `});`
+  `if (!res.ok) throw new Error(await res.text());`
+  `return res.json();`
 `}`
 
 ---
@@ -504,5 +504,5 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 
 ## **Final note**
 
-This guide encodes the **architecture canon** (ODL-SD v4.1 \+ the AI Blueprint) into folder structure, code patterns, and enforcement points so that everything remains **contract-first** (schemas → tools → patches). When in doubt, align code to the referenced specs here (they are the law).   
+This guide encodes the **architecture canon** (ODL-SD v4.1 \+ the AI Blueprint) into folder structure, code patterns, and enforcement points so that everything remains **contract-first** (schemas → tools → patches). When in doubt, align code to the referenced specs here (they are the law).
 

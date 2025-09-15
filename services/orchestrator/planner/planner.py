@@ -74,7 +74,7 @@ class PlanningResult(BaseModel):
 class TaskPlanner:
     """
     AI Task Planner that creates execution plans with grounding.
-    
+
     Features:
     - Task decomposition into executable steps
     - Tool selection and dependency management
@@ -83,7 +83,7 @@ class TaskPlanner:
     - Parallel execution planning
     - Fallback strategy generation
     """
-    
+
     def __init__(
         self,
         semantic_memory: Optional[SemanticMemory] = None,
@@ -93,12 +93,12 @@ class TaskPlanner:
         self.semantic_memory = semantic_memory
         self.episodic_memory = episodic_memory
         self.tool_registry = tool_registry
-        
+
         # Planning configuration
         self.max_plan_steps = 20
         self.max_planning_time_ms = 5000
         self.min_confidence_threshold = 0.6
-        
+
         # Task type handlers
         self.task_handlers = {
             "component_analysis": self._plan_component_analysis,
@@ -108,9 +108,9 @@ class TaskPlanner:
             "simulation_request": self._plan_simulation_request,
             "general_query": self._plan_general_query
         }
-        
+
         logger.info("TaskPlanner initialized")
-    
+
     async def create_plan(
         self,
         task_type: str,
@@ -123,30 +123,30 @@ class TaskPlanner:
         """Create an execution plan for the given task."""
         start_time = datetime.utcnow()
         plan_id = str(uuid4())
-        
+
         logger.info(f"Creating plan for task: {task_type} - {task_description}")
-        
+
         try:
             # Step 1: Analyze task and gather grounding
             grounding_info = await self._gather_grounding(task_description, context)
-            
+
             # Step 2: Select appropriate planning strategy
             handler = self.task_handlers.get(task_type, self._plan_general_query)
-            
+
             # Step 3: Create plan steps
             steps = await handler(task_description, context, grounding_info)
-            
+
             # Step 4: Optimize plan (parallel execution, cost optimization)
             optimized_steps = await self._optimize_plan(steps, context)
-            
+
             # Step 5: Calculate estimates and confidence
             total_duration, total_cost, confidence = await self._calculate_plan_metrics(optimized_steps)
-            
+
             # Step 6: Generate reasoning
             reasoning = await self._generate_plan_reasoning(
                 task_type, task_description, optimized_steps, grounding_info
             )
-            
+
             metadata = {
                     "region_config": region_config,
                     "context_summary": self._summarize_context(context),
@@ -170,7 +170,7 @@ class TaskPlanner:
                 created_at=start_time,
                 metadata=metadata,
             )
-            
+
             # Store plan in episodic memory
             if self.episodic_memory:
                 await self.episodic_memory.store_interaction(
@@ -184,13 +184,13 @@ class TaskPlanner:
                     },
                     agent_id="task_planner"
                 )
-            
+
             logger.info(f"Plan created: {plan_id} with {len(optimized_steps)} steps (confidence: {confidence:.2f})")
             return plan
-            
+
         except Exception as e:
             logger.error(f"Planning failed for task {task_type}: {str(e)}")
-            
+
             # Return minimal fallback plan
             fallback_step = PlanStep(
                 step_id=str(uuid4()),
@@ -200,7 +200,7 @@ class TaskPlanner:
                 estimated_cost_psu=1,
                 confidence=0.3
             )
-            
+
             return PlanningResult(
                 plan_id=plan_id,
                 task_type=task_type,
@@ -212,7 +212,7 @@ class TaskPlanner:
                 reasoning=f"Planning failed: {str(e)}. Using fallback strategy.",
                 created_at=start_time
             )
-    
+
     async def _gather_grounding(
         self,
         task_description: str,
@@ -225,14 +225,14 @@ class TaskPlanner:
             "sources": [],
             "context_analysis": {}
         }
-        
+
         if self.semantic_memory:
             # Retrieve relevant knowledge
             knowledge_items = await self.semantic_memory.retrieve_knowledge(
                 query=task_description,
                 limit=5
             )
-            
+
             for item, score in knowledge_items:
                 grounding_info["relevant_knowledge"].append({
                     "knowledge_id": item.knowledge_id,
@@ -242,13 +242,13 @@ class TaskPlanner:
                     "confidence": item.confidence
                 })
                 grounding_info["sources"].append(f"knowledge:{item.knowledge_id}")
-            
+
             # Find applicable patterns
             patterns = await self.semantic_memory.find_applicable_patterns(
                 current_conditions=context,
                 min_success_rate=0.7
             )
-            
+
             for pattern, match_score in patterns:
                 grounding_info["applicable_patterns"].append({
                     "pattern_id": pattern.pattern_id,
@@ -258,7 +258,7 @@ class TaskPlanner:
                     "match_score": match_score
                 })
                 grounding_info["sources"].append(f"pattern:{pattern.pattern_id}")
-        
+
         # Analyze context for domain-specific information
         grounding_info["context_analysis"] = {
             "domain": context.get("domain", "general"),
@@ -266,11 +266,11 @@ class TaskPlanner:
             "user_role": context.get("user_role"),
             "complexity_indicators": self._analyze_complexity(task_description, context)
         }
-        
+
         return grounding_info
-    
+
     # Task-specific planning methods
-    
+
     async def _plan_component_analysis(
         self,
         task_description: str,
@@ -279,7 +279,7 @@ class TaskPlanner:
     ) -> List[PlanStep]:
         """Plan for component analysis tasks."""
         steps = []
-        
+
         # Step 1: Parse component data if needed
         if "datasheet" in task_description.lower() or "pdf" in context:
             steps.append(PlanStep(
@@ -291,7 +291,7 @@ class TaskPlanner:
                 estimated_duration_ms=3000,
                 estimated_cost_psu=5
             ))
-        
+
         # Step 2: Classify component
         classify_step = PlanStep(
             step_id=str(uuid4()),
@@ -305,7 +305,7 @@ class TaskPlanner:
         if steps:
             classify_step.dependencies = [steps[-1].step_id]
         steps.append(classify_step)
-        
+
         # Step 3: Find similar components (deduplication)
         dedupe_step = PlanStep(
             step_id=str(uuid4()),
@@ -318,7 +318,7 @@ class TaskPlanner:
             estimated_cost_psu=4
         )
         steps.append(dedupe_step)
-        
+
         # Step 4: Generate recommendations
         recommend_step = PlanStep(
             step_id=str(uuid4()),
@@ -331,7 +331,7 @@ class TaskPlanner:
             estimated_cost_psu=2
         )
         steps.append(recommend_step)
-        
+
         # Step 5: Synthesize results
         synthesis_step = PlanStep(
             step_id=str(uuid4()),
@@ -342,9 +342,9 @@ class TaskPlanner:
             estimated_cost_psu=1
         )
         steps.append(synthesis_step)
-        
+
         return steps
-    
+
     async def _plan_design_validation(
         self,
         task_description: str,
@@ -353,7 +353,7 @@ class TaskPlanner:
     ) -> List[PlanStep]:
         """Plan for design validation tasks."""
         steps = []
-        
+
         # Step 1: Validate ODL-SD document
         validate_step = PlanStep(
             step_id=str(uuid4()),
@@ -365,7 +365,7 @@ class TaskPlanner:
             estimated_cost_psu=3
         )
         steps.append(validate_step)
-        
+
         # Step 2: Run energy simulation
         simulation_step = PlanStep(
             step_id=str(uuid4()),
@@ -378,7 +378,7 @@ class TaskPlanner:
             estimated_cost_psu=8
         )
         steps.append(simulation_step)
-        
+
         # Step 3: Financial analysis
         finance_step = PlanStep(
             step_id=str(uuid4()),
@@ -392,7 +392,7 @@ class TaskPlanner:
             parallel_group="analysis"
         )
         steps.append(finance_step)
-        
+
         # Step 4: Compliance checking (parallel with finance)
         compliance_step = PlanStep(
             step_id=str(uuid4()),
@@ -404,7 +404,7 @@ class TaskPlanner:
             parallel_group="analysis"
         )
         steps.append(compliance_step)
-        
+
         # Step 5: Generate optimization suggestions
         optimize_step = PlanStep(
             step_id=str(uuid4()),
@@ -415,9 +415,9 @@ class TaskPlanner:
             estimated_cost_psu=3
         )
         steps.append(optimize_step)
-        
+
         return steps
-    
+
     async def _plan_project_optimization(
         self,
         task_description: str,
@@ -426,7 +426,7 @@ class TaskPlanner:
     ) -> List[PlanStep]:
         """Plan for project optimization tasks."""
         steps = []
-        
+
         # Use applicable patterns from grounding
         for pattern_info in grounding_info.get("applicable_patterns", []):
             for action in pattern_info["actions"][:3]:  # Limit to top 3 actions
@@ -440,7 +440,7 @@ class TaskPlanner:
                     confidence=pattern_info["success_rate"] * pattern_info["match_score"]
                 )
                 steps.append(step)
-        
+
         # If no patterns found, use default optimization approach
         if not steps:
             steps.extend([
@@ -468,9 +468,9 @@ class TaskPlanner:
                     estimated_cost_psu=2
                 )
             ])
-        
+
         return steps
-    
+
     async def _plan_procurement_assistance(
         self,
         task_description: str,
@@ -479,7 +479,7 @@ class TaskPlanner:
     ) -> List[PlanStep]:
         """Plan for procurement assistance tasks."""
         steps = []
-        
+
         # Step 1: Analyze BOM or component requirements
         analyze_step = PlanStep(
             step_id=str(uuid4()),
@@ -490,7 +490,7 @@ class TaskPlanner:
             estimated_cost_psu=3
         )
         steps.append(analyze_step)
-        
+
         # Step 2: Generate RFQ
         rfq_step = PlanStep(
             step_id=str(uuid4()),
@@ -503,7 +503,7 @@ class TaskPlanner:
             estimated_cost_psu=4
         )
         steps.append(rfq_step)
-        
+
         # Step 3: Find suitable suppliers
         supplier_step = PlanStep(
             step_id=str(uuid4()),
@@ -517,7 +517,7 @@ class TaskPlanner:
             parallel_group="sourcing"
         )
         steps.append(supplier_step)
-        
+
         # Step 4: Price analysis (parallel with supplier matching)
         price_step = PlanStep(
             step_id=str(uuid4()),
@@ -530,7 +530,7 @@ class TaskPlanner:
             parallel_group="sourcing"
         )
         steps.append(price_step)
-        
+
         # Step 5: Generate procurement recommendations
         recommend_step = PlanStep(
             step_id=str(uuid4()),
@@ -541,9 +541,9 @@ class TaskPlanner:
             estimated_cost_psu=2
         )
         steps.append(recommend_step)
-        
+
         return steps
-    
+
     async def _plan_simulation_request(
         self,
         task_description: str,
@@ -552,10 +552,10 @@ class TaskPlanner:
     ) -> List[PlanStep]:
         """Plan for simulation requests."""
         steps = []
-        
+
         # Determine simulation type
         sim_type = self._determine_simulation_type(task_description, context)
-        
+
         if sim_type == "energy":
             steps.append(PlanStep(
                 step_id=str(uuid4()),
@@ -587,7 +587,7 @@ class TaskPlanner:
                 estimated_cost_psu=8,
                 parallel_group="simulation"
             )
-            
+
             finance_step = PlanStep(
                 step_id=str(uuid4()),
                 step_type=PlanStepType.TOOL_EXECUTION,
@@ -597,7 +597,7 @@ class TaskPlanner:
                 estimated_cost_psu=5,
                 parallel_group="simulation"
             )
-            
+
             synthesis_step = PlanStep(
                 step_id=str(uuid4()),
                 step_type=PlanStepType.SYNTHESIS,
@@ -606,11 +606,11 @@ class TaskPlanner:
                 estimated_duration_ms=1000,
                 estimated_cost_psu=2
             )
-            
+
             steps.extend([energy_step, finance_step, synthesis_step])
-        
+
         return steps
-    
+
     async def _plan_general_query(
         self,
         task_description: str,
@@ -619,7 +619,7 @@ class TaskPlanner:
     ) -> List[PlanStep]:
         """Plan for general queries."""
         steps = []
-        
+
         # Step 1: Ground the query with relevant knowledge
         grounding_step = PlanStep(
             step_id=str(uuid4()),
@@ -630,7 +630,7 @@ class TaskPlanner:
             estimated_cost_psu=2
         )
         steps.append(grounding_step)
-        
+
         # Step 2: Generate response
         response_step = PlanStep(
             step_id=str(uuid4()),
@@ -641,11 +641,11 @@ class TaskPlanner:
             estimated_cost_psu=3
         )
         steps.append(response_step)
-        
+
         return steps
-    
+
     # Helper methods
-    
+
     async def _optimize_plan(
         self,
         steps: List[PlanStep],
@@ -659,19 +659,19 @@ class TaskPlanner:
                 if step.parallel_group not in parallel_groups:
                     parallel_groups[step.parallel_group] = []
                 parallel_groups[step.parallel_group].append(step)
-        
+
         # Validate dependencies
         step_ids = {step.step_id for step in steps}
         for step in steps:
             step.dependencies = [dep for dep in step.dependencies if dep in step_ids]
-        
+
         # TODO: Implement more sophisticated optimization
         # - Cost-based tool selection
         # - Parallel execution optimization
         # - Dependency optimization
-        
+
         return steps
-    
+
     async def _calculate_plan_metrics(
         self,
         steps: List[PlanStep]
@@ -680,7 +680,7 @@ class TaskPlanner:
         # Calculate parallel execution groups
         parallel_groups = {}
         sequential_steps = []
-        
+
         for step in steps:
             if step.parallel_group:
                 if step.parallel_group not in parallel_groups:
@@ -688,18 +688,18 @@ class TaskPlanner:
                 parallel_groups[step.parallel_group].append(step)
             else:
                 sequential_steps.append(step)
-        
+
         # Calculate duration (considering parallel execution)
         total_duration = sum(step.estimated_duration_ms for step in sequential_steps)
-        
+
         for group_steps in parallel_groups.values():
             # Parallel steps take the time of the longest step
             max_duration = max(step.estimated_duration_ms for step in group_steps)
             total_duration += max_duration
-        
+
         # Calculate total cost (all steps contribute)
         total_cost = sum(step.estimated_cost_psu for step in steps)
-        
+
         # Calculate overall confidence (weighted average)
         if steps:
             total_weight = sum(step.estimated_cost_psu for step in steps)
@@ -708,9 +708,9 @@ class TaskPlanner:
             ) / total_weight if total_weight > 0 else 0.5
         else:
             weighted_confidence = 0.5
-        
+
         return total_duration, total_cost, weighted_confidence
-    
+
     async def _generate_plan_reasoning(
         self,
         task_type: str,
@@ -722,29 +722,29 @@ class TaskPlanner:
         reasoning_parts = [
             f"Created a {len(steps)}-step plan for {task_type} task."
         ]
-        
+
         # Mention grounding sources
         if grounding_info.get("relevant_knowledge"):
             knowledge_count = len(grounding_info["relevant_knowledge"])
             reasoning_parts.append(f"Grounded with {knowledge_count} relevant knowledge items.")
-        
+
         if grounding_info.get("applicable_patterns"):
             pattern_count = len(grounding_info["applicable_patterns"])
             reasoning_parts.append(f"Applied {pattern_count} learned patterns from past successes.")
-        
+
         # Mention parallel execution
         parallel_steps = [s for s in steps if s.parallel_group]
         if parallel_steps:
             reasoning_parts.append(f"Optimized for parallel execution of {len(parallel_steps)} steps.")
-        
+
         # Mention tool usage
         tool_steps = [s for s in steps if s.tool_name]
         if tool_steps:
             unique_tools = set(s.tool_name for s in tool_steps if s.tool_name)
             reasoning_parts.append(f"Will use {len(unique_tools)} specialized tools.")
-        
+
         return " ".join(reasoning_parts)
-    
+
     def _analyze_complexity(
         self,
         task_description: str,
@@ -754,14 +754,14 @@ class TaskPlanner:
         complexity = {
             "text_length": len(task_description),
             "has_attachments": bool(context.get("attachments")),
-            "multi_step": any(word in task_description.lower() 
+            "multi_step": any(word in task_description.lower()
                              for word in ["then", "after", "next", "also", "additionally"]),
-            "technical_terms": sum(1 for word in task_description.lower().split() 
+            "technical_terms": sum(1 for word in task_description.lower().split()
                                  if word in ["simulation", "optimization", "analysis", "validation"]),
-            "urgency_indicators": any(word in task_description.lower() 
+            "urgency_indicators": any(word in task_description.lower()
                                    for word in ["urgent", "asap", "quickly", "immediately"])
         }
-        
+
         # Calculate overall complexity score
         score = 0
         if complexity["text_length"] > 100:
@@ -774,12 +774,12 @@ class TaskPlanner:
             score += 2
         if complexity["urgency_indicators"]:
             score += 1
-        
+
         complexity["overall_score"] = min(score, 5)  # Cap at 5
         complexity["level"] = ["simple", "moderate", "complex", "very_complex", "expert"][min(score, 4)]
-        
+
         return complexity
-    
+
     def _determine_simulation_type(
         self,
         task_description: str,
@@ -787,18 +787,18 @@ class TaskPlanner:
     ) -> str:
         """Determine the type of simulation needed."""
         desc_lower = task_description.lower()
-        
+
         if any(word in desc_lower for word in ["energy", "performance", "output", "generation"]):
             return "energy"
         elif any(word in desc_lower for word in ["cost", "roi", "financial", "npv", "payback"]):
             return "financial"
         else:
             return "comprehensive"
-    
+
     def _map_action_to_tool(self, action: str) -> Optional[str]:
         """Map pattern action to tool name."""
         action_lower = action.lower()
-        
+
         if "component" in action_lower:
             if "classify" in action_lower:
                 return "ComponentClassificationTool"
@@ -808,19 +808,19 @@ class TaskPlanner:
                 return "ComponentRecommendationTool"
             elif "parse" in action_lower:
                 return "ParseDatasheetTool"
-        
+
         elif "simulate" in action_lower:
             if "energy" in action_lower:
                 return "SimulateEnergyTool"
             elif "financial" in action_lower:
                 return "SimulateFinanceTool"
-        
+
         elif "validate" in action_lower:
             return "ValidateOdlTool"
-        
+
         # Default to None - will be handled as a generic step
         return None
-    
+
     def _summarize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Create a summary of context for metadata."""
         return {

@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting OriginFD API Gateway...")
     settings = get_settings()
-    
+
     # Warm up database connection
     try:
         with engine.connect() as conn:
@@ -52,12 +52,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
         raise
-    
+
     # TODO: Warm up caches, load tool registry, etc.
     logger.info("API Gateway startup complete")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down OriginFD API Gateway...")
 

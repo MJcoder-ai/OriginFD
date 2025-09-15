@@ -132,18 +132,18 @@ export function AppSidebar({ className }: AppSidebarProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [hoverOpen, setHoverOpen] = React.useState(false)
   const [expandedItems, setExpandedItems] = React.useState<string[]>([])
-  
+
   // Load projects dynamically
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => apiClient.listProjects(),
   })
-  
+
   // Filter out legacy projects and create dynamic navigation
-  const uniqueProjects = projects.filter((project: any) => 
+  const uniqueProjects = projects.filter((project: any) =>
     !project.project_name.includes('(Legacy)')
   )
-  
+
   // Create dynamic navigation with projects
   const navigation = React.useMemo(() => {
     const projectsItem = {
@@ -159,7 +159,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
         }))
       ],
     }
-    
+
     return [
       staticNavigation[0], // Dashboard
       projectsItem,
@@ -209,7 +209,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
             }
           }}
         >
-          <div className="flex items-center min-w-0 flex-1" style={{ 
+          <div className="flex items-center min-w-0 flex-1" style={{
             paddingLeft: level === 1 ? '1rem' : level === 2 ? '1.75rem' : '0'
           }}>
             <Icon className="h-4 w-4 flex-shrink-0 mr-2" />
