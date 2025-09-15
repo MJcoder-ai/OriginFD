@@ -193,6 +193,29 @@ steps:
 
         echo "All dependency validations passed!"
 
+  # Step 2.5: Validate TypeScript and Frontend Build
+  - name: 'node:20-alpine'
+    id: 'validate-frontend'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "Installing pnpm and validating frontend build..."
+        npm install -g pnpm
+
+        echo "Installing dependencies..."
+        pnpm install --frozen-lockfile
+
+        echo "Building TypeScript packages..."
+        pnpm --filter @originfd/types-odl build
+        pnpm --filter @originfd/http-client build
+        pnpm --filter @originfd/ui build
+
+        echo "Type-checking web application..."
+        pnpm --filter @originfd/web type-check
+
+        echo "Frontend validation completed successfully!"
+
   # Step 3: Build and Push Docker Images
   - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-api'
