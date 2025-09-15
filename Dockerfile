@@ -59,9 +59,9 @@ USER appuser
 # Expose port
 EXPOSE 8080
 
-# Add health check with optimized settings
+# Add health check with dynamic port support for Cloud Run
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/health/ || exit 1
+    CMD curl -f http://localhost:${PORT:-8080}/health/ || exit 1
 
-# Use ENTRYPOINT for better signal handling in containers
-ENTRYPOINT ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use CMD with shell to support dynamic PORT for Cloud Run
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]

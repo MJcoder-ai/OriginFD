@@ -34,7 +34,6 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV PORT 3000
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -48,8 +47,8 @@ USER nextjs
 
 EXPOSE 3000
 
-# Health check
+# Health check with dynamic port support
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:${PORT:-3000}/api/health || exit 1
 
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "server.js"]

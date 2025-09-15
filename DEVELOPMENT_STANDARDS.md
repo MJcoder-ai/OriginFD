@@ -222,6 +222,10 @@ Before any code changes, AIs must verify:
 - [ ] Linting passes
 - [ ] Docker build succeeds locally
 - [ ] All tests pass
+- [ ] Cloud Run deployment validation completed
+- [ ] No reserved environment variables used
+- [ ] Dynamic port configuration verified
+- [ ] Health check endpoints use dynamic ports
 
 ### ✅ Documentation Phase
 - [ ] Changes documented with rationale
@@ -999,5 +1003,95 @@ const STATUS_TRANSITIONS: Record<ODLComponentStatus, ODLComponentStatus[]> = {
 - **ALWAYS** provide fallbacks for optional nested data
 - **ALWAYS** resolve compilation errors systematically, not individually
 
+### Issue #27: Google Cloud Run PORT Environment Variable Conflicts (DEPLOYMENT FAILURE RESOLVED)
+**Problem**: Critical deployment failures to Google Cloud Run due to reserved environment variable conflicts:
+```
+ERROR: (gcloud.run.deploy) spec.template.spec.containers[0].env: The following reserved env names were provided: PORT. These values are automatically set by the system.
+```
+
+**Root Cause Analysis**:
+1. **Hardcoded PORT Variables**: Multiple Dockerfiles explicitly set PORT environment variable
+2. **Cloud Build Configuration**: `cloudbuild.yaml` explicitly set `PORT=8000` in environment variables
+3. **Fixed Port Bindings**: Applications hardcoded to specific ports instead of using Cloud Run's dynamic PORT
+4. **Health Check Port Conflicts**: Health check endpoints used hardcoded ports
+5. **Missing Environment Variable Validation**: No systematic check for Cloud Run reserved variables
+
+**Critical Files Affected**:
+- `services/api/Dockerfile`: Line 61 - `ENTRYPOINT` with `--port 8000`
+- `services/orchestrator/Dockerfile`: Line 57 - `ENTRYPOINT` with `--port 8001`
+- `apps/web/Dockerfile`: Line 37 - `ENV PORT 3000`
+- `Dockerfile` (main): Line 67 - `ENTRYPOINT` with `--port 8080`
+- `cloudbuild.yaml`: Line 300 - `--set-env-vars="...PORT=8000"`
+
+**Systematic Resolution Applied**:
+1. **Dynamic Port Support**: Updated all Dockerfiles to use `${PORT:-default}` pattern
+2. **Cloud Build Fix**: Removed hardcoded PORT from environment variables
+3. **Health Check Updates**: Updated health checks to use dynamic ports
+4. **Command Structure**: Changed from `ENTRYPOINT` to `CMD` with shell execution for variable expansion
+
+**Critical Code Fixes Applied**:
+```dockerfile
+# BEFORE: Hardcoded ports
+ENTRYPOINT ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV PORT 3000
+
+# AFTER: Dynamic port support
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+# Removed: ENV PORT 3000
+
+# BEFORE: Fixed health check
+HEALTHCHECK CMD curl -f http://localhost:8000/health/ || exit 1
+
+# AFTER: Dynamic health check
+HEALTHCHECK CMD curl -f http://localhost:${PORT:-8000}/health/ || exit 1
+```
+
+**Cloud Build Configuration Fix**:
+```yaml
+# BEFORE: Reserved variable conflict
+--set-env-vars="ENVIRONMENT=production,DEBUG=false,PORT=8000"
+
+# AFTER: Removed reserved PORT variable
+--set-env-vars="ENVIRONMENT=production,DEBUG=false"
+```
+
+**Why This Was Missed in Previous Analysis**:
+1. **Scope Limitation**: Previous TypeScript analysis focused only on compilation, not deployment
+2. **No Deployment Validation**: Missing Cloud Run specific validation in quality checks
+3. **Documentation Gap**: Cloud Run reserved variables not documented in standards
+4. **Testing Gap**: No integration testing with actual Cloud Run deployment
+
+**Additional Issues Discovered in Proactive Review**:
+- Main application Dockerfile had additional PORT conflicts
+- Multiple configuration files contained localhost URLs
+- Docker Compose configurations could mislead development
+- CI/CD health checks used hardcoded localhost URLs
+- Documentation contained outdated port references
+
+**Standards Reinforcement Added**:
+- **NEVER** set reserved Cloud Run environment variables (PORT, K_SERVICE, K_REVISION, K_CONFIGURATION)
+- **ALWAYS** use dynamic port patterns: `${PORT:-default}` in Docker commands
+- **ALWAYS** validate deployment compatibility before build
+- **ALWAYS** test with actual Cloud Run deployment, not just local Docker
+- **ALWAYS** include deployment validation in CI/CD quality gates
+
+**Cloud Run Reserved Environment Variables** (FORBIDDEN in applications):
+- `PORT` - Assigned dynamically by Cloud Run
+- `K_SERVICE` - Service name set by Cloud Run
+- `K_REVISION` - Revision name set by Cloud Run
+- `K_CONFIGURATION` - Configuration name set by Cloud Run
+
+**Production-Ready Port Patterns**:
+```dockerfile
+# Python services (FastAPI/uvicorn)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
+# Node.js services (Next.js standalone mode automatically uses PORT)
+CMD ["node", "server.js"]
+
+# Health checks
+HEALTHCHECK CMD curl -f http://localhost:${PORT:-8000}/health/ || exit 1
+```
+
 Last Updated: 2025-09-15
-Version: 3.1 - Added TypeScript build failure resolution and systematic error fixing standards
+Version: 3.2 - Added Google Cloud Run deployment compatibility and reserved variable validation standards

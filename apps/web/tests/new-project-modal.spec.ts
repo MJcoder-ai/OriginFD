@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page, Route } from '@playwright/test';
 
 // Mock API responses for project creation
-async function mockProjectCreation(page) {
-  await page.route('**/api/bridge/odl/**', route => {
+async function mockProjectCreation(page: Page) {
+  await page.route('**/api/bridge/odl/**', (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',

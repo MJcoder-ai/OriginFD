@@ -49,9 +49,9 @@ USER appuser
 # Expose port
 EXPOSE 8001
 
-# Health check
+# Health check with dynamic port support
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/health/ || exit 1
+    CMD curl -f http://localhost:${PORT:-8001}/health/ || exit 1
 
-# Start the orchestrator application
-ENTRYPOINT ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Start the orchestrator application with dynamic port support for Cloud Run
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8001}"]
