@@ -12,6 +12,10 @@ import uuid
 import logging
 
 from core.database import SessionDep
+from core.performance import (
+    cached_response, rate_limit, performance_metrics,
+    invalidate_component_cache, monitor_performance
+)
 from api.routers.auth import get_current_user
 from models.component import (
     Component, ComponentManagement, ComponentStatusEnum,
@@ -122,6 +126,8 @@ class MediaAssetResponse(BaseModel):
 # Component CRUD Operations
 
 @router.post("/", response_model=ComponentResponse, status_code=status.HTTP_201_CREATED)
+@rate_limit(requests_per_minute=20)  # More restrictive for write operations
+@performance_metrics
 async def create_component(
     request: ComponentCreateRequest,
     db: Session = Depends(SessionDep),
@@ -196,9 +202,12 @@ async def create_component(
         db.add(management)
         db.commit()
         db.refresh(component)
-        
+
+        # Invalidate related cache entries
+        await invalidate_component_cache()
+
         logger.info(f"Created component {component.component_id} by user {current_user['id']}")
-        
+
         return ComponentResponse(
             id=str(component.id),
             component_id=component.component_id,
@@ -230,6 +239,9 @@ async def create_component(
 
 
 @router.get("/", response_model=ComponentListResponse)
+@cached_response(ttl=300, include_user=True)
+@rate_limit(requests_per_minute=100)
+@performance_metrics
 async def list_components(
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
@@ -245,7 +257,15 @@ async def list_components(
     """
     List components with filtering and pagination.
     """
-    query = db.query(Component).filter(Component.tenant_id == current_user["tenant_id"])
+    # Use eager loading to prevent N+1 queries when accessing relationships
+    from sqlalchemy.orm import joinedload, selectinload
+
+    query = db.query(Component).options(
+        # Eager load commonly accessed relationships to prevent N+1 queries
+        joinedload(Component.supplier),
+        selectinload(Component.inventory_records),
+        # Add more relationships as they're defined in the model
+    ).filter(Component.tenant_id == current_user["tenant_id"])
     
     # Apply filters
     if status:
@@ -327,6 +347,9 @@ async def list_components(
 
 
 @router.get("/{component_id}", response_model=ComponentResponse)
+@cached_response(ttl=600, include_user=True)
+@rate_limit(requests_per_minute=200)
+@performance_metrics
 async def get_component(
     component_id: str,
     db: Session = Depends(SessionDep),
@@ -431,7 +454,10 @@ async def update_component(
     
     db.commit()
     db.refresh(component)
-    
+
+    # Invalidate related cache entries
+    await invalidate_component_cache(str(component.id))
+
     logger.info(f"Updated component {component.component_id} by user {current_user['id']}")
     
     return ComponentResponse(
@@ -492,7 +518,10 @@ async def delete_component(
     component.updated_at = datetime.utcnow()
     
     db.commit()
-    
+
+    # Invalidate related cache entries
+    await invalidate_component_cache(str(component.id))
+
     logger.info(f"Archived component {component.component_id} by user {current_user['id']}")
     
     return {"message": "Component archived successfully"}
@@ -554,7 +583,10 @@ async def transition_component_status(
     
     db.commit()
     db.refresh(component)
-    
+
+    # Invalidate related cache entries
+    await invalidate_component_cache(str(component.id))
+
     logger.info(f"Transitioned component {component.component_id} from {old_status} to {request.new_status.value}")
     
     return ComponentResponse(
@@ -669,32 +701,43 @@ async def get_search_suggestions(
 ):
     """
     Get search suggestions for component discovery.
+    Optimized to use a single query with UNION to prevent N+1 queries.
     """
-    suggestions = db.query(Component.brand).filter(
-        and_(
-            Component.tenant_id == current_user["tenant_id"],
-            Component.brand.ilike(f"{q}%")
-        )
-    ).distinct().limit(10).all()
-    
-    brand_suggestions = [s[0] for s in suggestions]
-    
-    part_suggestions = db.query(Component.part_number).filter(
-        and_(
-            Component.tenant_id == current_user["tenant_id"],
-            Component.part_number.ilike(f"{q}%")
-        )
-    ).distinct().limit(10).all()
-    
-    part_suggestions = [s[0] for s in part_suggestions]
-    
+    from sqlalchemy import text
+
+    # Use a single optimized query with UNION to get both brands and part numbers
+    query = text("""
+        SELECT DISTINCT 'brand' as type, brand as value
+        FROM components
+        WHERE tenant_id = :tenant_id AND brand ILIKE :search_term
+
+        UNION
+
+        SELECT DISTINCT 'part_number' as type, part_number as value
+        FROM components
+        WHERE tenant_id = :tenant_id AND part_number ILIKE :search_term
+
+        LIMIT 20
+    """)
+
+    results = db.execute(query, {
+        "tenant_id": current_user["tenant_id"],
+        "search_term": f"{q}%"
+    }).fetchall()
+
+    brands = [r.value for r in results if r.type == 'brand'][:10]
+    part_numbers = [r.value for r in results if r.type == 'part_number'][:10]
+
     return {
-        "brands": brand_suggestions,
-        "part_numbers": part_suggestions
+        "brands": brands,
+        "part_numbers": part_numbers
     }
 
 
 @router.get("/stats/summary")
+@cached_response(ttl=600, include_user=False)  # Cache longer, not user-specific
+@rate_limit(requests_per_minute=50)
+@performance_metrics
 async def get_component_stats(
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user)
@@ -730,15 +773,18 @@ async def get_component_stats(
         )
     ).count()
     
-    # Components by category
+    # Optimized: Get category and domain stats in a single query using subqueries
+    from sqlalchemy import case
+
+    # Single query to get all category stats
     category_stats = db.query(
         Component.category,
         func.count(Component.id).label('count')
     ).filter(
         Component.tenant_id == tenant_id
     ).group_by(Component.category).all()
-    
-    # Components by domain
+
+    # Single query to get all domain stats
     domain_stats = db.query(
         Component.domain,
         func.count(Component.id).label('count')

@@ -1,0 +1,252 @@
+# Docker Compose Production Configuration
+# Optimized for production deployment with multi-stage builds
+
+version: '3.8'
+
+services:
+  # ==============================================
+  # Frontend - Next.js Web Application
+  # ==============================================
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runner  # Use optimized runtime stage
+      cache_from:
+        - node:20-alpine
+        - ${REGISTRY:-originfd}/web:latest
+    image: ${REGISTRY:-originfd}/web:${VERSION:-latest}
+    container_name: originfd-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - API_URL=${API_URL:-http://api:8000}
+    depends_on:
+      - api
+    networks:
+      - originfd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # Backend API - FastAPI Application
+  # ==============================================
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+      target: runtime  # Use optimized runtime stage
+      cache_from:
+        - python:3.11-slim
+        - ${REGISTRY:-originfd}/api:latest
+    image: ${REGISTRY:-originfd}/api:${VERSION:-latest}
+    container_name: originfd-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - originfd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==============================================
+  # AI Orchestrator Service
+  # ==============================================
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
+      target: runtime  # Use optimized runtime stage
+      cache_from:
+        - python:3.11-slim
+        - ${REGISTRY:-originfd}/orchestrator:latest
+    image: ${REGISTRY:-originfd}/orchestrator:${VERSION:-latest}
+    container_name: originfd-orchestrator
+    restart: unless-stopped
+    ports:
+      - "${ORCHESTRATOR_PORT:-8001}:8001"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - originfd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==============================================
+  # Celery Workers Service
+  # ==============================================
+  workers:
+    build:
+      context: .
+      dockerfile: services/workers/Dockerfile
+      target: runtime  # Use optimized runtime stage
+      cache_from:
+        - python:3.11-slim
+        - ${REGISTRY:-originfd}/workers:latest
+    image: ${REGISTRY:-originfd}/workers:${VERSION:-latest}
+    container_name: originfd-workers
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY}
+      - CELERY_WORKER_CONCURRENCY=${CELERY_WORKER_CONCURRENCY:-4}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - originfd-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; r = redis.Redis.from_url('redis://redis:6379/0'); r.ping()"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ==============================================
+  # Database - PostgreSQL
+  # ==============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: originfd-postgres
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-originfd}
+      - POSTGRES_USER=${POSTGRES_USER:-originfd}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    networks:
+      - originfd-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-originfd} -d ${POSTGRES_DB:-originfd}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ==============================================
+  # Cache - Redis
+  # ==============================================
+  redis:
+    image: redis:7-alpine
+    container_name: originfd-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - originfd-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ==============================================
+  # Monitoring - Optional Prometheus
+  # ==============================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: originfd-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - originfd-network
+
+# ==============================================
+# Network Configuration
+# ==============================================
+networks:
+  originfd-network:
+    driver: bridge
+    name: originfd-network
+
+# ==============================================
+# Volume Configuration
+# ==============================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+# ==============================================
+# Configuration Notes
+# ==============================================
+#
+# Environment Variables Required:
+# - DATABASE_URL: PostgreSQL connection string
+# - REDIS_URL: Redis connection string (optional, defaults to redis://redis:6379/0)
+# - SECRET_KEY: Application secret key
+# - POSTGRES_PASSWORD: PostgreSQL password
+#
+# Optional Environment Variables:
+# - VERSION: Image version tag (default: latest)
+# - REGISTRY: Container registry prefix
+# - WEB_PORT: Web application port (default: 3000)
+# - API_PORT: API service port (default: 8000)
+# - ORCHESTRATOR_PORT: Orchestrator service port (default: 8001)
+# - PROMETHEUS_PORT: Prometheus port (default: 9090)
+# - CELERY_WORKER_CONCURRENCY: Number of worker processes (default: 4)
+#
+# Usage:
+#   Production: docker compose -f docker-compose.prod.yml up -d
+#   With monitoring: docker compose -f docker-compose.prod.yml --profile monitoring up -d
+#   Scale workers: docker compose -f docker-compose.prod.yml up -d --scale workers=3

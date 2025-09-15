@@ -1,9 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Types for inventory management
+interface LocationDetails {
+  building: string;
+  room: string;
+  shelf: string;
+  bin: string;
+}
+
+interface InventoryRecord {
+  component_id: string;
+  warehouse_location: string;
+  quantity_available: number;
+  quantity_reserved: number;
+  quantity_on_order: number;
+  reorder_level: number;
+  reorder_quantity: number;
+  unit_cost: number;
+  last_updated: string;
+  location_details: LocationDetails;
+}
+
+interface InventoryTransaction {
+  id: string;
+  component_id: string;
+  transaction_type: 'receipt' | 'issue' | 'transfer' | 'adjustment' | 'return';
+  quantity: number;
+  unit_cost: number;
+  from_location?: string;
+  to_location?: string;
+  reference_number: string;
+  notes: string;
+  created_by: string;
+  created_at: string;
+}
+
 // Mock inventory data generator
 function generateInventoryData(componentIds: string[]) {
   const warehouses = ['Main Warehouse', 'Site Storage A', 'Site Storage B', 'Field Office']
-  const inventoryRecords = []
+  const inventoryRecords: InventoryRecord[] = []
 
   componentIds.forEach(componentId => {
     // Not all components have inventory records (some are catalog-only)
@@ -39,7 +74,7 @@ function generateInventoryData(componentIds: string[]) {
 // Mock transaction data
 function generateTransactionData() {
   const transactionTypes = ['receipt', 'issue', 'transfer', 'adjustment', 'return'] as const
-  const transactions = []
+  const transactions: InventoryTransaction[] = []
 
   for (let i = 0; i < 50; i++) {
     const transactionType = transactionTypes[Math.floor(Math.random() * transactionTypes.length)]
@@ -61,8 +96,8 @@ function generateTransactionData() {
   return transactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
-let mockInventoryData: any[] = []
-let mockTransactionData: any[] = []
+let mockInventoryData: InventoryRecord[] = []
+let mockTransactionData: InventoryTransaction[] = []
 
 export async function GET(request: NextRequest) {
   try {

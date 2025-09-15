@@ -5,13 +5,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import uvicorn
+import time
 
 from core.config import get_settings
 from core.database import engine
 from core.logging_config import setup_logging
+from core.performance import (
+    compression_middleware,
+    health_monitor,
+    db_monitor
+)
 
 
 
@@ -69,7 +76,32 @@ app = FastAPI(
 # Get settings
 settings = get_settings()
 
-# Add middleware
+# Performance monitoring middleware
+@app.middleware("http")
+async def performance_monitoring_middleware(request: Request, call_next):
+    """Monitor request performance and update health metrics."""
+    start_time = time.time()
+    health_monitor.request_count += 1
+
+    try:
+        response = await call_next(request)
+
+        # Add performance headers
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+
+        # Log slow requests
+        if process_time > 2.0:
+            logging.warning(f"Slow request: {request.method} {request.url} took {process_time:.3f}s")
+
+        return response
+    except Exception as e:
+        health_monitor.error_count += 1
+        raise
+
+# Add middleware in correct order (last added = first executed)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_HOSTS,
@@ -122,8 +154,17 @@ async def root():
         "name": "OriginFD API Gateway",
         "version": "0.1.0",
         "status": "operational",
-        "docs": "/docs"
+        "docs": "/docs",
+        "performance": {
+            "requests_processed": health_monitor.request_count,
+            "error_rate": f"{(health_monitor.error_count / max(health_monitor.request_count, 1) * 100):.2f}%"
+        }
     }
+
+@app.get("/health/detailed")
+async def health_detailed():
+    """Detailed health check with performance metrics."""
+    return await health_monitor.get_health_status()
 
 
 if __name__ == "__main__":

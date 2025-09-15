@@ -462,19 +462,52 @@ function generateODLCompliantComponents() {
   return components
 }
 
-// Generate ODL-SD v4.1 compliant components
-const odlComponents = generateODLCompliantComponents()
+// Performance optimization: Use lazy loading and caching
+let odlComponents: any[] = []
+let componentStats: any = null
+let statsCalculated = false
 
-// Calculate stats
-const componentStats = {
-  total_components: odlComponents.length,
-  active_components: odlComponents.filter(c => c.component_management.status === "available").length,
-  draft_components: odlComponents.filter(c => c.component_management.status === "draft").length,
-  categories: {
-    pv_modules: odlComponents.filter(c => c.component_management.component_identity.classification?.unspsc === "26111704").length,
-    inverters: odlComponents.filter(c => c.component_management.component_identity.classification?.unspsc === "26111705").length,
-    batteries: odlComponents.filter(c => c.component_management.component_identity.classification?.unspsc === "26111706").length
+// Function to ensure data is loaded
+function ensureDataLoaded() {
+  if (odlComponents.length === 0) {
+    console.log('Loading ODL components data...')
+    odlComponents = generateODLCompliantComponents()
   }
+}
+
+// Function to calculate stats only when needed with caching
+function calculateStats() {
+  if (!statsCalculated) {
+    console.log('Calculating component statistics...')
+    ensureDataLoaded()
+
+    // Optimized: Calculate all stats in a single pass
+    let activeCount = 0
+    let draftCount = 0
+    const categoryMap = { pv_modules: 0, inverters: 0, batteries: 0 }
+
+    for (const component of odlComponents) {
+      const status = component.component_management.status
+      const unspsc = component.component_management.component_identity.classification?.unspsc
+
+      if (status === "available") activeCount++
+      if (status === "draft") draftCount++
+
+      if (unspsc === "26111704") categoryMap.pv_modules++
+      else if (unspsc === "26111705") categoryMap.inverters++
+      else if (unspsc === "26111706") categoryMap.batteries++
+    }
+
+    componentStats = {
+      total_components: odlComponents.length,
+      active_components: activeCount,
+      draft_components: draftCount,
+      categories: categoryMap
+    }
+
+    statsCalculated = true
+  }
+  return componentStats
 }
 
 export async function GET(request: NextRequest) {
@@ -483,8 +516,9 @@ export async function GET(request: NextRequest) {
     
     // Check if this is a stats request
     if (request.url.includes('/stats')) {
-      console.log('Fetching ODL-SD v4.1 compliant component stats:', componentStats.total_components, 'components')
-      return NextResponse.json(componentStats)
+      const stats = calculateStats()
+      console.log('Fetching ODL-SD v4.1 compliant component stats:', stats.total_components, 'components')
+      return NextResponse.json(stats)
     }
     
     // Parse query parameters
@@ -494,33 +528,45 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const category = searchParams.get('category')
     
-    let filteredComponents = [...odlComponents]
+    // Ensure data is loaded before filtering
+    ensureDataLoaded()
+    let filteredComponents = odlComponents
     
-    // Apply filters
-    if (search) {
-      filteredComponents = filteredComponents.filter(comp => 
-        comp.component_management.component_identity.brand.toLowerCase().includes(search.toLowerCase()) ||
-        comp.component_management.component_identity.part_number.toLowerCase().includes(search.toLowerCase()) ||
-        comp.component_management.component_identity.component_id.toLowerCase().includes(search.toLowerCase())
-      )
+    // Optimized filtering: Use single pass with early exits and pre-computed values
+    const searchLower = search?.toLowerCase()
+    const unspscMap = {
+      'pv_modules': '26111704',
+      'inverters': '26111705',
+      'batteries': '26111706'
     }
-    
-    if (status) {
-      filteredComponents = filteredComponents.filter(comp => comp.component_management.status === status)
-    }
-    
-    if (category) {
-      const unspscMap = {
-        'pv_modules': '26111704',
-        'inverters': '26111705', 
-        'batteries': '26111706'
-      }
-      const targetUnspsc = unspscMap[category as keyof typeof unspscMap]
-      if (targetUnspsc) {
-        filteredComponents = filteredComponents.filter(comp => 
-          comp.component_management.component_identity.classification?.unspsc === targetUnspsc
-        )
-      }
+    const targetUnspsc = category ? unspscMap[category as keyof typeof unspscMap] : null
+
+    if (search || status || category) {
+      filteredComponents = odlComponents.filter(comp => {
+        const mgmt = comp.component_management
+        const identity = mgmt.component_identity
+
+        // Early exit if status doesn't match
+        if (status && mgmt.status !== status) return false
+
+        // Early exit if category doesn't match
+        if (targetUnspsc && identity.classification?.unspsc !== targetUnspsc) return false
+
+        // Check search terms only if search is provided
+        if (searchLower) {
+          const brand = identity.brand.toLowerCase()
+          const partNumber = identity.part_number.toLowerCase()
+          const componentId = identity.component_id.toLowerCase()
+
+          if (!brand.includes(searchLower) &&
+              !partNumber.includes(searchLower) &&
+              !componentId.includes(searchLower)) {
+            return false
+          }
+        }
+
+        return true
+      })
     }
     
     // Pagination

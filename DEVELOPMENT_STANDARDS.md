@@ -252,5 +252,263 @@ This document should be updated whenever:
 - Cloud Build deployment patterns change
 - Industry standards evolve
 
-Last Updated: 2025-09-14
-Version: 1.1 - Added TypeScript type system fragmentation standards
+## Performance & Scalability Standards
+
+### Issue #10: N+1 Database Query Problems
+**Problem**: Database performance bottlenecks due to multiple sequential queries.
+**Example**: Loading components list executes 1 query for components + N queries for each component's relationships.
+**Solution**: Implement eager loading and query optimization.
+
+**Correct Approach**:
+```python
+# BAD: N+1 queries
+components = db.query(Component).all()
+for component in components:
+    supplier = component.supplier  # Triggers additional query
+
+# GOOD: Single optimized query with eager loading
+components = db.query(Component).options(
+    joinedload(Component.supplier),
+    selectinload(Component.inventory_records)
+).all()
+```
+
+### Issue #11: Missing API Response Caching
+**Problem**: Repeated identical requests cause unnecessary database load.
+**Solution**: Implement Redis-based response caching with intelligent invalidation.
+
+**Implementation Standards**:
+```python
+@cached_response(ttl=300, include_user=True)
+@rate_limit(requests_per_minute=100)
+@performance_metrics
+async def list_components():
+    # Automatically cached and rate limited
+```
+
+### Issue #12: Suboptimal Docker Image Sizes
+**Problem**: Docker images over 800MB causing slow deployments and high storage costs.
+**Solution**: Multi-stage builds with dependency isolation.
+
+**Best Practices**:
+- Separate builder and runtime stages
+- Use virtual environments for Python dependencies
+- Comprehensive .dockerignore files
+- Minimal base images (python:3.11-slim, node:20-alpine)
+
+## API Design & Integration Standards
+
+### Issue #13: API Client Drift
+**Problem**: Frontend API client becomes outdated when backend changes, causing runtime errors.
+**Solution**: Automated OpenAPI client generation with CI/CD integration.
+
+**Implementation Standards**:
+```bash
+# Automated generation on API changes
+npm run generate:api-client
+
+# CI/CD integration with coverage validation
+- name: Generate OpenAPI client
+  run: npm run generate:api-client
+```
+
+### Issue #14: Missing Rate Limiting
+**Problem**: APIs vulnerable to abuse and resource exhaustion.
+**Solution**: Redis-based sliding window rate limiting.
+
+**Standards**:
+- Read operations: 100-200 requests/minute
+- Write operations: 20-50 requests/minute
+- Per-user limiting for authenticated endpoints
+- Per-IP limiting for public endpoints
+
+### Issue #15: Insufficient Performance Monitoring
+**Problem**: No visibility into API performance and bottlenecks.
+**Solution**: Comprehensive performance monitoring with metrics collection.
+
+**Required Monitoring**:
+- Request/response times
+- Database query performance
+- Cache hit rates
+- Error rates and patterns
+- Resource utilization
+
+## Security & Reliability Standards
+
+### Issue #16: Container Security Vulnerabilities
+**Problem**: Running containers as root user increases attack surface.
+**Solution**: Non-root user implementation in all containers.
+
+**Standards**:
+```dockerfile
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+USER appuser
+```
+
+### Issue #17: Missing Health Checks
+**Problem**: Services may fail silently without proper health monitoring.
+**Solution**: Comprehensive health checks at multiple levels.
+
+**Implementation**:
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
+```
+
+### Issue #18: Inadequate Error Handling
+**Problem**: Generic error responses provide insufficient debugging information.
+**Solution**: Structured error responses with proper logging.
+
+**Standards**:
+```python
+try:
+    # Operation
+except SpecificException as e:
+    logger.error(f"Operation failed: {str(e)}", extra={"context": context})
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail={"error": "operation_failed", "message": str(e)}
+    )
+```
+
+## Development Workflow Standards
+
+### Issue #19: Missing Automated Quality Checks
+**Problem**: Quality issues slip through to production due to insufficient validation.
+**Solution**: Comprehensive pre-commit and CI/CD validation pipeline.
+
+**Required Checks**:
+```bash
+# Pre-commit validation
+- TypeScript compilation (strict mode)
+- ESLint with security rules
+- Dependency vulnerability scanning
+- Docker build verification
+- Unit test execution
+
+# CI/CD validation
+- Integration test execution
+- Performance regression testing
+- Security scanning
+- OpenAPI client generation validation
+```
+
+### Issue #20: Inconsistent Dependency Management
+**Problem**: Version conflicts and security vulnerabilities in dependencies.
+**Solution**: Centralized dependency management with automated updates.
+
+**Standards**:
+```bash
+# Python: Use pip-tools for lock file generation
+pip-compile requirements.in
+
+# Node.js: Use pnpm with workspace protocol
+"@originfd/types-odl": "workspace:*"
+
+# Automated security updates
+npm audit --audit-level high
+```
+
+## Architectural Design Principles
+
+### 1. Single Source of Truth (SSOT)
+- **NEVER** duplicate type definitions across packages
+- **ALWAYS** use centralized business logic managers
+- **ALWAYS** import from authoritative type sources
+
+### 2. Performance by Design
+- **ALWAYS** implement caching for read operations
+- **ALWAYS** use database query optimization
+- **ALWAYS** implement proper pagination
+- **ALWAYS** monitor and measure performance
+
+### 3. Security by Default
+- **ALWAYS** validate input data with schemas
+- **ALWAYS** implement rate limiting
+- **ALWAYS** use non-root container users
+- **ALWAYS** sanitize error responses
+
+### 4. Observability First
+- **ALWAYS** implement comprehensive logging
+- **ALWAYS** monitor key performance metrics
+- **ALWAYS** provide health check endpoints
+- **ALWAYS** track error rates and patterns
+
+### 5. Automation Over Manual Processes
+- **ALWAYS** automate API client generation
+- **ALWAYS** automate dependency updates
+- **ALWAYS** automate security scanning
+- **ALWAYS** automate performance testing
+
+## Enhanced AI Development Checklist
+
+Before any code changes, AIs must verify:
+
+### ✅ Architecture & Design Phase
+- [ ] Single Source of Truth principle maintained
+- [ ] Performance implications considered
+- [ ] Security vulnerabilities assessed
+- [ ] Caching strategy defined
+- [ ] Monitoring and observability planned
+
+### ✅ Performance & Scalability
+- [ ] Database queries optimized (no N+1 queries)
+- [ ] Response caching implemented where appropriate
+- [ ] Rate limiting configured for all endpoints
+- [ ] Pagination implemented for list operations
+- [ ] Performance metrics collection enabled
+
+### ✅ Security & Reliability
+- [ ] Input validation with proper schemas
+- [ ] Error handling with structured responses
+- [ ] Health checks implemented
+- [ ] Non-root container users configured
+- [ ] Secrets properly managed (not hardcoded)
+
+### ✅ Integration & Automation
+- [ ] API client generation automated
+- [ ] CI/CD pipeline validates all changes
+- [ ] Docker images optimized (multi-stage builds)
+- [ ] Dependency management centralized
+- [ ] Automated testing covers new functionality
+
+### ✅ Monitoring & Observability
+- [ ] Comprehensive logging implemented
+- [ ] Performance metrics tracked
+- [ ] Error monitoring configured
+- [ ] Health status endpoints available
+- [ ] Alert thresholds defined
+
+## Production Readiness Criteria
+
+### Performance Benchmarks
+- API response time: <100ms (cached), <500ms (uncached)
+- Database query time: <1000ms per query
+- Cache hit rate: >90% for read operations
+- Error rate: <1% under normal load
+- Docker image size: <400MB per service
+
+### Security Requirements
+- No hardcoded secrets or credentials
+- All inputs validated with schemas
+- Rate limiting on all public endpoints
+- Security headers implemented
+- Container images scanned for vulnerabilities
+
+### Reliability Standards
+- Health checks respond within 10 seconds
+- Graceful degradation during partial failures
+- Circuit breakers for external service calls
+- Proper error handling and logging
+- Database connection pooling configured
+
+### Monitoring Requirements
+- Performance metrics collection
+- Error rate monitoring and alerting
+- Resource utilization tracking
+- Business metrics dashboards
+- Log aggregation and analysis
+
+Last Updated: 2025-09-15
+Version: 2.0 - Added comprehensive architectural improvement standards

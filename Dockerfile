@@ -1,26 +1,56 @@
-# Dockerfile
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# OriginFD Main Application Dockerfile - Multi-stage optimized build
+# This Dockerfile provides significant size reduction through multi-stage builds
 
-# Set the working directory
+# =====================================
+# Builder stage - Contains build tools and dependencies
+# =====================================
+FROM python:3.11-slim AS builder
+
 WORKDIR /app
 
-# Install system dependencies first (rarely change)
+# Install build dependencies only in builder stage
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
-    curl \
+    make \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first for better layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Create virtual environment to isolate dependencies
+RUN python -m venv /venv
+ENV PATH="/venv/bin:$PATH"
+
+# Install Python dependencies in virtual environment
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# =====================================
+# Runtime stage - Minimal production image
+# =====================================
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Install only runtime dependencies (no build tools)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy virtual environment from builder stage
+COPY --from=builder /venv /venv
+ENV PATH="/venv/bin:$PATH"
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser
 
-# Copy the rest of the application's code
+# Copy the application code (excluding unnecessary files via .dockerignore)
 COPY . .
+
+# Set proper ownership for non-root user
 RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
@@ -29,10 +59,9 @@ USER appuser
 # Expose port
 EXPOSE 8080
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+# Add health check with optimized settings
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8080/health/ || exit 1
 
-# Command to run the application
-# Cloud Run automatically sets the PORT environment variable
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use ENTRYPOINT for better signal handling in containers
+ENTRYPOINT ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
