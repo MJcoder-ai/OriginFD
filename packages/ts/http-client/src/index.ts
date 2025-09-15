@@ -346,7 +346,98 @@ export class OriginFDClient {
     return this.api.get(`marketplace/components/${componentId}`).json()
   }
 
+  // Additional Project Methods
+  async getProjectDocuments(projectId: string): Promise<DocumentResponse[]> {
+    return this.api.get(`projects/${projectId}/documents`).json<DocumentResponse[]>()
+  }
+
+  async getPrimaryProjectDocument(projectId: string): Promise<OdlDocument> {
+    return this.api.get(`projects/${projectId}/documents/primary`).json<OdlDocument>()
+  }
+
+  async getProjectReview(projectId: string): Promise<any> {
+    return this.api.get(`projects/${projectId}/review`).json()
+  }
+
+  async submitApproval(projectId: string, approved: boolean): Promise<any> {
+    return this.api.post(`projects/${projectId}/review/approve`, { json: { approved } }).json()
+  }
+
+  async getProjectScenarios(projectId: string): Promise<any[]> {
+    return this.api.get(`projects/${projectId}/scenarios`).json<any[]>()
+  }
+
+  async adoptScenario(projectId: string, scenarioId: string): Promise<any> {
+    return this.api.post(`projects/${projectId}/scenarios/${scenarioId}/adopt`).json()
+  }
+
+  // Model Registry
+  async listModels(): Promise<any[]> {
+    return this.api.get('models/').json<any[]>()
+  }
+
+  // Transparency Dashboard
+  async getPsuUsage(tenantId: string): Promise<any> {
+    return this.api.get(`transparency/tenants/${tenantId}/psu-usage`).json()
+  }
+
+  async getEscrowStatus(tenantId: string): Promise<any> {
+    return this.api.get(`transparency/tenants/${tenantId}/escrow`).json()
+  }
+
+  async getTransactionHistory(tenantId: string): Promise<any[]> {
+    return this.api.get(`transparency/tenants/${tenantId}/transactions`).json<any[]>()
+  }
+
+  // Canvas and Assets
+  async getAsset(projectId: string, instanceId: string): Promise<any> {
+    return this.api.get(`projects/${projectId}/assets/${instanceId}`).json()
+  }
+
+  async patchViewOverrides(viewId: string, overrides: any): Promise<any> {
+    return this.api.patch(`views/${viewId}/overrides`, { json: overrides }).json()
+  }
+
+  // Document Export
+  async exportDocument(projectId: string, format: string): Promise<any> {
+    return this.api.get(`projects/${projectId}/export/${format}`).json()
+  }
+
+  // Operations and Warranty
+  async createWarrantyClaim(deviceInstanceId: string, formData: any): Promise<any> {
+    return this.api.post(`components/${deviceInstanceId}/warranty/claims`, { json: formData }).json()
+  }
+
+  async swapComponent(deviceInstanceId: string, swapData: any): Promise<any> {
+    return this.api.post(`components/${deviceInstanceId}/swap`, { json: swapData }).json()
+  }
+
+  // Generic HTTP methods for compatibility
+  async post(path: string, data?: any): Promise<any> {
+    const options = data ? { json: data } : {}
+    return this.api.post(path, options).json()
+  }
+
+  async patch(path: string, data?: any): Promise<any> {
+    const options = data ? { json: data } : {}
+    return this.api.patch(path, options).json()
+  }
+
+  async put(path: string, data?: any): Promise<any> {
+    const options = data ? { json: data } : {}
+    return this.api.put(path, options).json()
+  }
+
+  async delete(path: string): Promise<any> {
+    return this.api.delete(path).json()
+  }
+
   // Utility methods
+  async get(path: string, searchParams?: Record<string, string>): Promise<any> {
+    const options = searchParams ? { searchParams } : {}
+    return this.api.get(path, options).json()
+  }
+
   isAuthenticated(): boolean {
     return !!this.authTokens?.accessToken
   }

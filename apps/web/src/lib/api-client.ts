@@ -204,6 +204,29 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}/scenarios`)
   }
 
+  async adoptScenario(projectId: string, scenarioId: string): Promise<any> {
+    return this.request(`projects/${projectId}/scenarios/${scenarioId}/adopt`, {
+      method: 'POST',
+    })
+  }
+
+  async createComponent(request: any): Promise<any> {
+    return this.request('components', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  }
+
+  async exportDocument(projectId: string, format: string): Promise<any> {
+    return this.request(`projects/${projectId}/export/${format}`)
+  }
+
+  // Operation methods for warranty panel
+  async post(path: string, data?: any): Promise<any> {
+    const options = data ? { method: 'POST', body: JSON.stringify(data) } : { method: 'POST' }
+    return this.request(path, options)
+  }
+
   async listModels(): Promise<ModelInfo[]> {
     return this.request('model-registry/models')
   }
@@ -290,6 +313,17 @@ export class OriginFDClient {
 
   async getTransactionHistory(tenantId: string): Promise<TransactionsResponse> {
     return this.request(`commerce/transactions/${tenantId}`)
+  }
+
+  async getHealth(): Promise<any> {
+    return this.request('health')
+  }
+
+  async submitTask(taskType: string, description: string, context: any, priority = 'normal'): Promise<any> {
+    return this.request('tasks/', {
+      method: 'POST',
+      body: JSON.stringify({ task_type: taskType, description, context, priority }),
+    })
   }
 
   // Component APIs
