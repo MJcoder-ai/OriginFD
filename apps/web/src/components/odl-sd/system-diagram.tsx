@@ -35,8 +35,6 @@ type Layer =
 
 interface ConnectionWithLayer extends Connection {
   layer?: Layer;
-  from_port?: string;
-  to_port?: string;
   from_component?: string;
   to_component?: string;
 }
@@ -75,10 +73,12 @@ export function SystemDiagram({
     // Group components by type for better layout
     const componentsByType: Record<string, ComponentInstance[]> = {};
     instances.forEach((component) => {
-      if (!componentsByType[component.type]) {
-        componentsByType[component.type] = [];
+      // Use component_id prefix as type or fallback to "unknown"
+      const componentType = component.component_id?.split(':')[0] || 'unknown';
+      if (!componentsByType[componentType]) {
+        componentsByType[componentType] = [];
       }
-      componentsByType[component.type].push(component);
+      componentsByType[componentType].push(component);
     });
 
     // Define layout columns for different component types
@@ -102,7 +102,7 @@ export function SystemDiagram({
           id: component.id,
           x: x + (index % 2) * 120 - 60, // Slight offset for multiple components of same type
           y: yOffset + Math.floor(index / 2) * 100,
-          type: component.type,
+          type: type,
         });
       });
 
@@ -201,8 +201,9 @@ export function SystemDiagram({
 
   const getComponentName = (id: string) => {
     const component = instances.find((c) => c.id === id);
+    const componentType = component?.component_id?.split(':')[0] || 'unknown';
     return (
-      component?.type
+      componentType
         .replace("_", " ")
         .replace(/\b\w/g, (l) => l.toUpperCase()) || id
     );
@@ -271,8 +272,8 @@ export function SystemDiagram({
                 return connectionLayer ? layers[connectionLayer] : true;
               })
               .map((connection) => {
-                const fromPos = getPositionById(connection.from_component);
-                const toPos = getPositionById(connection.to_component);
+                const fromPos = getPositionById(connection.from_instance_id);
+                const toPos = getPositionById(connection.to_instance_id);
 
                 if (!fromPos || !toPos) return null;
 
@@ -405,8 +406,8 @@ export function SystemDiagram({
             {(connections as ConnectionWithLayer[])
               .filter((conn) => isLayerVisible(conn.layer))
               .map((connection) => {
-                const fromPos = getPositionById(connection.from_component);
-                const toPos = getPositionById(connection.to_component);
+                const fromPos = getPositionById(connection.from_instance_id);
+                const toPos = getPositionById(connection.to_instance_id);
 
                 if (!fromPos || !toPos) return null;
 

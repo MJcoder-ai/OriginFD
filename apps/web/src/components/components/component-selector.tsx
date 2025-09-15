@@ -155,7 +155,6 @@ export function ComponentSelector({
       category: categoryFilter || undefined,
       domain: domainFilter || undefined,
       status: lifecycleFilter || undefined,
-      active_only: true,
       page_size: 50
     }),
     enabled: open,
@@ -488,10 +487,10 @@ export function ComponentSelector({
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="text-sm">
-                              {selectedComponent.component.brand} {selectedComponent.component.part_number}
+                              {selectedComponent.component.component_management?.component_identity?.brand} {selectedComponent.component.component_management?.component_identity?.part_number}
                             </CardTitle>
                             <CardDescription className="text-xs">
-                              {selectedComponent.component.rating_w}W
+                              {selectedComponent.component.component_management?.component_identity?.rating_w}W
                             </CardDescription>
                           </div>
                           <Button

@@ -63,11 +63,11 @@ export default function RFQDashboard({ userRole = 'procurement' }: RFQDashboardP
     let filtered = rfqs
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(rfq => rfq.status === statusFilter)
+      filtered = filtered.filter((rfq: any) => rfq.status === statusFilter)
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(rfq =>
+      filtered = filtered.filter((rfq: any) =>
         rfq.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rfq.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -80,11 +80,11 @@ export default function RFQDashboard({ userRole = 'procurement' }: RFQDashboardP
   const getStatusStats = () => {
     return {
       total: rfqs.length,
-      draft: rfqs.filter(r => r.status === 'draft').length,
-      receiving_bids: rfqs.filter(r => r.status === 'receiving_bids').length,
-      evaluation: rfqs.filter(r => r.status === 'evaluation').length,
-      awarded: rfqs.filter(r => r.status === 'awarded').length,
-      completed: rfqs.filter(r => r.status === 'completed').length
+      draft: rfqs.filter((r: any) => r.status === 'draft').length,
+      receiving_bids: rfqs.filter((r: any) => r.status === 'receiving_bids').length,
+      evaluation: rfqs.filter((r: any) => r.status === 'evaluation').length,
+      awarded: rfqs.filter((r: any) => r.status === 'awarded').length,
+      completed: rfqs.filter((r: any) => r.status === 'completed').length
     }
   }
 

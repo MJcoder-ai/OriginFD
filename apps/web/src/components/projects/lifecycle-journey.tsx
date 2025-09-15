@@ -14,7 +14,7 @@ interface LifecycleJourneyProps {
 export function LifecycleJourney({ projectId }: LifecycleJourneyProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['project-lifecycle', projectId],
-    queryFn: () => apiClient.getProjectLifecycle(projectId),
+    queryFn: () => apiClient.getProject(projectId),
   })
 
   if (isLoading) {

@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ComponentLifecycleManager, getStatusBadgeProps, getProgressColor } from '@/lib/component-lifecycle'
 import { ComponentResponse, ODLComponentStatus } from '@/lib/types'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   Button,
   Badge,
@@ -112,7 +112,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
 
   const handleTransition = () => {
     if (!selectedComponent) return
-    
+
     transitionMutation.mutate({
       componentId: selectedComponent.id,
       newStatus: selectedStatus,
@@ -123,14 +123,14 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
   // Get lifecycle stages overview
   const getLifecycleOverview = () => {
     if (!lifecycleData) return []
-    
+
     const stageGroups = ComponentLifecycleManager.getLifecycleStages()
     return stageGroups.map(stage => {
       const stageStatuses = ComponentLifecycleManager.getStatusesByStage(stage.stage)
-      const count = lifecycleData.filter((comp: ComponentResponse) => 
+      const count = lifecycleData.filter((comp: ComponentResponse) =>
         stageStatuses.includes(comp.component_management?.status as ODLComponentStatus)
       ).length
-      
+
       return {
         ...stage,
         count,
@@ -149,7 +149,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
         return false
       }
     }
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       return (
@@ -158,7 +158,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
         comp.component_management?.component_identity?.part_number?.toLowerCase().includes(query)
       )
     }
-    
+
     return true
   }) || []
 
@@ -285,8 +285,8 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                           {identity?.name}
                         </div>
                       </div>
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`text-xs ${statusDisplay.color}`}
                       >
                         {statusDisplay.label}
@@ -312,8 +312,8 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                         {validTransitions.length > 0 && (
                           <Dialog open={transitionDialogOpen && selectedComponent?.id === component.id}>
                             <DialogTrigger asChild>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => setSelectedComponent(component)}
                               >
@@ -332,7 +332,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                                     {statusDisplay.label} - {statusDisplay.description}
                                   </div>
                                 </div>
-                                
+
                                 <div>
                                   <Label htmlFor="newStatus">New Status</Label>
                                   <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as ODLComponentStatus)}>
@@ -351,7 +351,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                                     </SelectContent>
                                   </Select>
                                 </div>
-                                
+
                                 <div>
                                   <Label htmlFor="reason">Transition Reason</Label>
                                   <Textarea
@@ -361,10 +361,10 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                                     onChange={(e) => setTransitionReason(e.target.value)}
                                   />
                                 </div>
-                                
+
                                 <div className="flex justify-end space-x-2">
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     onClick={() => {
                                       setTransitionDialogOpen(false)
                                       setSelectedComponent(null)
@@ -372,7 +372,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                                   >
                                     Cancel
                                   </Button>
-                                  <Button 
+                                  <Button
                                     onClick={handleTransition}
                                     disabled={!selectedStatus || !transitionReason.trim() || transitionMutation.isPending}
                                   >
@@ -384,7 +384,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                           </Dialog>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center space-x-1">
                         <Button size="sm" variant="ghost">
                           <Activity className="h-3 w-3" />
@@ -403,7 +403,7 @@ export default function LifecycleDashboard({ userRole = 'admin', components = []
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Updated:</span>
-                        <span>{new Date(component.component_management?.updated_at || '').toLocaleDateString()}</span>
+                        <span>{new Date(component.component_management?.audit?.updated_at || '').toLocaleDateString()}</span>
                       </div>
                     </div>
                   </CardContent>

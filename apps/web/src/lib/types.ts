@@ -1,4 +1,5 @@
 export * from '@originfd/types-odl'
+import type { ODLComponentStatus } from '@originfd/types-odl'
 
 // ODL-SD v4.1 Component Management Response Structure
 export interface ComponentResponse {
@@ -239,7 +240,7 @@ export interface SpecificationCompliance {
   notes?: string
 }
 
-export type RFQStatus = 
+export type RFQStatus =
   | 'draft'
   | 'published'
   | 'receiving_bids'
@@ -502,32 +503,32 @@ export interface MediaMetadata {
   // Document specific
   page_count?: number
   language?: string
-  
+
   // Image specific
   dimensions?: {
     width: number
     height: number
     resolution_dpi?: number
   }
-  
+
   // Video specific
   duration_seconds?: number
   frame_rate?: number
   codec?: string
-  
+
   // Common technical metadata
   checksum_md5: string
   checksum_sha256: string
   original_filename: string
   compression_ratio?: number
-  
+
   // Business metadata
   document_version?: string
   revision_date?: string
   expiration_date?: string
   certification_number?: string
   test_standard?: string
-  
+
   // AI extraction metadata
   extracted_text?: string
   extracted_data?: Record<string, any>
@@ -628,7 +629,7 @@ export type Domain = 'PV' | 'BESS' | 'HYBRID' | 'GRID' | 'MICROGRID'
 export type Scale = 'RESIDENTIAL' | 'COMMERCIAL' | 'INDUSTRIAL' | 'UTILITY' | 'HYPERSCALE'
 
 // Enhanced Phase 1 Types for ODL-SD v4.1 Compliance
-export type LifecycleStage = 
+export type LifecycleStage =
   | 'development'
   | 'active'
   | 'mature'
@@ -636,9 +637,9 @@ export type LifecycleStage =
   | 'obsolete'
   | 'discontinued'
 
-export type ComplianceStatus = 
+export type ComplianceStatus =
   | 'compliant'
-  | 'non_compliant' 
+  | 'non_compliant'
   | 'pending_review'
   | 'expired'
   | 'not_applicable'

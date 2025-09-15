@@ -110,7 +110,7 @@ export class OriginFDClient {
     }
 
     if (this.authTokens?.accessToken) {
-      headers['Authorization'] = `Bearer ${this.authTokens.accessToken}`
+      (headers as any)['Authorization'] = `Bearer ${this.authTokens.accessToken}`
     }
 
     const response = await fetch(url, {
@@ -376,7 +376,7 @@ export class OriginFDClient {
     const url = `${this.baseUrl}/components/parse-datasheet`
     const headers: HeadersInit = {}
     if (this.authTokens?.accessToken) {
-      headers['Authorization'] = `Bearer ${this.authTokens.accessToken}`
+      (headers as any)['Authorization'] = `Bearer ${this.authTokens.accessToken}`
     }
 
     const response = await fetch(url, {

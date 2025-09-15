@@ -9,7 +9,8 @@ export class ComponentLifecycleManager {
     'dedupe_pending': ['compliance_pending', 'enriched', 'archived'],
     'compliance_pending': ['approved', 'dedupe_pending', 'archived'],
     'approved': ['available', 'compliance_pending', 'archived'],
-    'available': ['rfq_open', 'approved', 'installed', 'archived'],
+    'available': ['rfq_open', 'sourcing', 'approved', 'installed', 'archived'],
+    'sourcing': ['available', 'rfq_open', 'archived'],
     'rfq_open': ['rfq_awarded', 'available', 'archived'],
     'rfq_awarded': ['purchasing', 'available', 'archived'],
     'purchasing': ['ordered', 'available', 'archived'],
@@ -18,9 +19,14 @@ export class ComponentLifecycleManager {
     'received': ['installed', 'available', 'archived'],
     'installed': ['commissioned', 'received', 'operational', 'retired'],
     'commissioned': ['operational', 'installed', 'retired'],
-    'operational': ['warranty_active', 'commissioned', 'retired'],
-    'warranty_active': ['operational', 'retired'],
-    'retired': ['archived'],
+    'operational': ['warranty_active', 'maintenance', 'commissioned', 'retired'],
+    'warranty_active': ['operational', 'maintenance', 'retired'],
+    'maintenance': ['operational', 'warranty_active', 'quarantine'],
+    'retired': ['recycling', 'archived'],
+    'recycling': ['archived'],
+    'quarantine': ['maintenance', 'returned', 'archived'],
+    'returned': ['available', 'quarantine', 'archived'],
+    'cancelled': ['archived'],
     'archived': [] // Terminal state
   }
 
@@ -169,6 +175,54 @@ export class ComponentLifecycleManager {
       required_actions: ['Decommission', 'Asset disposal planning'],
       stakeholders: ['operations', 'maintenance', 'asset_management']
     },
+    'sourcing': {
+      label: 'Sourcing',
+      description: 'Actively sourcing component from suppliers',
+      color: 'blue',
+      stage: 'procurement',
+      required_actions: ['Contact suppliers', 'Compare quotes'],
+      stakeholders: ['procurement', 'sourcing']
+    },
+    'maintenance': {
+      label: 'Maintenance',
+      description: 'Component undergoing scheduled or corrective maintenance',
+      color: 'orange',
+      stage: 'operations',
+      required_actions: ['Complete maintenance', 'Update records'],
+      stakeholders: ['maintenance', 'operations']
+    },
+    'recycling': {
+      label: 'Recycling',
+      description: 'Component being processed for material recovery',
+      color: 'green',
+      stage: 'end_of_life',
+      required_actions: ['Material separation', 'Recovery tracking'],
+      stakeholders: ['recycling', 'environmental']
+    },
+    'quarantine': {
+      label: 'Quarantine',
+      description: 'Component isolated due to quality or safety concerns',
+      color: 'red',
+      stage: 'operations',
+      required_actions: ['Investigation', 'Quality assessment'],
+      stakeholders: ['quality_assurance', 'safety']
+    },
+    'returned': {
+      label: 'Returned',
+      description: 'Component returned from field, awaiting disposition',
+      color: 'yellow',
+      stage: 'procurement',
+      required_actions: ['Inspection', 'Disposition decision'],
+      stakeholders: ['returns', 'quality_assurance']
+    },
+    'cancelled': {
+      label: 'Cancelled',
+      description: 'Component procurement or deployment cancelled',
+      color: 'red',
+      stage: 'procurement',
+      required_actions: ['Cancel orders', 'Update records'],
+      stakeholders: ['procurement', 'project_management']
+    },
     'archived': {
       label: 'Archived',
       description: 'Component record archived, all lifecycle activities complete',
@@ -222,12 +276,12 @@ export class ComponentLifecycleManager {
 
   static getStakeholdersForStatus(status: ODLComponentStatus): string[] {
     const metadata = this.getStatusMetadata(status)
-    return metadata.stakeholders
+    return [...metadata.stakeholders]
   }
 
   static getRequiredActionsForStatus(status: ODLComponentStatus): string[] {
     const metadata = this.getStatusMetadata(status)
-    return metadata.required_actions
+    return [...metadata.required_actions]
   }
 
   static getStatusesByStage(stage: string): ODLComponentStatus[] {
