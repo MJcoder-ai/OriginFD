@@ -2,25 +2,28 @@
 """
 Enhanced OriginFD API with JWT Authentication
 """
+from datetime import datetime, timedelta
+from typing import Optional
+
 import uvicorn
-from fastapi import FastAPI, HTTPException, status, Depends
+from core.auth import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    authenticate_user,
+    create_token_pair,
+    get_user_by_id,
+    verify_token,
+)
+from core.dependencies import AdminUser, CurrentUser, EngineerUser
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime, timedelta
-
-from core.auth import (
-    authenticate_user, create_token_pair, verify_token,
-    get_user_by_id, ACCESS_TOKEN_EXPIRE_MINUTES
-)
-from core.dependencies import CurrentUser, AdminUser, EngineerUser
 
 # FastAPI app
 app = FastAPI(
     title="OriginFD API",
     description="Enhanced API with JWT Authentication",
-    version="0.2.0"
+    version="0.2.0",
 )
 
 # CORS middleware
@@ -33,12 +36,13 @@ app.add_middleware(
         "http://localhost:3003",
         "http://localhost:3004",
         "http://localhost:3005",
-        "http://localhost:3006"
+        "http://localhost:3006",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Request/Response models
 class LoginRequest(BaseModel):
@@ -93,7 +97,7 @@ async def root():
         "name": "OriginFD API",
         "version": "0.2.0",
         "status": "running",
-        "features": ["JWT Authentication", "Role-based Access Control"]
+        "features": ["JWT Authentication", "Role-based Access Control"],
     }
 
 
@@ -116,11 +120,7 @@ async def login(login_request: LoginRequest):
         )
 
     # Create token data
-    token_data = {
-        "sub": user["id"],
-        "email": user["email"],
-        "roles": user["roles"]
-    }
+    token_data = {"sub": user["id"], "email": user["email"], "roles": user["roles"]}
 
     # Create token pair
     access_token, refresh_token = create_token_pair(token_data)
@@ -128,7 +128,7 @@ async def login(login_request: LoginRequest):
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
 
@@ -144,16 +144,11 @@ async def refresh_token(refresh_request: RefreshRequest):
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
             )
 
         # Create new token data
-        token_data = {
-            "sub": user["id"],
-            "email": user["email"],
-            "roles": user["roles"]
-        }
+        token_data = {"sub": user["id"], "email": user["email"], "roles": user["roles"]}
 
         # Create new token pair
         access_token, new_refresh_token = create_token_pair(token_data)
@@ -161,15 +156,14 @@ async def refresh_token(refresh_request: RefreshRequest):
         return TokenResponse(
             access_token=access_token,
             refresh_token=new_refresh_token,
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
 
     except HTTPException:
         raise
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
 
@@ -181,7 +175,7 @@ async def get_current_user(current_user: CurrentUser):
         email=current_user["email"],
         full_name=current_user.get("full_name"),
         is_active=current_user["is_active"],
-        roles=current_user["roles"]
+        roles=current_user["roles"],
     )
 
 
@@ -208,7 +202,7 @@ async def list_projects(current_user: CurrentUser):
             "content_hash": "abc123",
             "is_active": True,
             "created_at": "2024-01-15T10:00:00Z",
-            "updated_at": "2024-01-20T14:30:00Z"
+            "updated_at": "2024-01-20T14:30:00Z",
         },
         {
             "id": "proj-2",
@@ -219,7 +213,7 @@ async def list_projects(current_user: CurrentUser):
             "content_hash": "def456",
             "is_active": True,
             "created_at": "2024-01-18T14:30:00Z",
-            "updated_at": "2024-01-18T14:30:00Z"
+            "updated_at": "2024-01-18T14:30:00Z",
         },
         {
             "id": "proj-3",
@@ -230,8 +224,8 @@ async def list_projects(current_user: CurrentUser):
             "content_hash": "ghi789",
             "is_active": True,
             "created_at": "2024-01-22T09:15:00Z",
-            "updated_at": "2024-01-23T11:45:00Z"
-        }
+            "updated_at": "2024-01-23T11:45:00Z",
+        },
     ]
 
     return {"projects": projects}
@@ -250,14 +244,13 @@ async def get_project(project_id: str, current_user: CurrentUser):
         "content_hash": "abc123",
         "is_active": True,
         "created_at": "2024-01-15T10:00:00Z",
-        "updated_at": "2024-01-20T14:30:00Z"
+        "updated_at": "2024-01-20T14:30:00Z",
     }
 
 
 @app.post("/projects", response_model=ProjectResponse)
 async def create_project(
-    project_data: ProjectCreateRequest,
-    current_user: EngineerUser
+    project_data: ProjectCreateRequest, current_user: EngineerUser
 ):
     """Create new project (requires engineer role)"""
     import uuid
@@ -272,7 +265,7 @@ async def create_project(
         content_hash="new123",
         is_active=True,
         created_at=datetime.utcnow().isoformat() + "Z",
-        updated_at=datetime.utcnow().isoformat() + "Z"
+        updated_at=datetime.utcnow().isoformat() + "Z",
     )
 
 
@@ -287,13 +280,13 @@ async def get_document(document_id: str, current_user: CurrentUser):
             "scale": "UTILITY",
             "created_at": "2024-01-15T10:00:00Z",
             "updated_at": "2024-01-20T14:30:00Z",
-            "version": "v3"
+            "version": "v3",
         },
         "content": {
             "description": "Large-scale solar PV installation in Arizona",
             "capacity": "500 MW",
-            "location": "Arizona, USA"
-        }
+            "location": "Arizona, USA",
+        },
     }
 
 
@@ -305,13 +298,15 @@ async def list_users(admin_user: AdminUser):
 
     users = []
     for user_data in MOCK_USERS_DB.values():
-        users.append({
-            "id": user_data["id"],
-            "email": user_data["email"],
-            "full_name": user_data.get("full_name"),
-            "is_active": user_data["is_active"],
-            "roles": user_data["roles"]
-        })
+        users.append(
+            {
+                "id": user_data["id"],
+                "email": user_data["email"],
+                "full_name": user_data.get("full_name"),
+                "is_active": user_data["is_active"],
+                "roles": user_data["roles"],
+            }
+        )
 
     return {"users": users}
 
@@ -324,22 +319,21 @@ async def get_admin_stats(admin_user: AdminUser):
         "active_users": 2,
         "total_projects": 3,
         "active_projects": 3,
-        "system_status": "healthy"
+        "system_status": "healthy",
     }
 
 
 if __name__ == "__main__":
+    import os
+
+    port = int(os.environ.get("PORT", 8000))
     print("Starting OriginFD API with JWT Authentication...")
-    print("Available at: http://localhost:8000")
-    print("API docs at: http://localhost:8000/docs")
+    print(f"Available at: http://localhost:{port}")
+    print(f"API docs at: http://localhost:{port}/docs")
     print("Demo credentials:")
     print("  Admin: admin@originfd.com / admin")
     print("  User:  user@originfd.com / password")
 
     uvicorn.run(
-        "auth_api:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        "auth_api:app", host="0.0.0.0", port=port, reload=True, log_level="info"
     )

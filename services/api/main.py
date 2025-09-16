@@ -1,30 +1,26 @@
 """
 OriginFD API Gateway - Main FastAPI Application
 """
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+
 import logging
-import uvicorn
 import time
+from contextlib import asynccontextmanager
 
-from core.config import get_settings
-from core.database import engine
-from core.logging_config import setup_logging
-from core.performance import (
-    compression_middleware,
-    health_monitor,
-    db_monitor
-)
-
-
+import uvicorn
 
 # Include core API routers
 # Temporarily disable commerce router due to import issues
-from api.routers import health, projects, alarms, approvals
+from api.routers import alarms, approvals, health, projects
+from core.config import get_settings
+from core.database import engine
+from core.logging_config import setup_logging
+from core.performance import compression_middleware, db_monitor, health_monitor
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
+
 # Temporarily disabled: , auth
 # from api.routers import commerce
 
@@ -47,6 +43,7 @@ async def lifespan(app: FastAPI):
     try:
         with engine.connect() as conn:
             from sqlalchemy import text
+
             conn.execute(text("SELECT 1"))
         logger.info("Database connection verified")
     except Exception as e:
@@ -70,11 +67,12 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Get settings
 settings = get_settings()
+
 
 # Performance monitoring middleware
 @app.middleware("http")
@@ -92,12 +90,15 @@ async def performance_monitoring_middleware(request: Request, call_next):
 
         # Log slow requests
         if process_time > 2.0:
-            logging.warning(f"Slow request: {request.method} {request.url} took {process_time:.3f}s")
+            logging.warning(
+                f"Slow request: {request.method} {request.url} took {process_time:.3f}s"
+            )
 
         return response
     except Exception as e:
         health_monitor.error_count += 1
         raise
+
 
 # Add middleware in correct order (last added = first executed)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -122,10 +123,7 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions gracefully."""
     logger.error(f"Unexpected error: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 # Include routers
@@ -157,9 +155,10 @@ async def root():
         "docs": "/docs",
         "performance": {
             "requests_processed": health_monitor.request_count,
-            "error_rate": f"{(health_monitor.error_count / max(health_monitor.request_count, 1) * 100):.2f}%"
-        }
+            "error_rate": f"{(health_monitor.error_count / max(health_monitor.request_count, 1) * 100):.2f}%",
+        },
     }
+
 
 @app.get("/health/detailed")
 async def health_detailed():
@@ -168,11 +167,14 @@ async def health_detailed():
 
 
 if __name__ == "__main__":
+    import os
+
     settings = get_settings()
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=settings.ENVIRONMENT == "development",
-        log_level="info"
+        log_level="info",
     )

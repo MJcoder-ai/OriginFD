@@ -1,7 +1,7 @@
 # Docker Compose Production Configuration
 # Optimized for production deployment with multi-stage builds
 
-version: '3.8'
+version: "3.8"
 
 services:
   # ==============================================
@@ -11,7 +11,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      target: runner  # Use optimized runtime stage
+      target: runner # Use optimized runtime stage
       cache_from:
         - node:20-alpine
         - ${REGISTRY:-originfd}/web:latest
@@ -29,7 +29,7 @@ services:
     networks:
       - originfd-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -42,7 +42,7 @@ services:
     build:
       context: .
       dockerfile: services/api/Dockerfile
-      target: runtime  # Use optimized runtime stage
+      target: runtime # Use optimized runtime stage
       cache_from:
         - python:3.11-slim
         - ${REGISTRY:-originfd}/api:latest
@@ -63,7 +63,7 @@ services:
     networks:
       - originfd-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,7 +76,7 @@ services:
     build:
       context: .
       dockerfile: services/orchestrator/Dockerfile
-      target: runtime  # Use optimized runtime stage
+      target: runtime # Use optimized runtime stage
       cache_from:
         - python:3.11-slim
         - ${REGISTRY:-originfd}/orchestrator:latest
@@ -96,7 +96,7 @@ services:
     networks:
       - originfd-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -109,7 +109,7 @@ services:
     build:
       context: .
       dockerfile: services/workers/Dockerfile
-      target: runtime  # Use optimized runtime stage
+      target: runtime # Use optimized runtime stage
       cache_from:
         - python:3.11-slim
         - ${REGISTRY:-originfd}/workers:latest
@@ -128,7 +128,13 @@ services:
     networks:
       - originfd-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import redis; r = redis.Redis.from_url('redis://redis:6379/0'); r.ping()"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import redis; r = redis.Redis.from_url('redis://redis:6379/0'); r.ping()",
+        ]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -152,7 +158,11 @@ services:
     networks:
       - originfd-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-originfd} -d ${POSTGRES_DB:-originfd}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-originfd} -d ${POSTGRES_DB:-originfd}",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -199,12 +209,12 @@ services:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=15d'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
     networks:
       - originfd-network
 
@@ -226,7 +236,6 @@ volumes:
     driver: local
   prometheus_data:
     driver: local
-
 # ==============================================
 # Configuration Notes
 # ==============================================

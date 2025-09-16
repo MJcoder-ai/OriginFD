@@ -2,26 +2,26 @@
 OriginFD AI Orchestrator Service
 L1 AI system with Planner/Router, Tool Registry, and Graph-RAG.
 """
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-import logging
-import uvicorn
 
+import logging
+from contextlib import asynccontextmanager
+
+import uvicorn
+from api.routers import graph
 from core.config import get_settings
 from core.logging_config import setup_logging
-
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from graph_store import GraphStore
-from api.routers import graph
+
 try:  # Optional routers may not exist yet
-    from api.routers import tasks, tools, planning, health
+    from api.routers import health, planning, tasks, tools
 except ImportError:  # pragma: no cover - missing optional modules
     tasks = tools = planning = health = None
 
 
-from api.routers import tasks, tools, planning, health
+from api.routers import health, planning, tasks, tools
 from model_registry import api as model_registry_api
-
 from planner.orchestrator import AIOrchestrator
 
 # Set up logging
@@ -54,9 +54,9 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down OriginFD AI Orchestrator...")
-    if hasattr(app.state, 'orchestrator'):
+    if hasattr(app.state, "orchestrator"):
         await app.state.orchestrator.cleanup()
-    if hasattr(app.state, 'graph_store'):
+    if hasattr(app.state, "graph_store"):
         app.state.graph_store.save()
 
 
@@ -67,7 +67,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Get settings
@@ -79,10 +79,7 @@ settings = get_settings()
 async def global_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions gracefully."""
     logger.error(f"Unexpected error in orchestrator: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 # Include routers
@@ -98,9 +95,6 @@ if planning:
 app.include_router(graph.router, prefix="/graph", tags=["graph"])
 
 
-
-
-
 @app.get("/")
 async def root():
     """Root endpoint with service information."""
@@ -113,18 +107,21 @@ async def root():
             "tool_execution",
             "graph_rag_grounding",
             "policy_routing",
-            "batch_processing"
+            "batch_processing",
         ],
-        "docs": "/docs"
+        "docs": "/docs",
     }
 
 
 if __name__ == "__main__":
+    import os
+
     settings = get_settings()
+    port = int(os.environ.get("PORT", 8001))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8001,
+        port=port,
         reload=settings.ENVIRONMENT == "development",
-        log_level="info"
+        log_level="info",
     )
