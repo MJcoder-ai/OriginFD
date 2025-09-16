@@ -1,0 +1,2390 @@
+{
+  "$schema": "https://odl-sd.org/schemas/v4.1/document.json",
+  "schema_version": "4.1",
+  "meta": {
+    "project": "ODL-SD_Universal_Component_Library",
+    "domain": "PV|BESS|HYBRID|GRID|SCADA",
+    "scale": "RESIDENTIAL|COMMERCIAL|UTILITY|HYPERSCALE",
+    "units": {
+      "system": "SI",
+      "currency": "USD",
+      "coordinate_system": "EPSG:4326"
+    },
+    "timestamps": {
+      "created_at": "2025-08-30T22:00:00Z",
+      "updated_at": "2025-08-30T22:00:00Z",
+      "valid_from": "2025-08-30T22:00:00Z",
+      "valid_until": "2026-08-30T22:00:00Z"
+    },
+    "versioning": {
+      "document_version": "1.0.0",
+      "content_hash": "sha256:pending",
+      "change_summary": "Initial unified component library release"
+    }
+  },
+  "libraries": {
+    "components": {
+      "residential": {
+        "pv_module_mono_60": {
+          "category": "generation",
+          "subcategory": "photovoltaic_module",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "60_cell_mono_PERC",
+            "technology": "mono_PERC_halfcut",
+            "scale": "RESIDENTIAL",
+            "certifications": ["IEC61215-2:2021", "IEC61730", "UL61730"],
+            "warranty_years": 25,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_positive",
+              "direction": "output",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"stc": 40.0, "noct": 37.2, "max_system": 1000},
+                "current_a": {"stc": 9.5, "noct": 7.8, "short_circuit": 10.2}
+              }
+            },
+            {
+              "id": "dc_negative",
+              "direction": "output",
+              "signal": {"kind": "dc", "connector": "MC4", "cable_length_m": 1.2}
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_stc_w": 350,
+              "efficiency_pct": 19.0,
+              "voltage_temp_coef_pct_k": -0.29,
+              "current_temp_coef_pct_k": 0.05,
+              "power_temp_coef_pct_k": -0.37,
+              "noct_c": 45,
+              "cells": 60,
+              "bypass_diodes": 3
+            },
+            "degradation": {
+              "initial_degradation": {
+                "lid_pct": 2.0,
+                "stabilization_kwh_m2": 5
+              },
+              "annual_degradation": {
+                "year_1_pct": 2.0,
+                "years_2_25_pct": 0.5
+              },
+              "warranty": {
+                "product_years": 12,
+                "performance": {
+                  "year_1_min_pct": 98,
+                  "year_25_min_pct": 84.8
+                }
+              }
+            },
+            "physical": {
+              "dimensions_mm": [1765, 1048, 35],
+              "weight_kg": 20.0,
+              "frame": "anodized_aluminum",
+              "glass": {"thickness_mm": 3.2, "type": "tempered_low_iron"}
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -40, "max": 85},
+              "storage_temp_c": {"min": -40, "max": 85}
+            },
+            "safety": {
+              "fire_rating": "Class_C",
+              "ip_rating": "IP67",
+              "max_system_voltage_v": 1000
+            }
+          },
+          "operating_envelope": {
+            "irradiance_w_m2": {"min": 100, "max": 1200},
+            "wind_speed_m_s": {"max": 60},
+            "snow_load_pa": {"front": 5400, "back": 2400},
+            "hail": {"diameter_mm": 25, "velocity_m_s": 23}
+          },
+          "lifecycle": {
+            "design": {
+              "cad_model": "IFC_compatible",
+              "bom_code": "PV-MONO60-350W",
+              "datasheet_url": "https://odl-sd.org/datasheets/pv_mono_60"
+            },
+            "procurement": {
+              "lead_time_days": 30,
+              "moq": 1,
+              "unit_cost_usd": 190,
+              "cost_per_w_usd": 0.54,
+              "supplier_qualification": ["ISO9001", "ISO14001"]
+            },
+            "installation": {
+              "crew_size_min": 2,
+              "installation_time_hours": 0.25,
+              "torque_specs_nm": {"frame": 8, "grounding": 5},
+              "tools_required": ["torque_wrench", "mc4_tool"]
+            },
+            "commissioning": {
+              "tests": ["visual_inspection", "iv_curve", "insulation_resistance"],
+              "sampling_rate_pct": 20,
+              "acceptance_criteria": "within_3pct_nameplate"
+            },
+            "operations": {
+              "inspection_interval_months": 12,
+              "cleaning_trigger": "soiling_loss_5pct",
+              "monitoring": "string_level"
+            },
+            "decommissioning": {
+              "removal_time_hours": 0.15,
+              "recycling_streams": ["glass", "aluminum", "silicon", "silver"],
+              "recycling_rate_pct": 95,
+              "disposal_method": "manufacturer_takeback"
+            }
+          },
+          "compliance": {
+            "standards": ["IEC61215-2:2021", "IEC61730", "UL61730"],
+            "grid_codes": ["IEEE1547-2018"],
+            "environmental": ["RoHS", "WEEE"],
+            "testing": {
+              "factory": ["EL_imaging", "flash_test"],
+              "field": ["IV_curve", "thermal_imaging"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 190,
+              "installation_usd": 25,
+              "total_usd": 215
+            },
+            "opex": {
+              "cleaning_usd_year": 2,
+              "inspection_usd_year": 1
+            },
+            "lcoe_contribution_usd_kwh": 0.018
+          }
+        },
+        "battery_lfp_5kwh": {
+          "category": "energy_storage",
+          "subcategory": "battery_module",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "48V_100Ah_LFP",
+            "technology": "LiFePO4",
+            "scale": "RESIDENTIAL",
+            "certifications": ["UL1973", "IEC62619", "UN38.3"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_positive",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"nominal": 51.2, "min": 45, "max": 58.4},
+                "current_a": {"continuous": 100, "peak": 150}
+              }
+            },
+            {
+              "id": "dc_negative",
+              "direction": "bidirectional",
+              "signal": {"kind": "dc"}
+            },
+            {
+              "id": "bms_can",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "CAN_2.0B",
+                "baud_rate": 500000
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "energy_kwh": 5.12,
+              "capacity_ah": 100,
+              "nominal_voltage_v": 51.2,
+              "internal_resistance_mohm": 30,
+              "round_trip_efficiency_pct": 95
+            },
+            "degradation": {
+              "calendar_model": {
+                "type": "arrhenius",
+                "parameters": {
+                  "activation_energy_ev": 0.8,
+                  "pre_exponential": 1e-4
+                }
+              },
+              "cycle_model": {
+                "cycles_80_dod": 6000,
+                "cycles_100_dod": 4000,
+                "eol_capacity_pct": 80
+              }
+            },
+            "physical": {
+              "dimensions_mm": [482, 442, 155],
+              "weight_kg": 45,
+              "terminals": "M8",
+              "enclosure": "metal"
+            },
+            "thermal": {
+              "operating_temp_c": {
+                "charge": {"min": 0, "max": 45},
+                "discharge": {"min": -10, "max": 55}
+              },
+              "storage_temp_c": {"min": -20, "max": 60},
+              "thermal_management": "passive"
+            },
+            "safety": {
+              "chemistry_hazards": ["thermal_runaway", "electrolyte_leak"],
+              "fire_class": "not_applicable",
+              "suppression": "not_required",
+              "venting_required": false,
+              "ip_rating": "IP20"
+            }
+          },
+          "operating_envelope": {
+            "soc_pct": {"min": 10, "max": 90},
+            "c_rate": {"charge_max": 1.0, "discharge_max": 1.0},
+            "altitude_m": {"max": 3000}
+          },
+          "protection": {
+            "overvoltage": {
+              "threshold_v": 60,
+              "response": "disconnect"
+            },
+            "undervoltage": {
+              "threshold_v": 44,
+              "response": "disconnect"
+            },
+            "overcurrent": {
+              "threshold_a": 150,
+              "response": "current_limit"
+            },
+            "overtemperature": {
+              "threshold_c": 60,
+              "response": "derate"
+            }
+          },
+          "lifecycle": {
+            "design": {
+              "chemistry_selection": "LFP_for_safety",
+              "cell_configuration": "16S1P",
+              "bom_code": "BATT-LFP-5KWH"
+            },
+            "procurement": {
+              "lead_time_days": 45,
+              "unit_cost_usd": 1400,
+              "cost_per_kwh_usd": 274,
+              "supplier_qualification": ["ISO9001", "UL_listed"]
+            },
+            "installation": {
+              "location": "indoor_garage_basement",
+              "mounting": "wall_rack",
+              "clearances_mm": {"front": 900, "sides": 100, "top": 200},
+              "ventilation": "natural",
+              "crew_size": 2,
+              "installation_time_hours": 2
+            },
+            "commissioning": {
+              "tests": ["insulation", "communication", "charge_discharge"],
+              "bms_configuration": true,
+              "initial_soc_pct": 50
+            },
+            "operations": {
+              "monitoring": "continuous_bms",
+              "maintenance_interval_months": 12,
+              "firmware_updates": "OTA",
+              "soc_window_pct": [10, 90]
+            },
+            "decommissioning": {
+              "removal_time_hours": 1,
+              "data_erasure": "required",
+              "recycling_streams": ["lithium", "copper", "aluminum", "steel"],
+              "recycling_rate_pct": 95,
+              "hazmat_handling": "UN3480"
+            }
+          },
+          "compliance": {
+            "standards": ["UL1973", "IEC62619", "UN38.3"],
+            "installation": ["NEC_Article_706", "NFPA_855"],
+            "environmental": ["RoHS", "REACH"],
+            "testing": {
+              "factory": ["capacity", "internal_resistance", "safety"],
+              "field": ["communication", "functionality"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 1400,
+              "installation_usd": 350,
+              "total_usd": 1750
+            },
+            "opex": {
+              "maintenance_usd_year": 50
+            },
+            "value_streams": ["self_consumption", "TOU_arbitrage", "backup_power"]
+          }
+        },
+        "inverter_string_5kw": {
+          "category": "power_electronics",
+          "subcategory": "string_inverter",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "5kW_single_phase",
+            "technology": "transformerless",
+            "scale": "RESIDENTIAL",
+            "certifications": ["UL1741SB", "IEEE1547-2018"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_mppt1",
+              "direction": "input",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 120, "max": 600, "mppt_range": [150, 500]},
+                "current_a": {"max": 14}
+              }
+            },
+            {
+              "id": "dc_mppt2",
+              "direction": "input",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 120, "max": 600, "mppt_range": [150, 500]},
+                "current_a": {"max": 14}
+              }
+            },
+            {
+              "id": "ac_grid",
+              "direction": "output",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 240,
+                "phases": 1,
+                "frequency_hz": {"nominal": 60, "range": [59.3, 60.5]}
+              }
+            },
+            {
+              "id": "comm",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "RS485_ModbusRTU"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "rated_power_w": 5000,
+              "max_efficiency_pct": 97.8,
+              "euro_efficiency_pct": 97.2,
+              "mppt_efficiency_pct": 99.9,
+              "thd_pct": 3,
+              "power_factor": {"range": [0.8, 1.0, 0.8]},
+              "mppt_count": 2
+            },
+            "degradation": {
+              "annual_efficiency_loss_pct": 0.1,
+              "mtbf_hours": 150000,
+              "capacitor_life_years": 15
+            },
+            "physical": {
+              "dimensions_mm": [471, 435, 176],
+              "weight_kg": 18,
+              "mounting": "wall_bracket",
+              "cooling": "natural_convection"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -25, "max": 60},
+              "derating_start_c": 45,
+              "storage_temp_c": {"min": -30, "max": 70}
+            },
+            "safety": {
+              "ip_rating": "NEMA3R",
+              "ground_fault": "integrated",
+              "arc_fault": "integrated_AFCI",
+              "rapid_shutdown": "PVRSS_compliant",
+              "isolation": "galvanic"
+            }
+          },
+          "operating_envelope": {
+            "dc_input_v": {"min": 120, "max": 600},
+            "ambient_temp_c": {"min": -25, "max": 60},
+            "humidity_pct": {"max": 100},
+            "altitude_m": {"max": 3000}
+          },
+          "grid_support_functions": {
+            "volt_var": {
+              "enabled": true,
+              "default_curve": "IEEE1547_Category_B"
+            },
+            "volt_watt": {
+              "enabled": true,
+              "activation_v_pu": 1.06
+            },
+            "freq_watt": {
+              "enabled": true,
+              "droop_pct": 5
+            },
+            "ride_through": {
+              "lvrt": true,
+              "hvrt": true,
+              "lfrt": true,
+              "hfrt": true
+            }
+          },
+          "lifecycle": {
+            "design": {
+              "topology": "H_bridge",
+              "switching_frequency_khz": 16,
+              "bom_code": "INV-STR-5KW"
+            },
+            "procurement": {
+              "lead_time_days": 14,
+              "unit_cost_usd": 1400,
+              "cost_per_w_usd": 0.28
+            },
+            "installation": {
+              "location": "outdoor_wall",
+              "clearances_mm": {"top": 300, "bottom": 600, "sides": 150},
+              "crew_size": 2,
+              "installation_time_hours": 3,
+              "dc_wiring": "MC4_connectors",
+              "ac_wiring": "THHN_10AWG"
+            },
+            "commissioning": {
+              "tests": ["insulation", "ground_fault", "grid_profile"],
+              "grid_profile_setting": "IEEE1547_2018",
+              "startup_sequence": "automatic"
+            },
+            "operations": {
+              "monitoring": "integrated_wifi",
+              "firmware_updates": "OTA",
+              "maintenance_interval_months": 12,
+              "expected_life_years": 15
+            },
+            "decommissioning": {
+              "removal_time_hours": 1,
+              "recycling_streams": ["aluminum", "copper", "electronics"],
+              "recycling_rate_pct": 85,
+              "disposal_method": "e_waste"
+            }
+          },
+          "compliance": {
+            "standards": ["UL1741SB", "IEEE1547-2018", "FCC_Part15_ClassB"],
+            "grid_codes": ["Rule21", "Rule14H"],
+            "safety": ["NEC2020_Article690"],
+            "testing": {
+              "factory": ["hipot", "ground_continuity", "functionality"],
+              "field": ["anti_islanding", "grid_support_verification"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 1400,
+              "installation_usd": 450,
+              "total_usd": 1850
+            },
+            "opex": {
+              "maintenance_usd_year": 50
+            },
+            "efficiency_value_usd_year": 120
+          }
+        }
+      },
+      "commercial": {
+        "pv_module_bifacial_144": {
+          "category": "generation",
+          "subcategory": "photovoltaic_module",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "144_halfcell_bifacial",
+            "technology": "mono_PERC_bifacial",
+            "scale": "COMMERCIAL",
+            "certifications": ["IEC61215", "IEC61730", "UL61730"],
+            "warranty_years": 25,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_positive",
+              "direction": "output",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"stc": 50, "max_system": 1500},
+                "current_a": {"stc": 11, "short_circuit": 12}
+              }
+            },
+            {
+              "id": "dc_negative",
+              "direction": "output",
+              "signal": {"kind": "dc"}
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_stc_w": 540,
+              "efficiency_pct": 21.0,
+              "cells": 144,
+              "bifaciality_factor": 0.8,
+              "temp_coef_power_pct_k": -0.34
+            },
+            "degradation": {
+              "year_1_pct": 2.0,
+              "annual_pct": 0.45,
+              "bifacial_gain_degradation_pct_year": 0.1
+            },
+            "physical": {
+              "dimensions_mm": [2278, 1134, 35],
+              "weight_kg": 28,
+              "frame": "anodized_aluminum"
+            },
+            "thermal": {
+              "noct_c": 44,
+              "operating_temp_c": {"min": -40, "max": 85}
+            },
+            "safety": {
+              "fire_rating": "Class_A",
+              "ip_rating": "IP68",
+              "max_system_voltage_v": 1500
+            }
+          },
+          "operating_envelope": {
+            "irradiance_w_m2": {"min": 100, "max": 1500},
+            "wind_speed_m_s": {"max": 60},
+            "snow_load_pa": 5400
+          },
+          "lifecycle": {
+            "design": {
+              "bifacial_gain_estimated_pct": 10,
+              "albedo_assumption": 0.25,
+              "bom_code": "PV-BIF-144-540W"
+            },
+            "procurement": {
+              "lead_time_days": 45,
+              "moq": 620,
+              "unit_cost_usd": 290,
+              "cost_per_w_usd": 0.54
+            },
+            "installation": {
+              "crew_size_min": 4,
+              "installation_rate_kw_day": 150,
+              "ground_clearance_m_min": 1.0
+            },
+            "commissioning": {
+              "tests": ["string_verification", "iv_curve", "thermal_imaging"],
+              "sampling_rate_pct": 100,
+              "bifacial_verification": true
+            },
+            "operations": {
+              "cleaning_frequency_year": 4,
+              "albedo_enhancement": "white_rock_optional",
+              "monitoring": "string_level"
+            },
+            "decommissioning": {
+              "removal_rate_kw_day": 200,
+              "recycling_rate_pct": 95
+            }
+          },
+          "compliance": {
+            "standards": ["IEC61215", "IEC61730", "IEC62109-1", "IEC62109-2"],
+            "grid_codes": ["IEEE1547-2018_Category_B"],
+            "interconnection": {"ieee_1547_2018_category": "B"},
+            "testing": {
+              "factory": ["EL_imaging", "flash_test", "bifacial_characterization"],
+              "field": ["IV_curve", "thermal_imaging", "albedo_measurement"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 290,
+              "installation_usd": 35,
+              "total_usd": 325
+            },
+            "opex": {
+              "cleaning_usd_year": 3,
+              "inspection_usd_year": 2
+            }
+          }
+        },
+        "tracker_single_axis_2p": {
+          "category": "structural",
+          "subcategory": "single_axis_tracker",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "SAT_2P_commercial",
+            "technology": "distributed_drive",
+            "scale": "COMMERCIAL",
+            "certifications": ["UL3703", "IEC62817"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "motor_control",
+              "direction": "input",
+              "signal": {
+                "kind": "control",
+                "protocol": "RS485_ModbusRTU"
+              }
+            },
+            {
+              "id": "scada",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "ModbusTCP"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "motor_power_w": 50,
+              "controller_power_w": 10,
+              "backup_power": "optional_battery"
+            },
+            "mechanical": {
+              "tracking_range_deg": [-60, 60],
+              "modules_per_row": 78,
+              "row_length_m": 90,
+              "gcr": 0.35,
+              "backtracking": true,
+              "accuracy_deg": 0.5
+            },
+            "physical": {
+              "torque_tube_diameter_mm": 150,
+              "material": "galvanized_steel",
+              "foundation_type": "driven_pile"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -30, "max": 55}
+            },
+            "safety": {
+              "wind_stow_speed_m_s": 20,
+              "snow_stow_angle_deg": 45,
+              "ip_rating": "IP65"
+            }
+          },
+          "operating_envelope": {
+            "wind_speed_m_s": {"operational_max": 20, "survival_max": 45},
+            "snow_load_pa": 2400,
+            "seismic_zone": 4
+          },
+          "lifecycle": {
+            "design": {
+              "terrain_slope_max_pct": 10,
+              "row_spacing_optimization": "gcr_based",
+              "bom_code": "TRK-SAT-2P"
+            },
+            "procurement": {
+              "lead_time_days": 60,
+              "unit_cost_usd_per_kw": 80
+            },
+            "installation": {
+              "pile_driving_rate_day": 200,
+              "assembly_rate_mw_week": 2,
+              "commissioning_rate_mw_day": 1
+            },
+            "commissioning": {
+              "tests": ["row_alignment", "tracking_accuracy", "backtracking_verification"],
+              "calibration": "astronomical_algorithm"
+            },
+            "operations": {
+              "maintenance_interval_months": 6,
+              "lubrication_interval_months": 12,
+              "controller_firmware_updates": "OTA"
+            },
+            "decommissioning": {
+              "disassembly_rate_mw_week": 3,
+              "steel_recycling_rate_pct": 98
+            }
+          },
+          "compliance": {
+            "standards": ["UL3703", "IEC62817"],
+            "testing": {
+              "factory": ["motor_burn_in", "controller_functionality"],
+              "field": ["tracking_performance", "wind_tunnel_optional"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd_per_kw": 80,
+              "installation_usd_per_kw": 25,
+              "total_usd_per_kw": 105
+            },
+            "opex": {
+              "maintenance_usd_kw_year": 3,
+              "tracking_gain_pct": 25
+            }
+          }
+        },
+        "battery_lfp_100kwh": {
+          "category": "energy_storage",
+          "subcategory": "battery_rack",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "100kWh_LFP_rack",
+            "technology": "LFP",
+            "scale": "COMMERCIAL",
+            "certifications": ["UL1973", "IEC62619", "UL9540A"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_bus",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 600, "max": 1000, "nominal": 700},
+                "current_a": {"continuous": 150, "peak": 200}
+              }
+            },
+            {
+              "id": "bms",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "CAN_2.0B"
+              }
+            },
+            {
+              "id": "coolant_in",
+              "direction": "input",
+              "signal": {
+                "kind": "thermal",
+                "medium": "air",
+                "flow_cfm": 500
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "energy_kwh": 100,
+              "usable_energy_kwh": 95,
+              "nominal_voltage_v": 700,
+              "c_rate_continuous": 0.5,
+              "c_rate_peak": 1.0,
+              "round_trip_efficiency_pct": 95
+            },
+            "degradation": {
+              "calendar_life_years": 15,
+              "cycle_life_80_dod": 8000,
+              "annual_capacity_loss_pct": 2
+            },
+            "physical": {
+              "dimensions_mm": [2400, 600, 2200],
+              "weight_kg": 850,
+              "rack_mount": "19_inch"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -10, "max": 45},
+              "thermal_management": "forced_air",
+              "heat_generation_w": {"charge": 500, "discharge": 600}
+            },
+            "safety": {
+              "fire_suppression": "integrated_aerosol",
+              "gas_detection": ["CO", "H2"],
+              "emergency_stop": "external_button",
+              "ip_rating": "IP54"
+            }
+          },
+          "operating_envelope": {
+            "soc_pct": {"min": 5, "max": 95},
+            "altitude_m": {"max": 2000},
+            "humidity_pct": {"max": 95}
+          },
+          "protection": {
+            "bms_functions": ["cell_balancing", "thermal_management", "fault_detection"],
+            "dc_breaker": {"rating_a": 250, "type": "electronic"},
+            "ground_fault": {"detection": "insulation_monitoring"}
+          },
+          "lifecycle": {
+            "design": {
+              "cell_chemistry": "LFP_for_safety",
+              "module_configuration": "14S7P",
+              "thermal_design": "forced_air_redundant_fans"
+            },
+            "procurement": {
+              "lead_time_days": 90,
+              "unit_cost_usd": 28000,
+              "cost_per_kwh_usd": 280
+            },
+            "installation": {
+              "location": "outdoor_enclosure",
+              "foundation": "concrete_pad",
+              "clearances_m": {"front": 1.2, "rear": 0.8, "sides": 0.8},
+              "crew_size": 4,
+              "installation_time_days": 2
+            },
+            "commissioning": {
+              "tests": ["capacity", "communication", "protection_coordination"],
+              "burn_in_cycles": 3,
+              "acceptance_criteria": "95pct_rated_capacity"
+            },
+            "operations": {
+              "monitoring": "24_7_remote",
+              "maintenance_interval_months": 6,
+              "augmentation_year": 7,
+              "state_of_health_reporting": "monthly"
+            },
+            "decommissioning": {
+              "removal_time_days": 1,
+              "second_life_applications": ["stationary_storage"],
+              "recycling_rate_pct": 95
+            }
+          },
+          "compliance": {
+            "standards": ["UL1973", "IEC62619", "UL9540A"],
+            "installation": ["NFPA855", "NEC_Article_706"],
+            "testing": {
+              "factory": ["cell_screening", "module_burn_in", "BMS_validation"],
+              "field": ["capacity_test", "thermal_runaway_test"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 28000,
+              "installation_usd": 5000,
+              "total_usd": 33000
+            },
+            "opex": {
+              "maintenance_usd_year": 500,
+              "insurance_usd_year": 300
+            },
+            "revenue_streams": ["demand_charge_reduction", "peak_shaving", "frequency_regulation"]
+          }
+        },
+        "pcs_100kw": {
+          "category": "power_electronics",
+          "subcategory": "bidirectional_pcs",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "100kW_PCS",
+            "technology": "three_level_NPC",
+            "scale": "COMMERCIAL",
+            "certifications": ["UL1741SB", "IEEE1547-2018"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_battery",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 600, "max": 1000},
+                "current_a": {"max": 180}
+              }
+            },
+            {
+              "id": "ac_grid",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 480,
+                "phases": 3,
+                "frequency_hz": {"nominal": 60}
+              }
+            },
+            {
+              "id": "comm",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "ModbusTCP"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "rated_power_kw": 100,
+              "efficiency_pct": 98,
+              "power_factor_range": [0.85, 1.0, 0.85],
+              "thd_pct": 3,
+              "response_time_ms": 100
+            },
+            "degradation": {
+              "annual_efficiency_loss_pct": 0.2,
+              "capacitor_life_years": 10
+            },
+            "physical": {
+              "dimensions_mm": [800, 800, 2100],
+              "weight_kg": 450,
+              "cooling": "forced_air"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -20, "max": 50},
+              "derating_start_c": 40
+            },
+            "safety": {
+              "ip_rating": "IP54",
+              "isolation": "transformer_optional"
+            }
+          },
+          "grid_support_functions": {
+            "frequency_response": {
+              "droop_pct": 5,
+              "deadband_mhz": 36
+            },
+            "voltage_support": {
+              "q_at_zero_p": 0.44,
+              "response_time_ms": 200
+            },
+            "black_start": false,
+            "grid_forming": false
+          },
+          "lifecycle": {
+            "design": {
+              "topology": "three_level_NPC",
+              "switching_device": "IGBT",
+              "control_platform": "DSP_FPGA"
+            },
+            "procurement": {
+              "lead_time_days": 60,
+              "unit_cost_usd": 15000,
+              "cost_per_kw_usd": 150
+            },
+            "installation": {
+              "location": "outdoor_pad",
+              "cooling_requirements": "ambient_plus_fans",
+              "crew_size": 4,
+              "installation_time_days": 2
+            },
+            "commissioning": {
+              "tests": ["power_quality", "efficiency", "grid_support_functions"],
+              "grid_interconnection_study": true
+            },
+            "operations": {
+              "monitoring": "SCADA_integrated",
+              "maintenance_interval_months": 6,
+              "filter_replacement_months": 12
+            },
+            "decommissioning": {
+              "removal_time_days": 1,
+              "recycling_rate_pct": 85
+            }
+          },
+          "compliance": {
+            "interconnection": {
+              "ieee_1547_2018_category": "B",
+              "ul_1741": "SB"
+            },
+            "safety": ["IEC62109-1", "IEC62109-2"],
+            "environmental": {"ip_rating": "IP54", "nema": "3R"},
+            "testing": {
+              "factory": ["type_test", "routine_test"],
+              "field": ["commissioning", "witness_test"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 15000,
+              "installation_usd": 3000,
+              "total_usd": 18000
+            },
+            "opex": {
+              "maintenance_usd_year": 300
+            }
+          }
+        }
+      },
+      "utility": {
+        "pv_module_utility_bifacial_210": {
+          "category": "generation",
+          "subcategory": "photovoltaic_module",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "210mm_bifacial_utility",
+            "technology": "Mono_PERC_bifacial_210mm",
+            "scale": "UTILITY",
+            "certifications": ["IEC61215", "IEC61730", "UL61730"],
+            "warranty_years": 30,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_positive",
+              "direction": "output",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"stc": 50.0, "noct": 46.0, "max_system": 1500},
+                "current_a": {"stc": 13.6, "isc": 14.2}
+              }
+            },
+            {
+              "id": "dc_negative",
+              "direction": "output",
+              "signal": {"kind": "dc"}
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_stc_w": 680,
+              "efficiency_pct": 22.0,
+              "bifaciality_factor": 0.75,
+              "temp_coef_power_pct_k": -0.34,
+              "bypass_diodes": 3
+            },
+            "degradation": {
+              "year_1_pct": 2.0,
+              "annual_pct": 0.45,
+              "warranty_retention_year_30_pct": 82.0
+            },
+            "physical": {
+              "dimensions_mm": [2384, 1303, 35],
+              "weight_kg": 34.0,
+              "frame": "aluminum_6005_T5",
+              "glass": {"thickness_mm": 2.0, "type": "tempered_low_iron"}
+            },
+            "thermal": {
+              "noct_c": 44,
+              "operating_temp_c": {"min": -40, "max": 85}
+            },
+            "safety": {
+              "fire_rating": "Class_A",
+              "ip_rating": "IP68",
+              "max_system_voltage_v": 1500
+            }
+          },
+          "operating_envelope": {
+            "irradiance_w_m2": {"min": 100, "max": 1500},
+            "wind_speed_m_s": {"max": 60},
+            "snow_load_pa": 5400,
+            "hail": {"diameter_mm": 35, "velocity_m_s": 27}
+          },
+          "lifecycle": {
+            "design": {
+              "cell_technology": "M10_210mm_wafer",
+              "bifacial_gain_model": "view_factor_based",
+              "bom_code": "PV-UTIL-BIF-210"
+            },
+            "procurement": {
+              "lead_time_days": 90,
+              "moq": 15000,
+              "unit_cost_usd": 340,
+              "cost_per_w_usd": 0.50
+            },
+            "installation": {
+              "crew_size": 20,
+              "installation_rate_mw_day": 2,
+              "torque_specs_nm": {"clamp": 20, "grounding": 10}
+            },
+            "commissioning": {
+              "tests": ["EL_imaging", "IV_curve", "thermal_imaging"],
+              "sampling_rate_pct": 100,
+              "drone_inspection": true
+            },
+            "operations": {
+              "cleaning_trigger": "soiling_5pct",
+              "inspection_interval_months": 6,
+              "monitoring_level": "string"
+            },
+            "decommissioning": {
+              "removal_rate_mw_day": 3,
+              "recycling_rate_pct": 95,
+              "recycling_value_usd_per_module": 20
+            }
+          },
+          "compliance": {
+            "grid_codes": ["IEEE_2800_2022"],
+            "interconnection": {
+              "lgia": true,
+              "ferc_orders": ["2023", "2023A"]
+            },
+            "testing": {
+              "factory": ["EL_imaging", "HiPot", "wet_leakage"],
+              "commissioning": ["IEC_62446-1_IV_curve", "polarity", "insulation_resistance"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 340,
+              "installation_usd": 40,
+              "total_usd": 380
+            },
+            "opex": {
+              "cleaning_usd_year": 2,
+              "inspection_usd_year": 1
+            }
+          }
+        },
+        "tracker_single_axis_1p": {
+          "category": "structural",
+          "subcategory": "single_axis_tracker_1P",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "utility_SAT_1P",
+            "technology": "distributed_drive",
+            "scale": "UTILITY",
+            "certifications": ["UL3703", "IEC62817", "CPP_wind_tunnel"],
+            "warranty_years": 20,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "motor_control",
+              "direction": "input",
+              "signal": {
+                "kind": "control",
+                "protocol": "ModbusRTU"
+              }
+            },
+            {
+              "id": "status_bus",
+              "direction": "output",
+              "signal": {
+                "kind": "data",
+                "protocol": "ModbusTCP"
+              }
+            }
+          ],
+          "attributes": {
+            "mechanical": {
+              "tracking_range_deg": [-60, 60],
+              "modules_per_row": 90,
+              "row_length_m": 90,
+              "gcr": 0.35,
+              "backtracking": true,
+              "terrain_following": true,
+              "stow_wind_speed_m_s": 20
+            },
+            "physical": {
+              "torque_tube_diameter_mm": 150,
+              "material": "galvanized_steel",
+              "foundation": "driven_pile_W6x20"
+            },
+            "electrical": {
+              "motor_power_w": 150,
+              "controller_redundancy": "N+1"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -30, "max": 55}
+            },
+            "safety": {
+              "wind_rating_m_s": 45,
+              "seismic_rating": "SDC_D",
+              "flood_height_m": 0.5
+            }
+          },
+          "operating_envelope": {
+            "wind_speed_m_s": {"operational": 20, "stow": 25, "survival": 45},
+            "slope_tolerance_pct": 15,
+            "ground_coverage_ratio": 0.35
+          },
+          "lifecycle": {
+            "design": {
+              "optimization": "LCOE_minimization",
+              "wind_tunnel_tested": true,
+              "bom_code": "TRK-UTIL-1P"
+            },
+            "procurement": {
+              "lead_time_days": 120,
+              "unit_cost_usd_per_kw": 65
+            },
+            "installation": {
+              "pile_driving_rate_day": 500,
+              "assembly_rate_mw_week": 5,
+              "crew_size": 30
+            },
+            "commissioning": {
+              "tests": ["row_alignment", "tracking_accuracy", "stow_verification"],
+              "acceptance_tolerance_deg": 2
+            },
+            "operations": {
+              "maintenance_interval_months": 6,
+              "mtbf_hours": 100000,
+              "spare_parts_pct": 2
+            },
+            "decommissioning": {
+              "removal_rate_mw_week": 10,
+              "steel_recycling_rate_pct": 98
+            }
+          },
+          "compliance": {
+            "testing": {
+              "factory": ["motor_burn_in", "gearbox_torque"],
+              "commissioning": ["row_alignment", "controller_calibration"]
+            },
+            "standards": ["UL3703", "IEC62817", "ASCE_7"]
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd_per_kw": 65,
+              "installation_usd_per_kw": 20,
+              "total_usd_per_kw": 85
+            },
+            "opex": {
+              "maintenance_usd_kw_year": 2.5,
+              "energy_gain_pct": 25
+            }
+          }
+        },
+        "inverter_central_2_5mw": {
+          "category": "power_electronics",
+          "subcategory": "central_inverter_1500v",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "2.5MW_central",
+            "technology": "three_level_NPC",
+            "scale": "UTILITY",
+            "certifications": ["UL1741SB", "IEEE2800-2022"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_in",
+              "direction": "input",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 875, "max": 1500},
+                "current_a": {"max": 3000}
+              }
+            },
+            {
+              "id": "mv_out",
+              "direction": "output",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 4160,
+                "phases": 3,
+                "frequency_hz": {"nominal": 60}
+              }
+            },
+            {
+              "id": "comm",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "IEC61850"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_mw": 2.5,
+              "efficiency_pct": 98.6,
+              "mppt_channels": 24,
+              "power_factor_range": [0.85, 1.0, 0.85]
+            },
+            "degradation": {
+              "annual_efficiency_loss_pct": 0.2,
+              "mtbf_hours": 200000
+            },
+            "physical": {
+              "dimensions_m": [6.1, 2.4, 2.9],
+              "weight_kg": 8000,
+              "cooling": "liquid"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -30, "max": 50},
+              "derating_start_c": 45
+            },
+            "safety": {
+              "ip_rating": "IP54",
+              "arc_flash_category": 2
+            }
+          },
+          "grid_support_functions": {
+            "voltage_regulation": {
+              "deadband_pu": 0.02,
+              "droop_pct": 3
+            },
+            "frequency_response": {
+              "droop_pct": 5,
+              "deadband_mhz": 36
+            },
+            "ride_through": {
+              "lvrt": true,
+              "hvrt": true,
+              "zero_voltage_ride_through_ms": 150
+            }
+          },
+          "lifecycle": {
+            "design": {
+              "topology": "three_level_NPC",
+              "semiconductor": "IGBT_latest_gen",
+              "integrated_transformer": true
+            },
+            "procurement": {
+              "lead_time_days": 180,
+              "unit_cost_usd": 125000,
+              "cost_per_kw_usd": 50
+            },
+            "installation": {
+              "foundation": "concrete_pad",
+              "crane_required": true,
+              "installation_time_days": 5,
+              "crew_size": 8
+            },
+            "commissioning": {
+              "tests": ["power_quality", "efficiency_curve", "grid_code_compliance"],
+              "witness_test": true
+            },
+            "operations": {
+              "monitoring": "24_7_remote",
+              "maintenance_interval_months": 6,
+              "major_overhaul_years": 10
+            },
+            "decommissioning": {
+              "removal_time_days": 3,
+              "recycling_rate_pct": 85,
+              "hazmat": "cooling_fluid"
+            }
+          },
+          "compliance": {
+            "grid_codes": ["IEEE_2800_2022", "NERC_PRC_024_3"],
+            "testing": {
+              "factory": ["type_tests", "witness"],
+              "commissioning": ["grid_code_validation"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 125000,
+              "installation_usd": 15000,
+              "total_usd": 140000
+            },
+            "opex": {
+              "maintenance_usd_year": 2500,
+              "insurance_usd_year": 1000
+            }
+          }
+        },
+        "battery_container_2mwh": {
+          "category": "energy_storage",
+          "subcategory": "containerized_bess",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "2MWh_container",
+            "technology": "LFP",
+            "scale": "UTILITY",
+            "certifications": ["UL9540", "UL9540A", "IEC62619"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_bus",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 700, "max": 1200},
+                "current_a": {"max": 2500}
+              }
+            },
+            {
+              "id": "bms_comm",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "CAN_2.0"
+              }
+            },
+            {
+              "id": "coolant_in",
+              "direction": "input",
+              "signal": {
+                "kind": "thermal",
+                "medium": "glycol_water",
+                "flow_lpm": {"min": 50, "max": 200}
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "usable_energy_mwh": 2.0,
+              "dc_nominal_v": 1000,
+              "c_rate_charge": 0.5,
+              "c_rate_discharge": 1.0,
+              "round_trip_efficiency_pct": 88
+            },
+            "degradation": {
+              "calendar_life_years": 20,
+              "cycle_life_eol80": 10000,
+              "annual_capacity_fade_pct": 2
+            },
+            "physical": {
+              "container": "40ft_ISO",
+              "dimensions_m": [12.2, 2.4, 2.9],
+              "weight_tons": 35,
+              "cooling": "liquid"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -20, "max": 45},
+              "hvac_redundancy": "N+1",
+              "heat_load_kw": {"charge": 20, "discharge": 25}
+            },
+            "safety": {
+              "fire_suppression": "water_mist",
+              "gas_detection": ["H2", "CO", "HF"],
+              "deflagration_panels": true,
+              "emergency_response_distance_m": 10
+            }
+          },
+          "operating_envelope": {
+            "soc_operating_pct": {"min": 5, "max": 95},
+            "altitude_m": {"max": 3000},
+            "seismic_zone": 4
+          },
+          "protection": {
+            "string_fusing": true,
+            "ground_fault_detection": true,
+            "arc_flash_mitigation": true,
+            "cyber_security_level": 2
+          },
+          "lifecycle": {
+            "design": {
+              "rack_configuration": "10_racks",
+              "thermal_runaway_propagation_tested": true,
+              "bom_code": "BESS-UTIL-2MWH"
+            },
+            "procurement": {
+              "lead_time_days": 180,
+              "unit_cost_usd": 560000,
+              "cost_per_kwh_usd": 280
+            },
+            "installation": {
+              "foundation": "concrete_pad_30cm",
+              "crane_capacity_tons": 50,
+              "installation_time_days": 3,
+              "commissioning_time_days": 2
+            },
+            "commissioning": {
+              "tests": ["capacity", "efficiency", "thermal_runaway", "protection_coordination"],
+              "burn_in_cycles": 5
+            },
+            "operations": {
+              "monitoring": "24_7_SOC",
+              "maintenance_interval_months": 3,
+              "augmentation_schedule": "year_7_and_14",
+              "warranty_capacity_year_10_pct": 70
+            },
+            "decommissioning": {
+              "removal_time_days": 2,
+              "transportation": "hazmat_certified",
+              "recycling_rate_pct": 95,
+              "second_life_assessment": true
+            }
+          },
+          "compliance": {
+            "grid_codes": ["IEEE_2800_2022"],
+            "interconnection": {
+              "lgia": true,
+              "ferc_orders": ["2023", "2023A"]
+            },
+            "testing": {
+              "factory": ["UL9540A", "capacity", "BMS_validation"],
+              "commissioning": ["witness_test", "grid_compliance"]
+            },
+            "safety": ["NFPA855", "FM_Global"]
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 560000,
+              "installation_usd": 40000,
+              "total_usd": 600000
+            },
+            "opex": {
+              "maintenance_usd_year": 8000,
+              "insurance_usd_year": 5000,
+              "augmentation_reserve_usd": 100000
+            },
+            "revenue_streams": ["energy_arbitrage", "frequency_regulation", "capacity"]
+          }
+        },
+        "transformer_main_100mva": {
+          "category": "transformer",
+          "subcategory": "gsu_main",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "100MVA_GSU",
+            "technology": "oil_immersed",
+            "scale": "UTILITY",
+            "certifications": ["IEEE_C57", "IEC_60076"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "lv_winding",
+              "direction": "input",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 34500,
+                "phases": 3,
+                "configuration": "delta"
+              }
+            },
+            {
+              "id": "hv_winding",
+              "direction": "output",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 115000,
+                "phases": 3,
+                "configuration": "wye_grounded"
+              }
+            },
+            {
+              "id": "oltc",
+              "direction": "control",
+              "signal": {
+                "kind": "control",
+                "tap_positions": 33,
+                "tap_range_pct": [-10, 10]
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_rating_mva": 100,
+              "impedance_pct": 12.5,
+              "x_r_ratio": 30,
+              "no_load_loss_kw": 65,
+              "load_loss_kw": 320
+            },
+            "physical": {
+              "dimensions_m": [9, 4, 5],
+              "weight_tons": 120,
+              "oil_volume_liters": 45000,
+              "cooling": "ONAN_ONAF"
+            },
+            "thermal": {
+              "top_oil_rise_k": 55,
+              "winding_rise_k": 65,
+              "cooling_stages_mva": [60, 80, 100]
+            },
+            "safety": {
+              "bunding_volume_pct": 110,
+              "fire_walls": true,
+              "deluge_system": true
+            }
+          },
+          "protection": {
+            "differential": "87T",
+            "overcurrent": ["51", "51N"],
+            "overvoltage": "59",
+            "buchholz": true,
+            "pressure_relief": true
+          },
+          "lifecycle": {
+            "design": {
+              "insulation_class": "A",
+              "bil_kv": 550,
+              "short_circuit_withstand": "3_seconds"
+            },
+            "procurement": {
+              "lead_time_days": 365,
+              "unit_cost_usd": 1500000,
+              "transportation": "special_permit"
+            },
+            "installation": {
+              "foundation": "engineered_concrete",
+              "assembly_time_days": 14,
+              "oil_filling_days": 2,
+              "dryout_days": 3
+            },
+            "commissioning": {
+              "tests": ["ratio", "vector_group", "impedance", "no_load_loss", "load_loss"],
+              "oil_processing": true,
+              "energization": "controlled_switching"
+            },
+            "operations": {
+              "oil_analysis_months": 12,
+              "thermography_months": 6,
+              "major_maintenance_years": 10,
+              "expected_life_years": 40
+            },
+            "decommissioning": {
+              "oil_removal_days": 2,
+              "pcb_testing": true,
+              "copper_recovery_kg": 8000,
+              "steel_recovery_tons": 100
+            }
+          },
+          "compliance": {
+            "standards": ["IEEE_C57", "IEC_60076"],
+            "testing": {
+              "factory": ["ratio", "impedance", "losses"],
+              "commissioning": ["insulation", "tan_delta", "DGA"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 1500000,
+              "installation_usd": 200000,
+              "total_usd": 1700000
+            },
+            "opex": {
+              "maintenance_usd_year": 15000,
+              "oil_analysis_usd_year": 2000,
+              "insurance_usd_year": 10000
+            }
+          }
+        }
+      },
+      "hyperscale": {
+        "tracker_controller_central_scada": {
+          "category": "control_system",
+          "subcategory": "scada_tracker_controller",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "central_tracker_scada",
+            "technology": "distributed_control",
+            "scale": "HYPERSCALE",
+            "certifications": ["IEC_60870-5-104", "IEC_61850", "NIST_CSF"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "ethernet_a",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "IEC61850",
+                "redundancy": "PRP"
+              }
+            },
+            {
+              "id": "ethernet_b",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "ModbusTCP"
+              }
+            },
+            {
+              "id": "field_bus",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "control",
+                "protocol": "RS485"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_consumption_w": 500,
+              "redundant_power": true
+            },
+            "capacity": {
+              "trackers_supported": 10000,
+              "data_points": 1000000,
+              "scan_rate_ms": 100
+            },
+            "physical": {
+              "rack_units": 4,
+              "redundancy": "N+1_servers"
+            },
+            "safety": {
+              "cyber_security_level": 3,
+              "availability_target_pct": 99.9
+            }
+          },
+          "lifecycle": {
+            "design": {
+              "architecture": "distributed_hierarchical",
+              "database": "time_series_optimized",
+              "bom_code": "SCADA-TRK-CTRL"
+            },
+            "procurement": {
+              "lead_time_days": 90,
+              "unit_cost_usd": 250000
+            },
+            "installation": {
+              "rack_space_u": 4,
+              "network_configuration_days": 5,
+              "commissioning_days": 10
+            },
+            "commissioning": {
+              "tests": ["network_latency", "failover", "data_integrity"],
+              "tracker_mapping": "automated_discovery"
+            },
+            "operations": {
+              "software_updates": "rolling_updates",
+              "backup_frequency_hours": 1,
+              "data_retention_years": 7
+            },
+            "decommissioning": {
+              "data_migration_days": 30,
+              "secure_erasure": true
+            }
+          },
+          "compliance": {
+            "standards": ["IEC_60870-5-104", "IEC_61850", "NIST_CSF"],
+            "cyber_security": {
+              "framework": "NIST",
+              "pen_testing_frequency_months": 12
+            }
+          },
+          "financial": {
+            "capex": {
+              "hardware_usd": 150000,
+              "software_usd": 100000,
+              "total_usd": 250000
+            },
+            "opex": {
+              "maintenance_usd_year": 25000,
+              "licensing_usd_year": 15000
+            }
+          }
+        },
+        "battery_container_10mwh": {
+          "category": "energy_storage",
+          "subcategory": "containerized_bess",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "10MWh_megapack",
+            "technology": "LFP",
+            "scale": "HYPERSCALE",
+            "certifications": ["UL9540", "UL9540A", "IEC62619"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_bus",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 800, "max": 1500},
+                "current_a": {"max": 12000}
+              }
+            },
+            {
+              "id": "bms_comm",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "CAN_2.0B"
+              }
+            },
+            {
+              "id": "coolant_in",
+              "direction": "input",
+              "signal": {
+                "kind": "thermal",
+                "medium": "glycol_water_50_50",
+                "flow_lpm": {"max": 400}
+              }
+            },
+            {
+              "id": "coolant_out",
+              "direction": "output",
+              "signal": {
+                "kind": "thermal",
+                "medium": "glycol_water_50_50"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "usable_energy_mwh": 10,
+              "power_rating_mw": 2.5,
+              "dc_voltage_nominal_v": 1200,
+              "round_trip_efficiency_pct": 88,
+              "auxiliary_consumption_kw": 20
+            },
+            "degradation": {
+              "calendar_life_years": 20,
+              "cycle_life_80_dod": 10000,
+              "annual_degradation_pct": 2,
+              "augmentation_schedule": [7, 14]
+            },
+            "physical": {
+              "footprint_m2": 30,
+              "height_m": 3,
+              "weight_tons": 40,
+              "enclosure": "outdoor_rated"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -30, "max": 50},
+              "thermal_management": "liquid_cooled",
+              "heat_rejection_kw": 250
+            },
+            "safety": {
+              "fire_suppression": "water_mist",
+              "gas_detection": ["H2", "CO", "HF"],
+              "explosion_protection": "deflagration_panels",
+              "emergency_shutdown": "remote_and_local"
+            }
+          },
+          "operating_envelope": {
+            "soc_limits_pct": {"min": 5, "max": 95},
+            "ramp_rate_mw_s": 2.5,
+            "response_time_ms": 100
+          },
+          "protection": {
+            "dc_protection": "electronic_breaker",
+            "ground_fault": "IMD",
+            "arc_detection": "optical",
+            "cyber_security": "IEC_62443_SL3"
+          },
+          "lifecycle": {
+            "design": {
+              "cell_chemistry": "LFP_for_safety",
+              "rack_architecture": "modular_hot_swap",
+              "cooling_redundancy": "N+1"
+            },
+            "procurement": {
+              "lead_time_days": 240,
+              "unit_cost_usd": 2800000,
+              "cost_per_kwh_usd": 280
+            },
+            "installation": {
+              "foundation": "engineered_pad",
+              "crane_capacity_tons": 100,
+              "installation_days": 5,
+              "grid_connection_days": 3
+            },
+            "commissioning": {
+              "capacity_test_duration_hours": 8,
+              "grid_compliance_tests": ["frequency_response", "voltage_support"],
+              "thermal_runaway_test": "UL9540A"
+            },
+            "operations": {
+              "remote_monitoring": "24_7_SOC",
+              "predictive_maintenance": "AI_enabled",
+              "warranty_terms": "capacity_and_availability",
+              "guaranteed_capacity_year_10_pct": 70
+            },
+            "decommissioning": {
+              "removal_days": 5,
+              "module_reuse_assessment": true,
+              "recycling_rate_pct": 95,
+              "residual_value_pct": 10
+            }
+          },
+          "compliance": {
+            "standards": ["UL9540", "UL9540A", "IEC62619"],
+            "grid_codes": ["IEEE_2800", "NERC_reliability"],
+            "environmental": ["ISO14001", "carbon_neutral_operations"],
+            "safety": ["NFPA855", "local_fire_codes"]
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 2800000,
+              "installation_usd": 200000,
+              "grid_connection_usd": 100000,
+              "total_usd": 3100000
+            },
+            "opex": {
+              "maintenance_usd_year": 28000,
+              "insurance_usd_year": 15000,
+              "capacity_payment_usd_year": 120000
+            },
+            "revenue_potential": {
+              "energy_arbitrage_usd_year": 500000,
+              "frequency_regulation_usd_year": 300000,
+              "capacity_market_usd_year": 200000
+            }
+          }
+        },
+        "pcs_5mw_gridforming": {
+          "category": "power_electronics",
+          "subcategory": "bidirectional_inverter",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "5MW_GFM_PCS",
+            "technology": "3L-NPC_SiC",
+            "scale": "HYPERSCALE",
+            "certifications": ["IEEE1547-2018", "UL1741SB", "IEEE2800"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "dc_battery",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "dc",
+                "voltage_v": {"min": 800, "max": 1500},
+                "current_a": {"max": 7000}
+              }
+            },
+            {
+              "id": "ac_grid_lv",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 4160,
+                "phases": 3,
+                "frequency_hz": {"nominal": 60}
+              }
+            },
+            {
+              "id": "control_lan",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "IEC61850"
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_rating_mw": 5.0,
+              "efficiency_peak_pct": 98.5,
+              "thd_current_pct": 2,
+              "power_factor_range": [0.85, 1.0, 0.85]
+            },
+            "grid_forming": {
+              "virtual_inertia_s": 4,
+              "droop_pct": 5,
+              "black_start_capable": true,
+              "island_mode": true
+            },
+            "physical": {
+              "dimensions_m": [6.1, 2.4, 2.9],
+              "weight_tons": 12,
+              "cooling": "liquid",
+              "enclosure": "outdoor_containerized"
+            },
+            "thermal": {
+              "operating_temp_c": {"min": -30, "max": 50},
+              "cooling_capacity_kw": 100,
+              "redundant_cooling": true
+            },
+            "safety": {
+              "arc_flash_mitigation": true,
+              "emergency_stop": "hardwired",
+              "ip_rating": "IP54"
+            }
+          },
+          "grid_support_functions": {
+            "frequency_response": {
+              "droop_pct": 5,
+              "synthetic_inertia_h_s": 4,
+              "deadband_mhz": 17
+            },
+            "voltage_support": {
+              "q_at_zero_p_pu": 0.44,
+              "response_time_ms": 200,
+              "regulation_deadband_pu": 0.01
+            },
+            "ride_through": {
+              "lvrt": true,
+              "hvrt": true,
+              "zero_voltage_ride_through_ms": 150
+            },
+            "black_start": {
+              "soft_start_time_s": 30,
+              "voltage_ramping_v_s": 100,
+              "frequency_accuracy_mhz": 10
+            }
+          },
+          "lifecycle": {
+            "design": {
+              "semiconductor": "SiC_MOSFET",
+              "topology": "three_level_NPC",
+              "control_platform": "FPGA_DSP"
+            },
+            "procurement": {
+              "lead_time_days": 180,
+              "unit_cost_usd": 500000,
+              "cost_per_kw_usd": 100
+            },
+            "installation": {
+              "foundation": "concrete_pad",
+              "installation_days": 7,
+              "grid_studies_required": ["transient_stability", "harmonic_analysis"]
+            },
+            "commissioning": {
+              "grid_forming_tests": ["black_start", "island_transition", "load_sharing"],
+              "performance_tests": ["efficiency", "harmonics", "response_time"],
+              "protection_coordination": true
+            },
+            "operations": {
+              "remote_control": "SCADA_EMS",
+              "maintenance_interval_months": 6,
+              "firmware_updates": "remote_OTA",
+              "mtbf_hours": 200000
+            },
+            "decommissioning": {
+              "removal_days": 3,
+              "semiconductor_recovery": true,
+              "recycling_rate_pct": 85
+            }
+          },
+          "compliance": {
+            "grid_codes": ["IEEE2800", "NERC_reliability"],
+            "safety": ["UL1741SB", "IEC62109"],
+            "cyber_security": {
+              "level": "NERC_CIP",
+              "iec_62443_sl": 3
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 500000,
+              "installation_usd": 50000,
+              "commissioning_usd": 25000,
+              "total_usd": 575000
+            },
+            "opex": {
+              "maintenance_usd_year": 10000,
+              "insurance_usd_year": 5000
+            }
+          }
+        },
+        "transformer_300mva_gsu": {
+          "category": "transformer",
+          "subcategory": "gsu",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "300MVA_GSU",
+            "technology": "oil_immersed",
+            "scale": "HYPERSCALE",
+            "certifications": ["IEEE_C57", "IEC_60076"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "lv_34_5kv",
+              "direction": "input",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 34500,
+                "phases": 3,
+                "configuration": "delta"
+              }
+            },
+            {
+              "id": "hv_230kv",
+              "direction": "output",
+              "signal": {
+                "kind": "ac",
+                "voltage_v_rms": 230000,
+                "phases": 3,
+                "configuration": "wye_grounded"
+              }
+            },
+            {
+              "id": "oltc",
+              "direction": "control",
+              "signal": {
+                "kind": "control",
+                "tap_positions": 33,
+                "tap_range_pct": [-10, 10]
+              }
+            }
+          ],
+          "attributes": {
+            "electrical": {
+              "power_rating_mva": 300,
+              "impedance_pct": 12.5,
+              "x_r_ratio": 35,
+              "no_load_loss_kw": 150,
+              "load_loss_kw": 900,
+              "efficiency_at_rated_pct": 99.6
+            },
+            "physical": {
+              "dimensions_m": [12, 5, 6],
+              "weight_tons": 350,
+              "oil_volume_liters": 120000,
+              "shipping_sections": 3
+            },
+            "thermal": {
+              "cooling": "ONAN_ONAF_ODAF",
+              "cooling_stages_mva": [180, 240, 300],
+              "top_oil_rise_k": 55,
+              "winding_hotspot_rise_k": 78
+            },
+            "safety": {
+              "explosion_vent": true,
+              "nitrogen_blanket": true,
+              "oil_containment_pct": 110,
+              "fire_suppression": "deluge"
+            }
+          },
+          "protection": {
+            "differential": "87T",
+            "restricted_earth_fault": "64R",
+            "overcurrent": ["50", "51"],
+            "overvoltage": "59",
+            "overfluxing": "24",
+            "gas_relay": "buchholz"
+          },
+          "lifecycle": {
+            "design": {
+              "insulation_system": "thermally_upgraded_paper",
+              "bil_hv_kv": 900,
+              "bil_lv_kv": 200,
+              "seismic_qualification": "IEEE_693"
+            },
+            "procurement": {
+              "lead_time_days": 540,
+              "unit_cost_usd": 4500000,
+              "factory_testing_days": 14
+            },
+            "installation": {
+              "foundation": "seismic_rated",
+              "assembly_days": 21,
+              "oil_processing_days": 5,
+              "bushing_installation_days": 3
+            },
+            "commissioning": {
+              "tests": ["ratio", "vector", "impedance", "SFRA", "DGA"],
+              "energization_method": "controlled_switching",
+              "monitoring_installation": ["fiber_optic_temp", "online_DGA"]
+            },
+            "operations": {
+              "monitoring": "continuous_online",
+              "oil_testing_frequency_months": 6,
+              "bushing_monitoring": "tan_delta_online",
+              "expected_life_years": 40
+            },
+            "decommissioning": {
+              "oil_recovery_pct": 99,
+              "copper_recovery_tons": 25,
+              "steel_recovery_tons": 300,
+              "pcb_testing_required": true
+            }
+          },
+          "compliance": {
+            "standards": ["IEEE_C57", "IEC_60076"],
+            "environmental": ["spill_prevention", "noise_limits"],
+            "testing": {
+              "factory": ["impulse", "temperature_rise", "noise"],
+              "site": ["ratio", "insulation", "protection"]
+            }
+          },
+          "financial": {
+            "capex": {
+              "equipment_usd": 4500000,
+              "transportation_usd": 200000,
+              "installation_usd": 300000,
+              "total_usd": 5000000
+            },
+            "opex": {
+              "maintenance_usd_year": 45000,
+              "monitoring_usd_year": 10000,
+              "insurance_usd_year": 25000
+            }
+          }
+        },
+        "ppc_utility_scale": {
+          "category": "control_system",
+          "subcategory": "plant_controller",
+          "metadata": {
+            "manufacturer": "generic",
+            "model": "PPC_hyperscale",
+            "technology": "hierarchical_control",
+            "scale": "HYPERSCALE",
+            "certifications": ["IEEE2030.8", "IEC61850"],
+            "warranty_years": 10,
+            "version": "1.0.0",
+            "last_updated": "2025-08-30T22:00:00Z"
+          },
+          "ports": [
+            {
+              "id": "poi_voltage",
+              "direction": "input",
+              "signal": {
+                "kind": "measurement",
+                "channels": 3
+              }
+            },
+            {
+              "id": "active_power_cmd",
+              "direction": "output",
+              "signal": {
+                "kind": "control",
+                "range_mw": [0, 500]
+              }
+            },
+            {
+              "id": "reactive_power_cmd",
+              "direction": "output",
+              "signal": {
+                "kind": "control",
+                "range_mvar": [-175, 175]
+              }
+            },
+            {
+              "id": "iso_scada",
+              "direction": "bidirectional",
+              "signal": {
+                "kind": "data",
+                "protocol": "ICCP_TASE2"
+              }
+            }
+          ],
+          "attributes": {
+            "capacity": {
+              "controlled_inverters": 200,
+              "controlled_mw": 500,
+              "scan_rate_ms": 100
+            },
+            "control_modes": [
+              "active_power_control",
+              "reactive_power_control",
+              "voltage_control",
+              "power_factor_control",
+              "ramp_rate_control"
+            ],
+            "physical": {
+              "servers": 2,
+              "redundancy": "hot_standby",
+              "ups_runtime_minutes": 30
+            },
+            "performance": {
+              "response_time_ms": 100,
+              "control_accuracy_pct": 1,
+              "availability_target_pct": 99.95
+            }
+          },
+          "functions": {
+            "agc_interface": {
+              "protocol": "DNP3",
+              "response_time_s": 4,
+              "ramp_rate_mw_min": 100
+            },
+            "curtailment": {
+              "modes": ["runback", "setpoint", "power_factor"],
+              "response_time_s": 1
+            },
+            "forecasting_integration": {
+              "providers": ["satellite", "NWP"],
+              "horizon_hours": 48,
+              "update_frequency_minutes": 15
+            },
+            "fault_ride_through_coordination": {
+              "monitoring": "real_time",
+              "event_recording": true,
+              "post_fault_ramping": true
+            }
+          },
+          "lifecycle": {
+            "design": {
+              "architecture": "distributed_hierarchical",
+              "failover_time_ms": 50,
+              "scalability": "modular"
+            },
+            "procurement": {
+              "lead_time_days": 120,
+              "unit_cost_usd": 500000,
+              "licensing_model": "perpetual"
+            },
+            "installation": {
+              "hardware_installation_days": 5,
+              "software_configuration_days": 10,
+              "integration_testing_days": 5
+            },
+            "commissioning": {
+              "model_validation": true,
+              "closed_loop_testing": true,
+              "grid_code_compliance_verification": true
+            },
+            "operations": {
+              "software_updates_per_year": 4,
+              "cyber_security_patches": "monthly",
+              "performance_reporting": "real_time",
+              "backup_frequency_minutes": 15
+            },
+            "decommissioning": {
+              "data_export_days": 5,
+              "secure_erasure": true,
+              "license_transfer": "negotiable"
+            }
+          },
+          "compliance": {
+            "grid_codes": ["IEEE2030.8", "regional_ISO_requirements"],
+            "cyber_security": {
+              "framework": "NERC_CIP",
+              "penetration_testing_frequency_months": 12
+            },
+            "data_retention": {
+              "event_logs_years": 7,
+              "performance_data_years": 3
+            }
+          },
+          "financial": {
+            "capex": {
+              "hardware_usd": 200000,
+              "software_usd": 300000,
+              "integration_usd": 100000,
+              "total_usd": 600000
+            },
+            "opex": {
+              "maintenance_usd_year": 30000,
+              "licensing_usd_year": 20000,
+              "support_usd_year": 25000
+            }
+          }
+        }
+      }
+    }
+  },
+  "registry": {
+    "version": "1.0.0",
+    "component_count": {
+      "residential": 25,
+      "commercial": 5,
+      "utility": 5,
+      "hyperscale": 5,
+      "total": 40
+    },
+    "validation": {
+      "schema_version": "4.1",
+      "validated_at": "2025-08-30T22:00:00Z",
+      "validation_method": "jsonschema",
+      "errors": [],
+      "warnings": []
+    },
+    "sources": {
+      "standards": [
+        "IEC61215-2:2021",
+        "IEC61730",
+        "UL61730",
+        "UL1741SB",
+        "IEEE1547-2018",
+        "IEEE2800-2022",
+        "UL1973",
+        "IEC62619",
+        "UL9540",
+        "UL9540A",
+        "NFPA855",
+        "IEEE_C57",
+        "IEC_60076",
+        "NERC_PRC_024_3"
+      ],
+      "references": [
+        "NREL_ATB_2024",
+        "LBNL_Tracking_the_Sun_2024",
+        "Wood_Mackenzie_Storage_Monitor_2024",
+        "IEA_PVPS_Task_12",
+        "EPRI_ESIC_Guidelines"
+      ]
+    },
+    "changelog": [
+      {
+        "date": "2025-08-30T22:00:00Z",
+        "version": "1.0.0",
+        "changes": "Initial unified component library release with complete lifecycle information"
+      }
+    ]
+  }
+}

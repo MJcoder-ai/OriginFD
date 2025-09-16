@@ -1,0 +1,6 @@
+# OriginFD Orchestrator Service Dependencies
+# Service-specific dependencies only (shared deps installed separately)
+
+# Orchestrator-specific dependencies
+passlib[bcrypt]==1.7.4
+networkx==3.2.1

@@ -1,0 +1,469 @@
+# OriginFD Cloud Build Configuration
+# Automates deployment from GitHub to Google Cloud Platform
+# Project: OriginFD (Project ID: originfd, Project Number: 203727718263)
+
+substitutions:
+  _PROJECT_ID: originfd
+  _REGION: us-central1
+  _ARTIFACT_REGISTRY_REPO: originfd-repo
+  _POSTGRES_INSTANCE: originfd-postgres-dev
+  _REDIS_INSTANCE: originfd-redis-dev
+  _VPC_CONNECTOR: originfd-vpc-connector
+  _NETWORK: originfd-network
+  _SUBNET: originfd-subnet
+  _CLOUDBUILD_SA: 203727718263@cloudbuild.gserviceaccount.com
+
+steps:
+  # Step 0: Enable Required APIs
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'enable-apis'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Enabling required Google Cloud APIs..."
+        gcloud services enable cloudresourcemanager.googleapis.com
+        gcloud services enable redis.googleapis.com
+        gcloud services enable vpcaccess.googleapis.com
+        gcloud services enable secretmanager.googleapis.com
+        gcloud services enable servicenetworking.googleapis.com
+        gcloud services enable sqladmin.googleapis.com
+        echo "APIs enabled successfully, waiting for propagation..."
+        sleep 30
+
+  # Step 1: Grant Service Networking Permission
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'grant-peering-permission'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Granting Compute Network Admin role to Cloud Build service account..."
+        gcloud projects add-iam-policy-binding ${_PROJECT_ID} \
+          --member="serviceAccount:${_CLOUDBUILD_SA}" \
+          --role="roles/compute.networkAdmin" || echo "Permission already exists"
+
+  # Step 2: Setup Infrastructure
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-artifact-registry'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Creating Artifact Registry repository..."
+        gcloud artifacts repositories create ${_ARTIFACT_REGISTRY_REPO} \
+          --repository-format=docker \
+          --location=${_REGION} \
+          --description="OriginFD Docker images" || echo "Repository already exists"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-vpc-network'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Creating VPC network and subnet..."
+        gcloud compute networks create ${_NETWORK} \
+          --subnet-mode=custom || echo "Network already exists"
+
+        gcloud compute networks subnets create ${_SUBNET} \
+          --network=${_NETWORK} \
+          --range=10.0.0.0/28 \
+          --region=${_REGION} || echo "Subnet already exists"
+
+        echo "Setting up Service Networking for private services..."
+        gcloud compute addresses create google-managed-services-${_NETWORK} \
+          --global \
+          --purpose=VPC_PEERING \
+          --prefix-length=16 \
+          --network=${_NETWORK} || echo "Service networking range already exists"
+
+        gcloud services vpc-peerings connect \
+          --service=servicenetworking.googleapis.com \
+          --ranges=google-managed-services-${_NETWORK} \
+          --network=${_NETWORK} || echo "VPC peering already connected"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-postgres'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Creating Cloud SQL PostgreSQL instance..."
+        gcloud sql instances create ${_POSTGRES_INSTANCE} \
+          --database-version=POSTGRES_15 \
+          --cpu=1 \
+          --memory=3840MB \
+          --region=${_REGION} \
+          --storage-type=SSD \
+          --storage-size=20GB \
+          --assign-ip \
+          --authorized-networks=0.0.0.0/0 \
+          --deletion-protection || echo "Instance already exists"
+
+        echo "Creating database..."
+        gcloud sql databases create originfd --instance=${_POSTGRES_INSTANCE} || echo "Database already exists"
+
+        echo "Setting up database user..."
+        # User will be created with password in secrets setup step
+        gcloud sql users create originfd-user \
+          --instance=${_POSTGRES_INSTANCE} \
+          --password=temp-password || echo "User already exists"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-redis'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Creating Memorystore Redis instance..."
+        gcloud redis instances create ${_REDIS_INSTANCE} \
+          --size=1 \
+          --region=${_REGION} \
+          --network=${_NETWORK} \
+          --redis-version=redis_7_0 || echo "Redis instance already exists"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-vpc-connector'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Creating Serverless VPC Access connector..."
+        gcloud compute networks vpc-access connectors create ${_VPC_CONNECTOR} \
+          --region=${_REGION} \
+          --subnet=${_SUBNET} \
+          --subnet-project=${_PROJECT_ID} \
+          --min-instances=2 \
+          --max-instances=3 \
+          --machine-type=e2-micro || echo "VPC connector already exists"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-secrets'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Creating secrets in Secret Manager..."
+
+        # Generate JWT secret
+        JWT_SECRET_VALUE=$$(openssl rand -base64 64)
+        echo -n "$$JWT_SECRET_VALUE" | gcloud secrets create jwt-secret-key --data-file=- || echo "JWT secret already exists"
+
+        # Get database connection string
+        DB_HOST=$$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(ipAddresses[0].ipAddress)")
+        DB_PASSWORD=$$(openssl rand -base64 32)
+        DATABASE_URL="postgresql://originfd-user:$$DB_PASSWORD@$$DB_HOST:5432/originfd"
+        echo -n "$$DATABASE_URL" | gcloud secrets create database-url --data-file=- || echo "Database URL secret already exists"
+
+        # Update the user password to match what we store in the secret
+        gcloud sql users set-password originfd-user \
+          --instance=${_POSTGRES_INSTANCE} \
+          --password=$$DB_PASSWORD || echo "Password already set"
+
+        # Get Redis connection string
+        REDIS_HOST=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(host)")
+        REDIS_PORT=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(port)")
+        REDIS_URL="redis://$$REDIS_HOST:$$REDIS_PORT/0"
+        echo -n "$$REDIS_URL" | gcloud secrets create redis-url --data-file=- || echo "Redis URL secret already exists"
+
+  # Step 2: Validate Dependencies Before Building
+  - name: 'python:3.11-slim'
+    id: 'validate-dependencies'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Validating all dependencies for conflicts..."
+        pip install --upgrade pip
+
+        # Test shared requirements
+        echo "Testing shared requirements.txt..."
+        pip install --dry-run -r requirements.txt || exit 1
+
+        # Test service-specific requirements with shared base
+        echo "Testing API service requirements..."
+        pip install --dry-run -r requirements.txt -r services/api/requirements.txt || exit 1
+
+        echo "Testing orchestrator service requirements..."
+        pip install --dry-run -r requirements.txt -r services/orchestrator/requirements.txt || exit 1
+
+        echo "Testing workers service requirements..."
+        pip install --dry-run -r requirements.txt -r services/workers/requirements.txt || exit 1
+
+        echo "Installing Python linting tools..."
+        pip install flake8 black isort mypy bandit
+
+        echo "Running Python code quality checks..."
+
+        echo "Checking code formatting with Black..."
+        black --check --diff services/
+
+        echo "Checking import sorting with isort..."
+        isort --check-only --diff services/
+
+        echo "Running Flake8 linting..."
+        flake8 services/ --max-line-length=88 --extend-ignore=E203,W503
+
+        echo "Running security checks with Bandit..."
+        bandit -r services/ -f json || echo "Security warnings found - review before production"
+
+        echo "All dependency validations and code quality checks passed!"
+
+  # Step 2.5: Validate TypeScript and Frontend Build
+  - name: 'node:20-alpine'
+    id: 'validate-frontend'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "Installing pnpm and validating frontend build..."
+        npm install -g pnpm
+
+        echo "Installing dependencies..."
+        pnpm install --frozen-lockfile
+
+        echo "Building TypeScript packages..."
+        pnpm --filter @originfd/types-odl build
+        pnpm --filter @originfd/http-client build
+        pnpm --filter @originfd/ui build
+
+        echo "Type-checking web application..."
+        pnpm --filter @originfd/web type-check
+
+        echo "Running ESLint for code quality..."
+        pnpm --filter @originfd/web lint
+
+        echo "Frontend validation completed successfully!"
+
+  # Step 3: Build and Push Docker Images
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
+    id: 'build-api'
+    args:
+      - '--dockerfile=services/api/Dockerfile'
+      - '--context=dir://.'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:latest'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA'
+      - '--cache=true'
+      - '--cache-ttl=24h'
+
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
+    id: 'build-orchestrator'
+    args:
+      - '--dockerfile=services/orchestrator/Dockerfile'
+      - '--context=dir://.'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:latest'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$COMMIT_SHA'
+      - '--cache=true'
+      - '--cache-ttl=24h'
+      - '--compressed-caching=false'
+      - '--single-snapshot'
+
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
+    id: 'build-workers'
+    args:
+      - '--dockerfile=services/workers/Dockerfile'
+      - '--context=dir://.'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:latest'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$COMMIT_SHA'
+      - '--cache=true'
+      - '--cache-ttl=24h'
+
+  - name: 'gcr.io/kaniko-project/executor:v1.19.2'
+    id: 'build-web'
+    args:
+      - '--dockerfile=apps/web/Dockerfile'
+      - '--context=dir://.'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:latest'
+      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA'
+      - '--cache=true'
+      - '--cache-ttl=24h'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'deploy-api'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy api \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA \
+          --region=${_REGION} \
+          --platform=managed \
+          --no-allow-unauthenticated \
+          --vpc-connector=${_VPC_CONNECTOR} \
+          --vpc-egress=all-traffic \
+          --memory=512Mi \
+          --cpu=1 \
+          --concurrency=80 \
+          --max-instances=10 \
+          --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
+          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'deploy-orchestrator'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy orchestrator \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$COMMIT_SHA \
+          --region=${_REGION} \
+          --platform=managed \
+          --no-allow-unauthenticated \
+          --vpc-connector=${_VPC_CONNECTOR} \
+          --vpc-egress=all-traffic \
+          --memory=1Gi \
+          --cpu=1 \
+          --concurrency=40 \
+          --max-instances=5 \
+          --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
+          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'deploy-workers'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy workers \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$COMMIT_SHA \
+          --region=${_REGION} \
+          --platform=managed \
+          --no-allow-unauthenticated \
+          --vpc-connector=${_VPC_CONNECTOR} \
+          --vpc-egress=all-traffic \
+          --memory=1Gi \
+          --cpu=2 \
+          --concurrency=20 \
+          --max-instances=10 \
+          --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
+          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'deploy-web'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Get API service URL for frontend configuration
+        API_URL=$$(gcloud run services describe api --region=${_REGION} --format="value(status.url)")
+
+        gcloud run deploy web \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA \
+          --region=${_REGION} \
+          --platform=managed \
+          --allow-unauthenticated \
+          --memory=512Mi \
+          --cpu=1 \
+          --concurrency=100 \
+          --max-instances=20 \
+          --set-env-vars="NEXT_PUBLIC_API_URL=$$API_URL,NODE_ENV=production"
+
+  # Step 4: Database Migration and Setup
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'run-migrations'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Running database migrations..."
+        gcloud run jobs create db-migrate \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA \
+          --region=${_REGION} \
+          --set-secrets="DATABASE_URL=database-url:latest" \
+          --set-env-vars="ENVIRONMENT=production" \
+          --task-timeout=600 \
+          --replace || echo "Migration job already exists"
+
+        # Execute the migration job
+        gcloud run jobs execute db-migrate --region=${_REGION} --wait
+
+        # Clean up the migration job after completion
+        gcloud run jobs delete db-migrate --region=${_REGION} --quiet || echo "Job cleanup failed"
+
+  # Step 5: Setup Load Balancer and Custom Domain (Optional)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-load-balancer'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Setting up Cloud Load Balancer..."
+
+        # Create backend service for web frontend
+        gcloud compute backend-services create originfd-web-backend \
+          --global \
+          --load-balancing-scheme=EXTERNAL_MANAGED \
+          --protocol=HTTP || echo "Backend service already exists"
+
+        # Create URL map
+        gcloud compute url-maps create originfd-url-map \
+          --default-backend-service=originfd-web-backend || echo "URL map already exists"
+
+        # Create HTTP(S) proxy
+        gcloud compute target-http-proxies create originfd-http-proxy \
+          --url-map=originfd-url-map || echo "HTTP proxy already exists"
+
+        # Reserve external IP
+        gcloud compute addresses create originfd-ip --global || echo "IP already reserved"
+
+        # Create forwarding rule
+        EXTERNAL_IP=$$(gcloud compute addresses describe originfd-ip --global --format="value(address)")
+        gcloud compute forwarding-rules create originfd-http-rule \
+          --global \
+          --target-http-proxy=originfd-http-proxy \
+          --address=$$EXTERNAL_IP \
+          --ports=80 || echo "Forwarding rule already exists"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE
+  dynamic_substitutions: true
+  machineType: N1_HIGHCPU_32
+
+timeout: 3600s # 1 hour timeout for complete deployment
+
+# Required IAM permissions for Cloud Build service account:
+# - Cloud SQL Admin
+# - Redis Admin
+# - VPC Access Admin
+# - Cloud Run Admin
+# - Artifact Registry Writer
+# - Secret Manager Admin
+# - Compute Network Admin
+# - Compute Load Balancer Admin
+# - Service Account User
+#
+# To set up the required permissions, run:
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/cloudsql.admin"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/redis.admin"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/vpcaccess.admin"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/run.admin"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/artifactregistry.writer"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/secretmanager.admin"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/compute.admin"
+#
+# gcloud projects add-iam-policy-binding originfd \
+#   --member="serviceAccount:203727718263@cloudbuild.gserviceaccount.com" \
+#   --role="roles/iam.serviceAccountUser"

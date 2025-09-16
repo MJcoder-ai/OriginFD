@@ -1,0 +1,6 @@
+# OriginFD API Service Dependencies
+# Service-specific dependencies only (shared deps installed separately)
+
+# API-specific dependencies
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6

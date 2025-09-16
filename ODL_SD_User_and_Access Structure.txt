@@ -1,0 +1,386 @@
+{
+  "$schema": "https://originflow.dev/schemas/odl-sd-rbac/v1.json",
+  "schema_version": "1.0",
+  "meta": {
+    "title": "ODL-SD v4.1 User & Access Structure",
+    "generated_at": "2025-08-31T00:00:00Z",
+    "odl_sd_sections": [
+      "meta",
+      "hierarchy",
+      "requirements",
+      "libraries",
+      "instances",
+      "connections",
+      "structures",
+      "physical",
+      "analysis",
+      "compliance",
+      "finance",
+      "operations",
+      "esg",
+      "governance",
+      "external_models",
+      "audit",
+      "data_management"
+    ],
+    "hierarchy_levels": [
+      "PORTFOLIO",
+      "SITE",
+      "PLANT",
+      "BLOCK",
+      "ARRAY",
+      "STRING",
+      "DEVICE"
+    ],
+    "lifecycle_status": [
+      "planned",
+      "procured",
+      "installed",
+      "commissioned",
+      "operational",
+      "maintenance",
+      "decommissioned"
+    ]
+  },
+
+  "vocabulary": {
+    "rights_codes": {
+      "R": "read/view",
+      "W": "write/create/update/delete",
+      "P": "propose change (requires approver action to merge)",
+      "A": "approve/reject gated changes (governance.signatures)",
+      "X": "execute actions (simulations, validations, jobs)",
+      "S": "support/escalate (join sessions, comment, annotate)"
+    },
+    "action_catalog": {
+      "validate_schema": "Run JSON Schema & integrity checks on ODL-SD doc",
+      "run_analysis": "Execute items in analysis[]",
+      "run_finance": "Execute finance model & sensitivity/Monte Carlo",
+      "publish_design": "Create signed baseline via governance",
+      "open_change_request": "Create governance change request",
+      "merge_change_request": "Approve & merge a change request",
+      "trigger_commissioning_tests": "Kick off ops.commissioning phases",
+      "raise_warranty_claim": "Create operations.warranty_claims entry",
+      "update_pricing": "Write supplier pricing into libraries/components",
+      "update_esg": "Write KPI updates into esg.*",
+      "export_package": "Generate external_models/data export bundle",
+      "invite_remote_session": "Share QR/one-time link to join chat",
+      "assign_roles": "Grant/revoke roles at any hierarchy node"
+    }
+  },
+
+  "policies": {
+    "scope_inheritance": "Permissions assigned at any hierarchy node propagate downward unless explicitly overridden.",
+    "least_privilege": true,
+    "mandatory_mfa_levels": ["project_manager","engineer","expert","supplier_manager","compliance_officer","financial_analyst","asset_owner","super_user"],
+    "session_join": {
+      "method": "qr_or_code",
+      "recording": true,
+      "attestation": "session actions are appended to audit[]"
+    },
+    "phase_gates": {
+      "design":   {"write_locked_sections": [], "notes": "Engineering owns libraries/instances/connections."},
+      "procurement": {"write_locked_sections": ["analysis"], "notes": "Analyses frozen; libraries pricing open to supplier_manager."},
+      "construction": {"write_locked_sections": ["finance"], "notes": "Financial base case frozen; ops commissioning opens."},
+      "commissioning": {"write_locked_sections": ["libraries"], "notes": "Hardware libraries immutable; ops.commissioning executable."},
+      "operations": {"write_locked_sections": ["libraries","structures","physical"], "notes": "Core design immutable; changes via governance CR only."},
+      "decommissioning": {"write_locked_sections": [], "notes": "Full access to operations.decommissioning & esg.circular_economy."}
+    },
+    "approvals": {
+      "required_for": ["W on libraries","W on compliance","publish_design","merge_change_request"],
+      "approver_roles": ["expert","project_manager","compliance_officer","asset_owner","super_user"]
+    },
+    "data_classification": {
+      "public": ["templates","non-identifying examples"],
+      "internal": ["project meta and hierarchy"],
+      "restricted": ["finance","operations","compliance","esg","external_models"],
+      "confidential": ["supplier_pricing","governance.signatures","audit"]
+    }
+  },
+
+  "permission_sets": {
+    "view_public": {
+      "*": "R",
+      "libraries": "R",
+      "finance": "R",
+      "operations": "",
+      "audit": "",
+      "governance": ""
+    },
+    "project_viewer": {
+      "*": "R",
+      "audit": "R",
+      "governance": "R"
+    },
+    "eng_editor": {
+      "libraries": "P",
+      "instances": "W",
+      "connections": "W",
+      "structures": "W",
+      "physical": "W",
+      "analysis": "X",
+      "requirements": "W",
+      "meta": "W",
+      "data_management": "R",
+      "governance": "P"
+    },
+    "ops_editor": {
+      "operations": "WXS",
+      "analysis": "X",
+      "instances": "P",
+      "connections": "P",
+      "audit": "R",
+      "governance": "P"
+    },
+    "finance_editor": {
+      "finance": "WX",
+      "analysis": "X",
+      "audit": "R",
+      "governance": "P"
+    },
+    "compliance_editor": {
+      "compliance": "WAX",
+      "operations": "X",
+      "governance": "A",
+      "audit": "R"
+    },
+    "esg_editor": {
+      "esg": "WX",
+      "operations": "R",
+      "audit": "R",
+      "governance": "P"
+    },
+    "lib_editor": {
+      "libraries": "WA",
+      "audit": "R",
+      "governance": "A"
+    },
+    "read_all": {
+      "*": "R",
+      "audit": "R",
+      "governance": "R"
+    },
+    "approver_full": {
+      "*": "R",
+      "governance": "A",
+      "audit": "R",
+      "merge_rights": ["libraries","compliance","finance","instances","connections","operations"]
+    }
+  },
+
+  "roles": {
+    "guest": {
+      "description": "Frictionless user without login.",
+      "inherits": ["view_public"],
+      "overrides": {
+        "analysis": "X",
+        "action_allow": ["validate_schema","run_analysis","export_package"],
+        "scope": "public_templates_only",
+        "write_denied": ["instances","connections","libraries","finance","operations","compliance","esg","governance","audit"]
+      }
+    },
+
+    "client": {
+      "description": "End-user/homeowner/investor initiating projects.",
+      "inherits": ["project_viewer"],
+      "overrides": {
+        "requirements": "W",
+        "meta": "W",
+        "analysis": "X",
+        "finance": "P",
+        "governance": "P",
+        "action_allow": ["validate_schema","run_analysis","run_finance","open_change_request","export_package"],
+        "scope": "own_projects"
+      }
+    },
+
+    "consultant": {
+      "description": "Advisor who joins on demand.",
+      "inherits": ["project_viewer"],
+      "overrides": {
+        "analysis": "XS",
+        "requirements": "P",
+        "finance": "P",
+        "operations": "S",
+        "governance": "P",
+        "action_allow": ["invite_remote_session","run_analysis","run_finance"],
+        "scope": "invited_sessions"
+      }
+    },
+
+    "project_manager": {
+      "description": "Coordinates lifecycle & timelines.",
+      "inherits": ["read_all","approver_full"],
+      "overrides": {
+        "operations": "WS",
+        "requirements": "W",
+        "meta": "W",
+        "governance": "A",
+        "action_allow": ["invite_remote_session","publish_design","merge_change_request","trigger_commissioning_tests","export_package"],
+        "scope": "assigned_projects"
+      }
+    },
+
+    "engineer": {
+      "description": "Design/connection/commissioning authority.",
+      "inherits": ["eng_editor"],
+      "overrides": {
+        "libraries": "P",
+        "analysis": "X",
+        "compliance": "P",
+        "operations": "XS",
+        "action_allow": ["validate_schema","run_analysis","publish_design","open_change_request","trigger_commissioning_tests","export_package"],
+        "scope": "assigned_projects"
+      }
+    },
+
+    "technician_operator": {
+      "description": "Installer/Operator in the field.",
+      "inherits": ["ops_editor"],
+      "overrides": {
+        "operations": "WXS",
+        "analysis": "X",
+        "action_allow": ["trigger_commissioning_tests","raise_warranty_claim","export_package"],
+        "scope": "plant_and_below"
+      }
+    },
+
+    "expert": {
+      "description": "Specialist with override on technical domains.",
+      "inherits": ["eng_editor","approver_full"],
+      "overrides": {
+        "libraries": "WA",
+        "analysis": "X",
+        "compliance": "WA",
+        "action_allow": ["publish_design","merge_change_request","export_package"],
+        "scope": "by_invitation_or_critical_events"
+      }
+    },
+
+    "data_analyst": {
+      "description": "Performance & analytics specialist.",
+      "inherits": ["project_viewer"],
+      "overrides": {
+        "analysis": "WX",
+        "operations": "R",
+        "finance": "R",
+        "action_allow": ["run_analysis","export_package"],
+        "scope": "portfolio_read_multi_project_write_analysis"
+      }
+    },
+
+    "esg_officer": {
+      "description": "Sustainability and ESG reporting.",
+      "inherits": ["project_viewer","esg_editor"],
+      "overrides": {
+        "compliance": "R",
+        "action_allow": ["update_esg","export_package"],
+        "scope": "portfolio"
+      }
+    },
+
+    "financial_analyst": {
+      "description": "Investment/ROI modeling.",
+      "inherits": ["finance_editor"],
+      "overrides": {
+        "analysis": "X",
+        "action_allow": ["run_finance","export_package"],
+        "scope": "portfolio_or_assigned_projects"
+      }
+    },
+
+    "compliance_officer": {
+      "description": "Regulatory & grid compliance.",
+      "inherits": ["compliance_editor"],
+      "overrides": {
+        "operations": "X",
+        "governance": "A",
+        "action_allow": ["merge_change_request","export_package"],
+        "scope": "jurisdictional_projects"
+      }
+    },
+
+    "supplier_manager": {
+      "description": "Vendors & pricing management.",
+      "inherits": ["project_viewer","lib_editor"],
+      "overrides": {
+        "libraries": "WA",
+        "finance": "R",
+        "action_allow": ["update_pricing","export_package"],
+        "scope": "component_categories_assigned"
+      }
+    },
+
+    "auditor_legal": {
+      "description": "Independent audit & legal review.",
+      "inherits": ["read_all"],
+      "overrides": {
+        "audit": "R",
+        "governance": "R",
+        "action_allow": ["export_package"],
+        "scope": "time_bound_review"
+      }
+    },
+
+    "asset_owner": {
+      "description": "Owner/Operator with commercial authority.",
+      "inherits": ["read_all","approver_full"],
+      "overrides": {
+        "finance": "WA",
+        "operations": "WSX",
+        "governance": "A",
+        "action_allow": ["publish_design","merge_change_request","export_package"],
+        "scope": "owned_assets"
+      }
+    },
+
+    "utility_offtaker": {
+      "description": "Offtaker/market interface (read-limited).",
+      "inherits": ["project_viewer"],
+      "overrides": {
+        "compliance": "R",
+        "finance": "R",
+        "operations": "R",
+        "action_allow": ["export_package"],
+        "scope": "contracts_linked_projects"
+      }
+    },
+
+    "super_user": {
+      "description": "Platform admin with full control.",
+      "inherits": ["approver_full"],
+      "overrides": {
+        "*": "WAXS",
+        "audit": "R",
+        "action_allow": ["assign_roles","publish_design","merge_change_request","export_package"],
+        "scope": "global"
+      }
+    }
+  },
+
+  "ai_agents": {
+    "planner_agent": {
+      "can_act_as": ["consultant","data_analyst"],
+      "allowed_actions": ["validate_schema","run_analysis","run_finance","open_change_request","export_package"],
+      "merge_requires": ["expert","project_manager","asset_owner","super_user"]
+    },
+    "ops_agent": {
+      "can_act_as": ["technician_operator"],
+      "allowed_actions": ["trigger_commissioning_tests","raise_warranty_claim"],
+      "merge_requires": ["project_manager","expert","asset_owner"]
+    }
+  },
+
+  "overrides_examples": [
+    {
+      "rule": "phase_gate_lock",
+      "when": {"phase": "operations"},
+      "effect": {"deny_write": ["libraries","structures","physical"], "except_roles": ["super_user"] }
+    },
+    {
+      "rule": "temporary_installer_window",
+      "when": {"phase": "construction"},
+      "grant": {"role": "technician_operator", "sections": {"instances":"W","connections":"W"}, "window_hours": 72}
+    }
+  ]
+}
