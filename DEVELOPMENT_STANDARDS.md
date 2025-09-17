@@ -1282,6 +1282,7 @@ healthcheck:
 3. **Development vs Production Server Gap**: Using uvicorn directly instead of production-grade server
 
 **Failing Code Examples**:
+
 ```python
 # PROBLEMATIC: Direct PyJWT import without explicit dependency
 import jwt
@@ -1294,6 +1295,7 @@ CMD ["python", "main.py"]  # Uses uvicorn directly
 **Systematic Resolution Applied**:
 
 1. **Added Explicit Dependencies**:
+
 ```
 # requirements.txt
 PyJWT==2.8.0
@@ -1301,6 +1303,7 @@ gunicorn==22.0.0
 ```
 
 2. **Production-Grade Server Configuration**:
+
 ```dockerfile
 # API Service (4 workers for high throughput)
 CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} main:app"]
@@ -1312,17 +1315,184 @@ CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PO
 3. **Dynamic PORT Support**: All gunicorn configurations use `${PORT:-default}` for Cloud Run compatibility
 
 **Why Production Server Matters**:
+
 - **Gunicorn**: Production-grade WSGI server with proper process management
 - **UvicornWorker**: ASGI worker for FastAPI compatibility
 - **Multiple Workers**: Better resource utilization and fault tolerance
 - **Graceful Shutdown**: Proper signal handling for Cloud Run
 
 **Prevention Standards**:
+
 - Always explicitly declare all imported dependencies, even transitive ones
 - Use production-grade servers (gunicorn) for deployment, not development servers (uvicorn direct)
 - Test dependency imports in isolated environments
 - Maintain consistency in import patterns across codebase
 - Document production vs development server differences
 
-Last Updated: 2025-09-16
-Version: 3.4 - Added missing dependency resolution and production server configuration standards
+### Issue #30: Cloud Run Service vs Background Worker Architecture Mismatch (DEPLOYMENT FAILURE RESOLVED)
+
+**Problem**: Workers service deployment failed because Celery background workers don't serve HTTP requests, but Cloud Run Services expect web servers that respond to health checks.
+
+**Build Error**:
+
+```
+Cloud Run service deployment timeout - container failed to start listening on PORT
+Health check failures: connection refused on port 8080
+```
+
+**Root Cause Analysis**:
+
+1. **Architectural Mismatch**: Cloud Run Services are designed for web applications that listen for HTTP requests, but Celery workers are background task processors
+2. **Missing HTTP Interface**: Workers service had no HTTP server for Cloud Run health checks
+3. **Health Check Failure**: Cloud Run couldn't verify service health without HTTP endpoints
+4. **Process Architecture**: Single-process Celery worker incompatible with Cloud Run's HTTP-based monitoring
+
+**Failing Configuration**:
+
+```python
+# PROBLEMATIC: Pure Celery worker without HTTP interface
+def main():
+    app.worker_main(argv=["worker", "--loglevel=info", "--concurrency=4", "--pool=prefork"])
+
+# PROBLEMATIC: Non-HTTP health check
+HEALTHCHECK CMD python -c "import redis; redis.ping()" || exit 1
+```
+
+**Two Solution Options Evaluated**:
+
+1. **Option 1: Cloud Run Job (Recommended for pure background workers)**
+   - Deploy as `gcloud run jobs deploy` instead of `gcloud run deploy`
+   - No HTTP interface required
+   - Better suited for task processing workloads
+
+2. **Option 2: Hybrid Web Server + Background Worker (Implemented)**
+   - Add minimal FastAPI server for health checks
+   - Run Celery worker in background thread
+   - Maintains Cloud Run Service compatibility
+
+**Implemented Solution (Option 2)**:
+
+```python
+# Dual-purpose worker: HTTP server + background processing
+import threading
+import uvicorn
+from fastapi import FastAPI
+
+# Minimal web server for Cloud Run health checks
+health_app = FastAPI(title="OriginFD Workers Health Check")
+
+@health_app.get("/health")
+def health_check():
+    """Health check endpoint for Cloud Run."""
+    return {
+        "status": "healthy",
+        "service": "workers",
+        "checks": {
+            "redis": check_redis_connectivity(),
+            "database": check_database_connectivity()
+        }
+    }
+
+def run_health_server():
+    """Run health server in separate thread."""
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(health_app, host="0.0.0.0", port=port, log_level="warning")
+
+def main():
+    """Start both health server and Celery worker."""
+    # Start health check server in daemon thread
+    health_thread = threading.Thread(target=run_health_server)
+    health_thread.daemon = True
+    health_thread.start()
+
+    # Start Celery worker (blocks main thread)
+    app.worker_main(argv=["worker", "--loglevel=info", "--concurrency=4", "--pool=prefork"])
+```
+
+**Updated Docker Configuration**:
+
+```dockerfile
+# Install FastAPI and uvicorn for health server
+# requirements.txt
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Dockerfile changes
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Expose port for health server
+EXPOSE 8080
+
+# HTTP-based health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+```
+
+**Architecture Benefits**:
+
+- **Cloud Run Compatibility**: Satisfies HTTP health check requirements
+- **Background Processing**: Maintains full Celery worker functionality
+- **Production Monitoring**: HTTP endpoints for external monitoring
+- **Resource Efficiency**: Single container with dual responsibilities
+- **Graceful Degradation**: Health endpoint reports dependency status
+
+**Alternative Approaches Considered**:
+
+1. **Pure Cloud Run Job**: Better architecture but requires job orchestration
+2. **External Health Check**: Complex infrastructure requirements
+3. **TCP Health Check**: Not supported by Cloud Run Services
+4. **Process Supervisor**: Adds complexity without clear benefits
+
+**Standards for Background Workers in Cloud Run**:
+
+1. **Always provide HTTP health endpoints** for Cloud Run Services
+2. **Use threading for multiple responsibilities** (web server + background worker)
+3. **Implement comprehensive health checks** (dependencies + worker status)
+4. **Log both HTTP and worker activities** for debugging
+5. **Consider Cloud Run Jobs** for pure background processing workloads
+
+**Workers Service Implementation Pattern**:
+
+```python
+# Required dependencies
+fastapi>=0.104.1
+uvicorn>=0.24.0
+
+# Health check implementation
+@health_app.get("/health")
+def health_check():
+    health_status = {"status": "healthy", "checks": {}}
+
+    # Check critical dependencies
+    try:
+        redis_client.ping()
+        health_status["checks"]["redis"] = "healthy"
+    except Exception as e:
+        health_status["checks"]["redis"] = f"unhealthy: {str(e)}"
+        health_status["status"] = "degraded"
+
+    return health_status
+
+# Threading pattern for dual-purpose service
+def main():
+    # Background HTTP server (daemon thread)
+    health_thread = threading.Thread(target=run_health_server)
+    health_thread.daemon = True
+    health_thread.start()
+
+    # Primary worker process (main thread)
+    start_background_worker()
+```
+
+**Prevention Standards**:
+
+- **NEVER** deploy pure background workers as Cloud Run Services without HTTP interface
+- **ALWAYS** provide HTTP health endpoints for Cloud Run Services
+- **ALWAYS** validate Cloud Run deployment requirements before implementation
+- **CONSIDER** Cloud Run Jobs for batch processing and pure background workloads
+- **IMPLEMENT** comprehensive dependency health checks in worker services
+- **USE** daemon threads for auxiliary HTTP servers in worker processes
+
+Last Updated: 2025-09-17
+Version: 3.5 - Added Cloud Run background worker architecture standards and dual-purpose service patterns

@@ -27,7 +27,8 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
-# No additional runtime packages needed for workers
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
 COPY --from=builder /venv /venv
@@ -43,11 +44,12 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
-# No port exposure needed for Celery workers
+# Expose port for health check web server
+EXPOSE 8080
 
-# Health check using Redis connection
-HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import os; import redis; r = redis.Redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0')); r.ping()" || exit 1
+# Health check using the new FastAPI health endpoint
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-# Start the Celery workers
+# Start the workers service (includes both health server and Celery worker)
 ENTRYPOINT ["python", "main.py"]
