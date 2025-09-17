@@ -27,6 +27,12 @@ The deployment consists of:
 - **Cache/Queue**: Redis (Memorystore)
 - **Networking**: VPC with private connectivity
 
+## Important: Public Access Configuration
+
+⚠️ **Critical Issue**: 403 Forbidden errors on web service access indicate missing IAM policies for public access.
+
+**Quick Fix**: See `DEVELOPMENT_STANDARDS.md` Issue #18 for complete troubleshooting guide and prevention standards.
+
 ## Step 1: Set up IAM Permissions
 
 The Cloud Build service account needs the following permissions to deploy the infrastructure:
@@ -256,7 +262,9 @@ The OriginFD application is now fully configured for automated Google Cloud Plat
 
 ## Support
 
-For issues with the deployment:
+For deployment issues, see the comprehensive troubleshooting guide in `DEVELOPMENT_STANDARDS.md`.
+
+Common support resources:
 
 1. Check service logs in Google Cloud Console
 2. Review Cloud Build execution history

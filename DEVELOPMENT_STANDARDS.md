@@ -1494,5 +1494,187 @@ def main():
 - **IMPLEMENT** comprehensive dependency health checks in worker services
 - **USE** daemon threads for auxiliary HTTP servers in worker processes
 
+### Issue #18: Cloud Run Public Access 403 Forbidden Errors
+
+**Problem**: Deployed Cloud Run services return "Error: Forbidden - Your client does not have permission to get URL / from this server" (HTTP 403) when accessing public URLs.
+**Root Cause**: Cloud Run services deployed without proper IAM policies for public access, even when `--allow-unauthenticated` flag is used in cloudbuild.yaml.
+**Symptoms**:
+
+- Browser shows "Error: Forbidden" message
+- HTTP 403 status code in network requests
+- Cloud Run logs show: "The request was not authenticated. Either allow unauthenticated invocations or set the proper Authorization header"
+
+**External Evidence**: Service showing as "Ready" in Cloud Run console but still requiring authentication for public access.
+
+**Correct Solution**: Two-step public access configuration:
+
+1. **IAM Policy Binding**: Add `allUsers` with `roles/run.invoker` role
+2. **Service Redeployment**: Ensure `--allow-unauthenticated` flag is properly applied
+
+**Implementation Commands**:
+
+```bash
+# Step 1: Add public access IAM policy
+gcloud run services add-iam-policy-binding [SERVICE_NAME] \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker"
+
+# Step 2: Redeploy with unauthenticated access (if needed)
+gcloud run deploy [SERVICE_NAME] \
+  --image=[CURRENT_IMAGE] \
+  --region=us-central1 \
+  --platform=managed \
+  --allow-unauthenticated \
+  [other-deployment-flags]
+```
+
+**Verification**:
+
+```bash
+# Verify IAM policy
+gcloud run services get-iam-policy [SERVICE_NAME] --region=us-central1
+# Should show: allUsers with roles/run.invoker
+
+# Test public access
+curl -I [SERVICE_URL]
+# Should return HTTP 200 instead of 403
+```
+
+**Prevention Standards**:
+
+- **ALWAYS** configure both IAM policy and deployment flags for public Cloud Run services
+- **VERIFY** public access immediately after deployment using curl or browser testing
+- **DOCUMENT** all public service URLs in deployment documentation
+- **MONITOR** service access logs for authentication warnings
+
+### Issue #19: TypeScript Set Iteration Compatibility
+
+**Problem**: TypeScript compilation error "Type 'Set<string>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher"
+**Root Cause**: TypeScript configuration missing `downlevelIteration` flag and proper ES target for Set iteration support.
+**Context**: Modern JavaScript Set objects require specific TypeScript compiler configuration for iteration.
+
+**Correct Solutions**:
+
+1. **TypeScript Configuration Fix**:
+
+   ```json
+   {
+     "compilerOptions": {
+       "target": "es2015",
+       "downlevelIteration": true
+       // other options...
+     }
+   }
+   ```
+
+2. **Alternative Code Pattern** (when config changes not feasible):
+   ```typescript
+   // Instead of: for (const key of mySet)
+   for (const key of Array.from(mySet)) {
+     // iteration logic
+   }
+   ```
+
+**Prevention Standards**:
+
+- **ALWAYS** configure TypeScript with appropriate ES target level
+- **USE** `Array.from()` for Set/Map iteration when targeting older JS environments
+- **TEST** TypeScript compilation in isolated build environments (like Docker)
+- **VERIFY** all modern JavaScript features are properly configured in tsconfig.json
+
+### Issue #20: ResponsiveTable Component Export Resolution
+
+**Problem**: TypeScript error "Module '@originfd/ui' has no exported member 'ResponsiveTable'" despite component being properly exported.
+**Root Cause**: UI package not built before web application compilation, resulting in missing component exports.
+**Context**: Monorepo packages must be built in dependency order to resolve imports.
+
+**Correct Solution**:
+
+```bash
+# Build UI package first
+pnpm --filter @originfd/ui build
+
+# Then build consuming applications
+pnpm --filter web build
+```
+
+**Column Type Safety Fix**:
+
+```typescript
+// Incorrect (generic string keys)
+const columns = [{ key: "name", header: "Name", priority: 1 }];
+
+// Correct (typed keys)
+const columns: Array<{ key: keyof User; header: string; priority: number }> = [
+  { key: "name", header: "Name", priority: 1 },
+];
+```
+
+**Prevention Standards**:
+
+- **ALWAYS** build dependency packages before consuming packages
+- **USE** typed column definitions for table components
+- **VERIFY** component exports in package index files
+- **TEST** import resolution in isolated build environments
+
+## Deployment Troubleshooting Standards
+
+### Systematic Diagnosis Process
+
+1. **Service Status Check**:
+
+   ```bash
+   gcloud run services describe [SERVICE_NAME] --region=us-central1
+   ```
+
+2. **Recent Logs Analysis**:
+
+   ```bash
+   gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=[SERVICE_NAME]" --limit=10
+   ```
+
+3. **Revision Health Check**:
+
+   ```bash
+   gcloud run revisions list --service=[SERVICE_NAME] --region=us-central1
+   ```
+
+4. **IAM Policy Verification**:
+   ```bash
+   gcloud run services get-iam-policy [SERVICE_NAME] --region=us-central1
+   ```
+
+### Common Issue Categories
+
+**Authentication/Authorization Issues**:
+
+- 403 Forbidden → Missing IAM policies for public access
+- 401 Unauthorized → Service authentication configuration
+
+**Service Availability Issues**:
+
+- Service not responding → Check revision health and logs
+- Timeout errors → Verify resource allocation and startup time
+
+**Build/Deployment Issues**:
+
+- TypeScript compilation errors → Check tsconfig.json and dependency builds
+- Missing dependencies → Verify package.json and lockfile synchronization
+- Docker build failures → Check Dockerfile paths and build context
+
+**Network/SSL Issues** (Local Testing):
+
+- SSL certificate errors with curl → Use `curl -k` for testing (skip verification)
+- Certificate chain issues → Local Windows SSL configuration, not service problem
+
+**Prevention Standards**:
+
+- **ALWAYS** verify public access immediately after deployment
+- **TEST** both authenticated and unauthenticated endpoints as appropriate
+- **MONITOR** service logs during initial deployment
+- **DOCUMENT** all public service URLs and access patterns
+- **IMPLEMENT** health check endpoints for all services
+
 Last Updated: 2025-09-17
-Version: 3.5 - Added Cloud Run background worker architecture standards and dual-purpose service patterns
+Version: 3.6 - Added Cloud Run public access configuration, TypeScript iteration compatibility, and deployment troubleshooting standards
