@@ -10,6 +10,8 @@ gunicorn==22.0.0
 # Database
 sqlalchemy==2.0.23
 alembic==1.13.1
+# PostgreSQL driver (required for database connectivity)
+psycopg2-binary==2.9.9
 
 # Authentication and security
 # Note: python-jose[cryptography] includes cryptography as dependency
