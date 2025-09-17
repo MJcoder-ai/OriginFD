@@ -57,5 +57,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health/ || exit 1
 
-# Start the FastAPI application with dynamic port support for Cloud Run
-CMD ["python", "main.py"]
+# Start the FastAPI application with production-grade gunicorn
+CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} main:app"]

@@ -1265,5 +1265,64 @@ healthcheck:
 - Test all URL configurations in container environments
 - Use `127.0.0.1` for local container health checks instead of `localhost`
 
+### Issue #29: Missing PyJWT Dependency and Production Server Configuration (DEPLOYMENT FAILURE RESOLVED)
+
+**Problem**: Cloud Run deployment failed with `ModuleNotFoundError: No module named 'jwt'` despite having python-jose installed.
+
+**Build Error**: Container crashed on startup before listening for traffic due to missing JWT dependency.
+
+**Root Cause Analysis**:
+
+1. **Inconsistent JWT Import Patterns**: Codebase used both direct PyJWT imports and python-jose imports
+   - `api/routers/auth.py`: `import jwt` (direct PyJWT)
+   - `core/auth.py`: `from jose import JWTError, jwt` (python-jose)
+
+2. **Missing Explicit PyJWT Dependency**: While python-jose includes PyJWT as a dependency, the direct `import jwt` requires explicit PyJWT installation
+
+3. **Development vs Production Server Gap**: Using uvicorn directly instead of production-grade server
+
+**Failing Code Examples**:
+```python
+# PROBLEMATIC: Direct PyJWT import without explicit dependency
+import jwt
+token = jwt.encode(payload, secret, algorithm="HS256")
+
+# PROBLEMATIC: Development server for production
+CMD ["python", "main.py"]  # Uses uvicorn directly
+```
+
+**Systematic Resolution Applied**:
+
+1. **Added Explicit Dependencies**:
+```
+# requirements.txt
+PyJWT==2.8.0
+gunicorn==22.0.0
+```
+
+2. **Production-Grade Server Configuration**:
+```dockerfile
+# API Service (4 workers for high throughput)
+CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} main:app"]
+
+# Orchestrator Service (2 workers for resource efficiency)
+CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8001} main:app"]
+```
+
+3. **Dynamic PORT Support**: All gunicorn configurations use `${PORT:-default}` for Cloud Run compatibility
+
+**Why Production Server Matters**:
+- **Gunicorn**: Production-grade WSGI server with proper process management
+- **UvicornWorker**: ASGI worker for FastAPI compatibility
+- **Multiple Workers**: Better resource utilization and fault tolerance
+- **Graceful Shutdown**: Proper signal handling for Cloud Run
+
+**Prevention Standards**:
+- Always explicitly declare all imported dependencies, even transitive ones
+- Use production-grade servers (gunicorn) for deployment, not development servers (uvicorn direct)
+- Test dependency imports in isolated environments
+- Maintain consistency in import patterns across codebase
+- Document production vs development server differences
+
 Last Updated: 2025-09-16
-Version: 3.3 - Added production URL configuration standards and hardcoded localhost prevention guidelines
+Version: 3.4 - Added missing dependency resolution and production server configuration standards

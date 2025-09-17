@@ -4,6 +4,8 @@
 # FastAPI and web framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+# Production WSGI server
+gunicorn==22.0.0
 
 # Database
 sqlalchemy==2.0.23
@@ -12,6 +14,8 @@ alembic==1.13.1
 # Authentication and security
 # Note: python-jose[cryptography] includes cryptography as dependency
 python-jose[cryptography]==3.3.0
+# Explicit PyJWT for direct JWT operations (fixes ModuleNotFoundError)
+PyJWT==2.8.0
 # Explicit pin to ensure compatible version
 cryptography==42.0.8
 
