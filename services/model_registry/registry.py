@@ -1,7 +1,9 @@
 """Simple in-memory model registry."""
-from typing import Dict, List, Optional
+
 from datetime import datetime
-from .models import ModelInfo, ModelCreate, ModelUpdate
+from typing import Dict, List, Optional
+
+from .models import ModelCreate, ModelInfo, ModelUpdate
 
 
 class ModelRegistry:
@@ -12,15 +14,27 @@ class ModelRegistry:
         # Seed with a couple of example models
         self.create_model(
             ModelCreate(
-                name="gpt-4", provider="openai", region="us-east", cost_per_1k_tokens=0.06,
-                latency_ms=120, eval_score=0.92, cag_hit_rate=0.85, cag_drift=0.05,
+                name="gpt-4",
+                provider="openai",
+                region="us-east",
+                cost_per_1k_tokens=0.06,
+                latency_ms=120,
+                eval_score=0.92,
+                cag_hit_rate=0.85,
+                cag_drift=0.05,
                 routing_rules={"default": "true"},
             )
         )
         self.create_model(
             ModelCreate(
-                name="claude-3", provider="anthropic", region="us-west", cost_per_1k_tokens=0.05,
-                latency_ms=150, eval_score=0.88, cag_hit_rate=0.8, cag_drift=0.07,
+                name="claude-3",
+                provider="anthropic",
+                region="us-west",
+                cost_per_1k_tokens=0.05,
+                latency_ms=150,
+                eval_score=0.88,
+                cag_hit_rate=0.8,
+                cag_drift=0.07,
             )
         )
 

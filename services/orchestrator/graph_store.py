@@ -1,10 +1,11 @@
 """Persistent storage for orchestrator graph configurations."""
+
 from __future__ import annotations
 
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class GraphStore:

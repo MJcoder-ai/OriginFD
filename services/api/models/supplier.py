@@ -1,14 +1,15 @@
 """Supplier model and schema."""
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 from typing import Optional
 
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, EmailStr
 
 from .base import Base
 

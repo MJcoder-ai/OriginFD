@@ -36,7 +36,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 {
   "$schema": "https://odl-sd.org/schemas/v4.1/document.json",
   "schema_version": "4.1",
-  
+
   "meta": {
     "project": "string",
     "portfolio_id": "string",
@@ -60,7 +60,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "change_summary": "string"
     }
   },
-  
+
   "hierarchy": {},           // Portfolio → Site → Plant → Block structure
   "requirements": {},        // Functional, constraints, regulatory, ESG
   "libraries": {},          // Component definitions with full port typing
@@ -89,7 +89,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     "id": "unique_identifier",
     "parent_id": "parent_reference",
     "children": ["child_ids"],
-    
+
     "portfolio": {
       "id": "PORTFOLIO_GLOBAL_2025",
       "name": "Global Renewable Portfolio",
@@ -109,7 +109,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "aggregation_rules": {
       "power": {
         "method": "hierarchical_sum",
@@ -157,7 +157,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
   "title": "ODL-SD Document Schema v4.1",
   "type": "object",
   "required": ["$schema", "schema_version", "meta", "hierarchy"],
-  
+
   "definitions": {
     "port_definition": {
       "type": "object",
@@ -182,7 +182,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       },
       "required": ["id", "direction", "signal"]
     },
-    
+
     "instance_definition": {
       "type": "object",
       "properties": {
@@ -211,7 +211,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       },
       "required": ["id", "type_ref"]
     },
-    
+
     "connection_definition": {
       "type": "object",
       "properties": {
@@ -248,7 +248,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       },
       "required": ["from", "to", "kind"]
     },
-    
+
     "sub_element_definition": {
       "type": "object",
       "properties": {
@@ -258,7 +258,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "required": ["type_ref", "qty"]
     }
   },
-  
+
   "properties": {
     "instances": {
       "type": "array",
@@ -280,13 +280,13 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     "scalability_strategies": {
       "instance_threshold": 10000,
       "connection_threshold": 50000,
-      
+
       "partitioning": {
         "strategy": "hierarchical|geographic|temporal",
         "partition_size_mb": 100,
         "index_fields": ["id", "type_ref", "location", "lifecycle_status"]
       },
-      
+
       "external_references": {
         "enabled": true,
         "storage_backend": "s3|azure_blob|gcs",
@@ -302,13 +302,13 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "ttl_seconds": 3600
         }
       },
-      
+
       "compression": {
         "algorithm": "gzip|brotli|zstd",
         "level": 6,
         "minimum_size_kb": 10
       },
-      
+
       "streaming": {
         "enabled": true,
         "protocol": "json_lines|msgpack|protobuf",
@@ -316,7 +316,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "checkpoint_interval": 10000
       }
     },
-    
+
     "validation_performance": {
       "async_validation": true,
       "parallel_workers": 8,
@@ -432,7 +432,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "bess_rack": {
         "category": "energy_storage",
         "subcategory": "battery_rack",
@@ -494,7 +494,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "power_conversion_system": {
         "category": "power_electronics",
         "subcategory": "bidirectional_inverter",
@@ -678,7 +678,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "routine_tests": ["oil_analysis", "thermography", "partial_discharge"]
     }
   },
-  
+
   "protection_relay": {
     "category": "protection",
     "subcategory": "multifunction_relay",
@@ -823,7 +823,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "pull_test_required": true
     }
   },
-  
+
   "tracker_structure": {
     "category": "structural",
     "subcategory": "single_axis_tracker",
@@ -928,7 +928,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "technology": "Mono_PERC_Bifacial",
           "certifications": ["IEC61215", "IEC61730", "UL1703", "IEC62804"]
         },
-        
+
         "ports": [
           {
             "id": "dc_positive",
@@ -950,7 +950,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             }
           }
         ],
-        
+
         "attributes": {
           "electrical": {
             "power_stc_w": 570,
@@ -963,7 +963,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "bypass_diodes": 3,
             "bifaciality_factor": 0.85
           },
-          
+
           "degradation": {
             "initial_degradation": {
               "lid": {
@@ -984,12 +984,12 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                 "max_power_loss_pct": 5
               }
             },
-            
+
             "annual_degradation": {
               "standard_rate_pct": 0.45,
               "year_1_rate_pct": 2.5,
               "years_2_30_rate_pct": 0.45,
-              
+
               "mechanisms": {
                 "uv_degradation": {
                   "backsheet_yellowing_rate": 0.1,
@@ -1008,7 +1008,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                   "delamination_risk": "low"
                 }
               },
-              
+
               "acceleration_factors": {
                 "high_temperature": {
                   "threshold_c": 70,
@@ -1028,7 +1028,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                 }
               }
             },
-            
+
             "warranty": {
               "product_years": 12,
               "performance": {
@@ -1042,7 +1042,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                 "claim_threshold_pct": 3
               }
             },
-            
+
             "end_of_life": {
               "expected_lifetime_years": 35,
               "failure_modes": [
@@ -1064,7 +1064,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               ]
             }
           },
-          
+
           "physical": {
             "dimensions_mm": [2278, 1134, 35],
             "weight_kg": 28.5,
@@ -1113,7 +1113,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "exchange_rate": 1.0
       }
     },
-    
+
     "capital_structure": {
       "total_investment": 150000000,
       "debt": {
@@ -1153,7 +1153,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "utility": 500000
       }
     },
-    
+
     "capex": {
       "development": {
         "land_acquisition": {
@@ -1174,7 +1174,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "owners_engineer": 800000
         }
       },
-      
+
       "equipment": {
         "modules": {
           "model": "LONGi_Hi-MO_6_72_570",
@@ -1215,7 +1215,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "total": 5000000
         }
       },
-      
+
       "construction": {
         "site_preparation": {
           "clearing_grubbing": 1200000,
@@ -1239,7 +1239,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "total": 8000000
         }
       },
-      
+
       "soft_costs": {
         "epc_management": 4500000,
         "construction_management": 1500000,
@@ -1260,19 +1260,19 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "performance_testing": 300000
         }
       },
-      
+
       "contingency": {
         "design_development_pct": 3,
         "equipment_pct": 2,
         "construction_pct": 5,
         "total": 6000000
       },
-      
+
       "total_capex": 148324240,
       "cost_per_wdc": 0.989,
       "cost_per_wac": 1.186
     },
-    
+
     "opex": {
       "fixed_annual": {
         "operations": {
@@ -1316,7 +1316,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "per_mw": 40480,
         "escalation_pct": 2.5
       },
-      
+
       "variable": {
         "per_mwh": {
           "consumables": 0.5,
@@ -1329,7 +1329,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "rate_per_pct": 50000
         }
       },
-      
+
       "lifecycle_costs": {
         "year_5": {
           "inverter_overhaul": 500000
@@ -1351,7 +1351,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "revenue": {
       "power_purchase_agreement": {
         "offtaker": "Pacific_Gas_Electric",
@@ -1380,7 +1380,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "availability_requirement_pct": 95
         }
       },
-      
+
       "capacity_payment": {
         "contract": "resource_adequacy",
         "capacity_mw": 100,
@@ -1388,7 +1388,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "term_years": 10,
         "annual_revenue": 5400000
       },
-      
+
       "ancillary_services": {
         "frequency_regulation": {
           "capacity_mw": 10,
@@ -1406,7 +1406,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "annual_payment": 200000
         }
       },
-      
+
       "renewable_energy_credits": {
         "type": "bundled|unbundled",
         "volume_per_mwh": 1,
@@ -1414,7 +1414,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "contract_years": 10,
         "buyer": "voluntary_market"
       },
-      
+
       "tax_benefits": {
         "investment_tax_credit": {
           "rate_pct": 30,
@@ -1438,7 +1438,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "financial_model": {
       "assumptions": {
         "inflation_rate_pct": 2.5,
@@ -1449,7 +1449,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "ppa_renewal_probability": 0.8,
         "terminal_value_multiple": 8
       },
-      
+
       "energy_production": {
         "year_1_gross_mwh": 315000,
         "year_1_net_mwh": 305550,
@@ -1474,7 +1474,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "key_metrics": {
         "project_irr_pct": 7.8,
         "equity_irr_pct": 12.4,
@@ -1493,7 +1493,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "plcr": 1.45
         }
       },
-      
+
       "sensitivity_analysis": {
         "single_factor": [
           {
@@ -1607,7 +1607,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "tenor_months": [6, 12, 24]
         }
       },
-      
+
       "climate_specific_losses": {
         "climate_zones": {
           "arid_desert": {
@@ -1629,7 +1629,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "tracker_stow_strategy": "horizontal_dust_storms"
             }
           },
-          
+
           "tropical_monsoon": {
             "classification": "Am",
             "characteristics": {
@@ -1649,7 +1649,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "wind_design_speed_mps": 60
             }
           },
-          
+
           "temperate_continental": {
             "classification": "Dfb",
             "characteristics": {
@@ -1669,7 +1669,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "cold_weather_lubricants": true
             }
           },
-          
+
           "coastal_marine": {
             "classification": "Cfb",
             "characteristics": {
@@ -1690,7 +1690,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             }
           }
         },
-        
+
         "dynamic_adjustment_algorithm": {
           "inputs": [
             "location_coordinates",
@@ -1711,7 +1711,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "extreme_weather_risk_pricing": {
         "insurance_adjustments": {
           "hurricane_zone": {
@@ -1730,7 +1730,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "defensible_space_m": 30
           }
         },
-        
+
         "resilience_investments": {
           "hardening_capex_increase_pct": 8,
           "benefit_cost_ratio": 4.2,
@@ -1739,7 +1739,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "advanced_monte_carlo_implementation": {
       "algorithm": {
         "code_snippet": {
@@ -1747,7 +1747,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "implementation": "# See implementation in Appendix A"
         }
       },
-      
+
       "correlation_matrix": {
         "definition": "Pearson correlation coefficients between risk factors",
         "matrix": {
@@ -1889,7 +1889,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           ]
         }
       ],
-      
+
       "documentation": {
         "as_built_drawings": {
           "electrical_sld": true,
@@ -1914,7 +1914,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "monitoring": {
       "data_acquisition": {
         "scada_system": {
@@ -1975,7 +1975,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "performance_analysis": {
         "kpis": [
           {
@@ -2026,7 +2026,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "maintenance": {
       "preventive": {
         "schedule": [
@@ -2100,7 +2100,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "crew_size": 4
           }
         ],
-        
+
         "vegetation_management": {
           "mowing": {
             "frequency": "monthly",
@@ -2118,7 +2118,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "corrective": {
         "response_matrix": {
           "module_failure": {
@@ -2150,7 +2150,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "skill_level": "specialist"
           }
         },
-        
+
         "spare_parts": {
           "critical": {
             "modules": {"quantity": 300, "percentage": 0.1},
@@ -2169,7 +2169,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "warranty_claims": {
         "process": {
           "detection": "monitoring|inspection",
@@ -2181,7 +2181,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "tracking": []
       }
     },
-    
+
     "service_events": [
       {
         "id": "SVC_001",
@@ -2202,7 +2202,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "completed_by": "internal_team"
       }
     ],
-    
+
     "performance_tracking": {
       "degradation": {
         "measurement_method": "capacity_test|regression_analysis",
@@ -2234,7 +2234,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         ]
       }
     },
-    
+
     "decommissioning": {
       "planned_date": "2062-01-01",
       "strategy": "full_removal|repowering",
@@ -2406,7 +2406,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         ]
       },
-      
+
       "contamination_remediation": {
         "soil_remediation": {
           "trigger_levels": {
@@ -2446,7 +2446,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             }
           }
         },
-        
+
         "groundwater_remediation": {
           "monitoring_wells": {
             "count": 8,
@@ -2470,7 +2470,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             }
           }
         },
-        
+
         "emergency_response": {
           "spill_response": {
             "notification_timeline_hours": {
@@ -2493,7 +2493,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           }
         }
       },
-      
+
       "liability_provisions": {
         "financial_assurance": {
           "mechanisms": {
@@ -2521,7 +2521,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "release_conditions": "regulatory_approval"
             }
           },
-          
+
           "cost_escalation": {
             "base_year": 2025,
             "escalation_rate_pct": 3.5,
@@ -2529,7 +2529,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "adjustment_mechanism": "cpi_plus_1pct"
           }
         },
-        
+
         "closure_planning": {
           "decommissioning_fund": {
             "target_amount": 8000000,
@@ -2537,7 +2537,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "annual_contribution": 250000,
             "investment_return_pct": 4.5
           },
-          
+
           "site_restoration": {
             "end_use": "agricultural|recreational|industrial|natural",
             "restoration_standards": {
@@ -2582,7 +2582,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         },
         "payback_time_years": 0.4
       },
-      
+
       "biodiversity": {
         "baseline_assessment": {
           "date": "2024-06-01",
@@ -2612,7 +2612,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "reporting": "public"
         }
       },
-      
+
       "water_management": {
         "consumption": {
           "construction_m3": 50000,
@@ -2626,7 +2626,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "discharge_permit": "NPDES_12345"
         }
       },
-      
+
       "land_use": {
         "total_area_ha": 200,
         "panel_coverage_ha": 120,
@@ -2636,7 +2636,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "area_ha": 100
         }
       },
-      
+
       "circular_economy": {
         "design_for_recycling": true,
         "recycled_content_pct": 15,
@@ -2644,7 +2644,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "certifications": ["Cradle_to_Cradle", "ISO_14040"]
       }
     },
-    
+
     "social": {
       "community_engagement": {
         "public_meetings": 12,
@@ -2661,7 +2661,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "landowner_payments": 450000
         }
       },
-      
+
       "employment": {
         "construction": {
           "peak_jobs": 500,
@@ -2680,7 +2680,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "veterans_pct": 15
         }
       },
-      
+
       "health_safety": {
         "safety_record": {
           "ltir": 0.5,
@@ -2692,7 +2692,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "training_hours_per_person": 40,
         "emergency_response_plan": true
       },
-      
+
       "supply_chain": {
         "responsible_sourcing": {
           "policy": true,
@@ -2706,20 +2706,20 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "governance": {
       "ownership_structure": {
         "sponsor": {"name": "RenewCo", "stake_pct": 51},
         "financial_partner": {"name": "GreenFund", "stake_pct": 30},
         "tax_equity": {"name": "BankCorp", "stake_pct": 19}
       },
-      
+
       "board_composition": {
         "independent_directors_pct": 60,
         "diversity_pct": 40,
         "expertise": ["renewable_energy", "finance", "engineering", "esg"]
       },
-      
+
       "compliance": {
         "anti_corruption": {
           "policy": true,
@@ -2736,7 +2736,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "standards": ["GRI", "SASB", "TCFD"]
         }
       },
-      
+
       "risk_management": {
         "framework": "ISO_31000",
         "climate_risk_assessment": true,
@@ -2748,14 +2748,14 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "certifications": {
       "project": ["LEED_Gold", "Envision_Platinum"],
       "products": ["UL_Listed", "IEC_Certified"],
       "management": ["ISO_9001", "ISO_14001", "ISO_45001"],
       "sustainability": ["B_Corp", "RE100"]
     },
-    
+
     "reporting": {
       "frameworks": ["GRI", "SASB", "TCFD", "CDP"],
       "verification": "third_party",
@@ -2775,7 +2775,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "cybersecurity": {
         "framework": "NIST_CSF_2.0",
         "maturity_level": 3,
-        
+
         "scada_security": {
           "architecture": {
             "zones": [
@@ -2804,7 +2804,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                 "security_level": "critical"
               }
             ],
-            
+
             "segmentation": {
               "firewalls": {
                 "between_zones": true,
@@ -2821,7 +2821,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               }
             }
           },
-          
+
           "vulnerabilities": {
             "assessment_frequency": "quarterly",
             "penetration_testing": "annual",
@@ -2843,7 +2843,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                 "status": "monitoring"
               }
             ],
-            
+
             "patch_management": {
               "testing_environment": true,
               "patch_window": "monthly",
@@ -2851,14 +2851,14 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "rollback_plan": true
             }
           },
-          
+
           "incident_response": {
             "team": {
               "internal": ["ciso", "it_manager", "scada_engineer"],
               "external": ["forensics_firm", "legal_counsel"],
               "escalation": "defined"
             },
-            
+
             "playbooks": {
               "ransomware": {
                 "detection_time_target_min": 15,
@@ -2877,7 +2877,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
                 "safety_system_independence": true
               }
             },
-            
+
             "forensics": {
               "log_retention_days": 365,
               "siem_platform": "splunk",
@@ -2885,7 +2885,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "behavioral_analytics": true
             }
           },
-          
+
           "access_control": {
             "authentication": {
               "multi_factor": "mandatory",
@@ -2893,14 +2893,14 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "session_timeout_minutes": 15,
               "password_policy": "nist_800_63b"
             },
-            
+
             "authorization": {
               "role_based_access": true,
               "principle_of_least_privilege": true,
               "regular_review_months": 3,
               "automated_deprovisioning": true
             },
-            
+
             "remote_access": {
               "vpn_required": true,
               "jump_server": true,
@@ -2908,7 +2908,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "vendor_access_approval": "per_session"
             }
           },
-          
+
           "supply_chain_security": {
             "software_bill_of_materials": true,
             "vendor_assessment": {
@@ -2922,7 +2922,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "secure_boot": true
             }
           },
-          
+
           "resilience_measures": {
             "backup_systems": {
               "frequency": "daily",
@@ -2930,13 +2930,13 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "air_gapped_copy": true,
               "restoration_tested": "quarterly"
             },
-            
+
             "redundancy": {
               "control_systems": "n_plus_1",
               "communication_paths": "dual",
               "power_supplies": "redundant"
             },
-            
+
             "business_continuity": {
               "rto_hours": 4,
               "rpo_hours": 1,
@@ -2945,7 +2945,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             }
           }
         },
-        
+
         "compliance_standards": {
           "nerc_cip": {
             "applicable": true,
@@ -2966,7 +2966,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "surveillance_audits": "annual"
           }
         },
-        
+
         "metrics_kpis": {
           "mean_time_to_detect_hours": 2,
           "mean_time_to_respond_hours": 1,
@@ -3011,7 +3011,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "scale": 1.0
       }
     },
-    
+
     "cim_integration": {
       "version": "CIM17",
       "namespace": "http://iec.ch/TC57/2020/CIM-schema-cim17",
@@ -3033,7 +3033,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "tso": "CAISO"
       }
     },
-    
+
     "weather_data": {
       "tmy_data": {
         "format": "TMY3",
@@ -3051,7 +3051,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         ],
         "file": "s3://weather/724666TYA.csv"
       },
-      
+
       "satellite_data": {
         "provider": "SolarAnywhere",
         "resolution_km": 1,
@@ -3063,7 +3063,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "longitude": -122.4194
         }
       },
-      
+
       "forecasting": {
         "provider": "DNV",
         "horizons": ["hour_ahead", "day_ahead", "week_ahead"],
@@ -3075,7 +3075,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         }
       }
     },
-    
+
     "simulation_tools": {
       "pvsyst": {
         "version": "7.4",
@@ -3088,14 +3088,14 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "loss_diagram": "s3://simulations/losses.pdf"
         }
       },
-      
+
       "pscad": {
         "version": "5.0",
         "model": "s3://simulations/grid_integration.pscx",
         "studies": ["load_flow", "short_circuit", "transient_stability"],
         "compliance": ["IEEE_1547", "NERC_PRC_024"]
       },
-      
+
       "helioscope": {
         "design_id": "abc123",
         "api_key": "encrypted",
@@ -3200,7 +3200,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         ]
       }
     ],
-    
+
     "integrated_compliance_matrix": {
       "voltage_limits": {
         "federal": {"min_pu": 0.88, "max_pu": 1.10},
@@ -3215,7 +3215,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "applied": {"min_hz": 57.5, "max_hz": 61.5}
       }
     },
-    
+
     "standards_summaries": {
       "IEEE_1547": {
         "key_clauses": [
@@ -3241,7 +3241,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       },
       "timestamp": "2025-06-15T10:00:00Z",
       "design_version": "v2.1",
-      
+
       "inputs": {
         "grid_model": "WECC_2025_Heavy_Summer",
         "plant_model": {
@@ -3255,7 +3255,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "critical_3_phase_fault"
         ]
       },
-      
+
       "outputs": {
         "steady_state": {
           "power_flow": {
@@ -3281,7 +3281,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "power_losses_mw": 2.3
             }
           },
-          
+
           "short_circuit": {
             "poi_fault_current": {
               "three_phase_ka": 12.5,
@@ -3292,7 +3292,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "margin_pct": 68
             }
           },
-          
+
           "contingency_analysis": {
             "violations": [
               {
@@ -3304,7 +3304,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             ]
           }
         },
-        
+
         "dynamic_stability": {
           "fault_ride_through": {
             "test_cases": [
@@ -3324,7 +3324,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               }
             ]
           },
-          
+
           "frequency_response": {
             "events": [
               {
@@ -3335,7 +3335,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               }
             ]
           },
-          
+
           "small_signal_stability": {
             "eigenvalues": [
               {"real": -0.5, "imag": 3.2, "damping_ratio": 0.156},
@@ -3345,7 +3345,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "damping_adequate": true
           }
         },
-        
+
         "mitigation_required": {
           "transmission_upgrades": [],
           "reactive_compensation": {
@@ -3357,7 +3357,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "special_protection_scheme": false
         }
       },
-      
+
       "approval": {
         "status": "approved_with_conditions",
         "conditions": [
@@ -3381,14 +3381,14 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 {
   "$schema": "https://odl-sd.org/schemas/v4.1/document.json",
   "schema_version": "4.1",
-  
+
   "meta": {
     "project": "Desert_Solar_150MW",
     "domain": "HYBRID",
     "scale": "UTILITY",
     "created_at": "2025-08-30T10:00:00Z"
   },
-  
+
   "hierarchy": {
     "type": "PLANT",
     "id": "PLANT_001",
@@ -3397,7 +3397,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "name": "Americas Renewable Portfolio"
     }
   },
-  
+
   "instances": [
     {
       "id": "PV_STRING_001",
@@ -3431,7 +3431,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       }
     }
   ],
-  
+
   "connections": [
     {
       "id": "DC_CONN_001",
@@ -3471,7 +3471,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       }
     }
   ],
-  
+
   "analysis": [
     {
       "id": "CAPACITY_TEST_001",
@@ -3525,7 +3525,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "STC": "Standard Test Conditions - 1000W/m², 25°C, AM1.5",
       "TMY": "Typical Meteorological Year"
     },
-    
+
     "financial_terms": {
       "BASIS_POINT": "0.01% - Used in interest rate discussions",
       "CAPEX": "Capital Expenditure - Initial investment costs",
@@ -3539,7 +3539,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "REC": "Renewable Energy Certificate",
       "WACC": "Weighted Average Cost of Capital"
     },
-    
+
     "standards_organizations": {
       "ANSI": "American National Standards Institute",
       "ASTM": "American Society for Testing and Materials",

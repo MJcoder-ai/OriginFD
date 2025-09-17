@@ -1,13 +1,13 @@
 # ODL-SD v4.1 – Component Management Supplement (CMS)
 
-**Version:** 1.0  
+**Version:** 1.0
 **Scope:** This supplement defines the complete Component Management model, workflows, and standards alignment for the platform. It extends **ODL‑SD v4.1** by adding a well-bounded `component_management` object, designed to be embedded in each `libraries.components[]` record or referenced alongside it at the document root. It covers creation, deduplication, supplier & pricing, RFQ/bidding, orders & shipments, logistics tracking, inventory, installation, warranty, returns/RMA, compliance, approvals, audit, analytics, and AI‑assisted automation.
 
 ---
 
 ## 1) Compatibility & Integration Points with ODL‑SD v4.1
 
-- **Primary anchor:** `libraries.components[]` — each component may include a `component_management` object.  
+- **Primary anchor:** `libraries.components[]` — each component may include a `component_management` object.
 - **Cross-links:**
   - `governance` (change requests, approvals, phase gates).
   - `operations` (commissioning & service actions; field instances).
@@ -647,29 +647,29 @@
 
 ## 3) End‑to‑End Workflows (RACI aligned)
 
-**A. Creation & Cataloging**  
-1. *Create generic component* → Engineer (R), Expert (A)  
-2. *Upload datasheet & parse* → Engineer (R), Expert (A)  
-3. *Dedup & canonicalize (GTIN/UNSPSC/eCl@ss/HS)* → Engineer (R), Expert (A), Compliance (C)  
+**A. Creation & Cataloging**
+1. *Create generic component* → Engineer (R), Expert (A)
+2. *Upload datasheet & parse* → Engineer (R), Expert (A)
+3. *Dedup & canonicalize (GTIN/UNSPSC/eCl@ss/HS)* → Engineer (R), Expert (A), Compliance (C)
 4. *Publish to summary portal* → Engineer (R), Project Manager (I)
 
-**B. Supplier & Pricing**  
-5. *Supplier definition* → Supplier Manager (R), Project Manager (A), Expert (C)  
-6. *Margins/Taxes (VAT/Import)* → Supplier Manager (R), Project Manager (A), Compliance (C)  
+**B. Supplier & Pricing**
+5. *Supplier definition* → Supplier Manager (R), Project Manager (A), Expert (C)
+6. *Margins/Taxes (VAT/Import)* → Supplier Manager (R), Project Manager (A), Compliance (C)
 7. *Approval gate → Available* → Expert (A)
 
-**C. RFQ/Bidding & Ordering**  
-8. *Issue RFQ, collect bids, AI follow‑ups* → Supplier Manager (R), Project Manager (A)  
-9. *Award & PO generation* → Supplier Manager (R), Project Manager (A)  
+**C. RFQ/Bidding & Ordering**
+8. *Issue RFQ, collect bids, AI follow‑ups* → Supplier Manager (R), Project Manager (A)
+9. *Award & PO generation* → Supplier Manager (R), Project Manager (A)
 10. *Waybill & label (QR/Digital Link)* → Project Manager (R), Supplier Manager (C)
 
-**D. Logistics & Inventory**  
-11. *Shipments & SSCC handling units; EPCIS events* → Supplier Manager (R), PM (A)  
-12. *Receipt → inventory (quantity/lot/serial)* → Engineer (R), PM (C)  
+**D. Logistics & Inventory**
+11. *Shipments & SSCC handling units; EPCIS events* → Supplier Manager (R), PM (A)
+12. *Receipt → inventory (quantity/lot/serial)* → Engineer (R), PM (C)
 13. *Install/commission (phase gate)* → Engineer (R), Expert (A)
 
-**E. Warranty, Returns, RMA**  
-14. *Warranty claims* → Tech Ops (R), Compliance (A), Supplier Manager (C)  
+**E. Warranty, Returns, RMA**
+14. *Warranty claims* → Tech Ops (R), Compliance (A), Supplier Manager (C)
 15. *Returns/Exchanges (RMA)* → Supplier Manager (R), Project Manager (A), Compliance (C)
 
 > Legend: **R** Responsible, **A** Accountable, **C** Consulted, **I** Informed.
@@ -703,159 +703,159 @@ Ordered rules to resolve `tracking_policy.level`:
 > This section is **normative** for platform behaviour. Words like **MUST**, **SHOULD**, and **MAY** follow RFC‑2119 style. The guidance below is intended to be copy‑visible inside admin/settings pages and developer docs.
 
 ### 6.1 Identification & Classification (GS1, UNSPSC, eCl@ss, HS/HTS)
-**Policy**  
-- Every component **MUST** have a category code (UNSPSC or eCl@ss).  
-- Physical tradable items **SHOULD** store a GS1 **GTIN** when available; otherwise set `gtin=null`.  
-- All logistics handling units **MUST** be identified by **SSCC** (pallet/case/parcel).  
-- All sites/nodes/depots **SHOULD** carry **GLN** identifiers.  
+**Policy**
+- Every component **MUST** have a category code (UNSPSC or eCl@ss).
+- Physical tradable items **SHOULD** store a GS1 **GTIN** when available; otherwise set `gtin=null`.
+- All logistics handling units **MUST** be identified by **SSCC** (pallet/case/parcel).
+- All sites/nodes/depots **SHOULD** carry **GLN** identifiers.
 - Import/exported items **MUST** store a 6‑digit **HS** root; destination‑specific **HTS** MAY be computed at ordering time.
 
-**Experience notes**  
-- Don’t force GTIN on industrial parts that don’t have it; rely on brand+part and certificate numbers.  
-- HS classification is often tied to **function** & **materials**; store key attributes (e.g., material, voltage class) to support classifier models.  
+**Experience notes**
+- Don’t force GTIN on industrial parts that don’t have it; rely on brand+part and certificate numbers.
+- HS classification is often tied to **function** & **materials**; store key attributes (e.g., material, voltage class) to support classifier models.
 - Use **SGTIN (GTIN+serial)** for serialised items when partners require GS1 encoding.
 
-**Data quality gates**  
-- Name uniqueness = `Brand_Part_RatingW`; conflicts trigger dedupe review.  
+**Data quality gates**
+- Name uniqueness = `Brand_Part_RatingW`; conflicts trigger dedupe review.
 - HS present for cross‑border orders; GLN present for any warehouse/depot location you control.
 
 ---
 
 ### 6.2 Procurement Transactions (UBL 2.3 first; cXML/EDI as adapters)
-**Document map**  
-- RFQ → **Quotation**; Award → **Order** (PO); Ship → **DespatchAdvice** + **Waybill**; In‑transit → **TransportationStatus**; Receipt → **ReceiptAdvice**; Returns → **CreditNote**.  
+**Document map**
+- RFQ → **Quotation**; Award → **Order** (PO); Ship → **DespatchAdvice** + **Waybill**; In‑transit → **TransportationStatus**; Receipt → **ReceiptAdvice**; Returns → **CreditNote**.
 
-**Platform MUST**  
-- Generate valid UBL documents with consistent IDs (e.g., `PO-XXXXXX`) and ISO currency codes.  
-- Preserve line‑level references to `component_ref`, `qty`, `uom`, `unit_price`, and `tracking_level_resolved`.  
-- Attach controlled documents (datasheet, certificates) as binary parts with content hashes.  
+**Platform MUST**
+- Generate valid UBL documents with consistent IDs (e.g., `PO-XXXXXX`) and ISO currency codes.
+- Preserve line‑level references to `component_ref`, `qty`, `uom`, `unit_price`, and `tracking_level_resolved`.
+- Attach controlled documents (datasheet, certificates) as binary parts with content hashes.
 - Sign outgoing business docs where partner requires (XMLDSig) and archive immutable copies.
 
-**Experience notes**  
-- Use **Incoterms** defaults (e.g., DAP) to avoid misaligned responsibility for import duties; make it explicit on each PO.  
+**Experience notes**
+- Use **Incoterms** defaults (e.g., DAP) to avoid misaligned responsibility for import duties; make it explicit on each PO.
 - Include payment terms and return policy mirrors on each PO line to de‑risk RMAs.
 
 ---
 
 ### 6.3 Logistics Eventing (EPCIS 2.0 JSON/JSON‑LD)
-**Minimum capture**  
-- For each shipment: **pickup, departed, arrived, delivered**, plus any **handover**.  
-- Each event **MUST** include `event_time`, `read_point` (GLN or GPS), and SSCC(s).  
-- Sensor data (temp/shock) **SHOULD** be captured for sensitive equipment (inverters, BESS).  
+**Minimum capture**
+- For each shipment: **pickup, departed, arrived, delivered**, plus any **handover**.
+- Each event **MUST** include `event_time`, `read_point` (GLN or GPS), and SSCC(s).
+- Sensor data (temp/shock) **SHOULD** be captured for sensitive equipment (inverters, BESS).
 
-**Operational SLAs**  
-- Event latency < 15 minutes to keep “last known” reliable.  
+**Operational SLAs**
+- Event latency < 15 minutes to keep “last known” reliable.
 - Time sources **MUST** be NTP‑synced; offline capture queues into store‑and‑forward.
 
-**Experience notes**  
-- Use **aggregation events**: you don’t need to scan every serial when a pallet (SSCC) is sealed; the supplier will disaggregate at receipt.  
+**Experience notes**
+- Use **aggregation events**: you don’t need to scan every serial when a pallet (SSCC) is sealed; the supplier will disaggregate at receipt.
 - If GPS is flaky, fall back to GLN + photo evidence at gates.
 
 ---
 
 ### 6.4 QR & Resolver (GS1 Digital Link)
-**Policy**  
-- All outward‑facing labels **SHOULD** use Digital Link URIs that resolve to the correct **shipment/SSCC** or **component** page with role‑based access.  
-- QR codes **MUST NOT** contain PII; use anonymised tokens.  
-- For serialised equipment, QR **SHOULD** link to the **component instance** and show warranty/commissioning state.  
+**Policy**
+- All outward‑facing labels **SHOULD** use Digital Link URIs that resolve to the correct **shipment/SSCC** or **component** page with role‑based access.
+- QR codes **MUST NOT** contain PII; use anonymised tokens.
+- For serialised equipment, QR **SHOULD** link to the **component instance** and show warranty/commissioning state.
 
-**Experience notes**  
-- Provide an **offline fallback** (short code) for sites without data; queue scans and resolve later.  
+**Experience notes**
+- Provide an **offline fallback** (short code) for sites without data; queue scans and resolve later.
 - Consider **dynamic QR** for revocable links when devices are stolen or reassigned.
 
 ---
 
 ### 6.5 Quality & Document Control (ISO 9001)
-**Policy**  
-- Every datasheet/certificate **MUST** be immutable, content‑hashed, and revisioned.  
-- Changes to `libraries.components` **MUST** occur via governed change requests with approver roles.  
+**Policy**
+- Every datasheet/certificate **MUST** be immutable, content‑hashed, and revisioned.
+- Changes to `libraries.components` **MUST** occur via governed change requests with approver roles.
 - Records retention **MUST** meet contractual/regulatory minima (typ. 7–10 years).
 
-**Experience notes**  
-- Watermark **DRAFT** on unapproved renders to prevent accidental use.  
+**Experience notes**
+- Watermark **DRAFT** on unapproved renders to prevent accidental use.
 - Add **training tips** inline in the UI near upload forms (e.g., “shoot nameplate straight‑on, keep glare low”).
 
 ---
 
 ### 6.6 Sustainable Procurement (ISO 20400) & Compliance (RoHS/REACH/WEEE)
-**Policy**  
-- Supplier selection **SHOULD** include environmental & social criteria (weight 15–30%).  
-- Store compliance evidence (RoHS/REACH/WEEE declarations) under `compliance.certificates`.  
+**Policy**
+- Supplier selection **SHOULD** include environmental & social criteria (weight 15–30%).
+- Store compliance evidence (RoHS/REACH/WEEE declarations) under `compliance.certificates`.
 - High‑impact categories **SHOULD** include basic LCA fields (embodied CO₂e per unit, if supplier provides).
 
-**Experience notes**  
+**Experience notes**
 - Make sustainability **visible** in bid scoring; suppliers will surface better data if it affects awards.
 
 ---
 
 ### 6.7 Electrical Safety & Performance (IEC & Grid Codes)
-**PV modules**: verify IEC 61215 (design qualification) and IEC 61730 (safety); store certificate numbers and test report links. Capture **module serials** at install for warranty traceability.  
-**Inverters/PCS**: verify product safety (e.g., IEC 62109 series) and EMC; store **grid code** compliance (e.g., IEEE 1547/EN 50549) where applicable; keep **firmware** version in instance records.  
+**PV modules**: verify IEC 61215 (design qualification) and IEC 61730 (safety); store certificate numbers and test report links. Capture **module serials** at install for warranty traceability.
+**Inverters/PCS**: verify product safety (e.g., IEC 62109 series) and EMC; store **grid code** compliance (e.g., IEEE 1547/EN 50549) where applicable; keep **firmware** version in instance records.
 **BoS**: for breakers, combiner boxes, cables—record voltage class, short‑circuit ratings, temperature ratings; ensure wiring guides reflect verified limits.
 
-**Experience notes**  
+**Experience notes**
 - Block commissioning package generation until mandatory certificates are attached.
 
 ---
 
 ### 6.8 Digital Product Passport (DPP) / Battery Regulation Readiness
-**Policy**  
-- Components in scope (e.g., certain batteries) **MUST** set `traceability.dpp.enabled=true` and store QR/DPP URI.  
+**Policy**
+- Components in scope (e.g., certain batteries) **MUST** set `traceability.dpp.enabled=true` and store QR/DPP URI.
 - Minimum DPP payload fields: manufacturer, model, capacity/rating, hazardous substance flags, repairability/serviceability notes, end‑of‑life instructions.
 
-**Experience notes**  
+**Experience notes**
 - Start collecting DPP‑like data **now**, even if not mandated—retrofit is costly once products are deployed.
 
 ---
 
 ### 6.9 Cybersecurity & Data Protection
-**Policy**  
-- All media with potential PII **MUST** pass privacy checks (face/plate blur where appropriate).  
-- Access to shipments/instances is **least‑privilege**; signed URLs for media; encryption at rest & in transit.  
+**Policy**
+- All media with potential PII **MUST** pass privacy checks (face/plate blur where appropriate).
+- Access to shipments/instances is **least‑privilege**; signed URLs for media; encryption at rest & in transit.
 - Admin exports **MUST** be audit‑logged and time‑boxed.
 
-**Experience notes**  
+**Experience notes**
 - Use different buckets/keys for **restricted raw** vs **redacted** assets; only redacted leaves the org by default.
 
 ---
 
 ### 6.10 Accessibility & Localisation
-**Policy**  
-- Generate **alt_text** for all externally‑facing images; localise proposals and client portal labels.  
-- Prefer **vector** for symbols/diagrams; keep raster fallbacks.  
+**Policy**
+- Generate **alt_text** for all externally‑facing images; localise proposals and client portal labels.
+- Prefer **vector** for symbols/diagrams; keep raster fallbacks.
 - Units **MUST** respect project settings (SI/imperial) with explicit unit labels.
 
-**Experience notes**  
+**Experience notes**
 - Keep template‑level **doc_bindings** so content teams don’t hunt for images; the platform auto‑selects per rules.
 
 ---
 
 ### 6.11 Data Quality (DQ) Rules & Acceptance Criteria
-**Mandatory fields to approve a component**: `brand`, `part_number`, `classification`, `datasheet`, `tracking_policy.level`, at least one supplier **OR** an approved equivalence link.  
-**PO line acceptance**: `qty>0`, `uom`, `unit_price` ≥ 0, `tracking_level_resolved` set.  
+**Mandatory fields to approve a component**: `brand`, `part_number`, `classification`, `datasheet`, `tracking_policy.level`, at least one supplier **OR** an approved equivalence link.
+**PO line acceptance**: `qty>0`, `uom`, `unit_price` ≥ 0, `tracking_level_resolved` set.
 **Shipment acceptance**: at least one SSCC, origin/destination GLN, and initial `pickup` event.
 
-**Experience notes**  
+**Experience notes**
 - Show **why** a record fails DQ (inline) and one‑click **fix** actions (e.g., auto‑classify UNSPSC).
 
 ---
 
 ### 6.12 Interoperability & Conformance Tests
-**Must‑pass tests**  
-- UBL validation for each doc type; EPCIS event schema validation; JSON Schema validation for CMS; QR/Digital Link decoding; barcode scan legibility test (print @ 203 dpi).  
+**Must‑pass tests**
+- UBL validation for each doc type; EPCIS event schema validation; JSON Schema validation for CMS; QR/Digital Link decoding; barcode scan legibility test (print @ 203 dpi).
 - Partner loopback tests (send, receive, reconcile) before go‑live.
 
-**Experience notes**  
+**Experience notes**
 - Keep a **golden sample pack** (RFQ→PO→Ship→Receive→Return) for regression testing.
 
 ---
 
 ### 6.13 Performance, Scale & Retention
-**Targets**  
-- EPCIS ingest ≥ 200 events/sec/project (burst); media rendition within 3s P95; search across 100k components in < 1s P95.  
+**Targets**
+- EPCIS ingest ≥ 200 events/sec/project (burst); media rendition within 3s P95; search across 100k components in < 1s P95.
 - Retention: live EPCIS 180 days hot, then archive; media originals retained per contract.
 
-**Experience notes**  
+**Experience notes**
 - Paginate aggressively; store derived KPIs to avoid re‑scanning large logs.
 
 ---
@@ -869,28 +869,28 @@ Ordered rules to resolve `tracking_policy.level`:
 ---
 
 ### 6.15 Code Lists & Glossary (for UI/Docs)
-- **Reason codes (returns)**: wrong_item, over_order, defect, damage_transit, other.  
-- **Delivery modes**: pickup, collection_point, direct.  
-- **Tracking levels**: quantity, lot, serial.  
+- **Reason codes (returns)**: wrong_item, over_order, defect, damage_transit, other.
+- **Delivery modes**: pickup, collection_point, direct.
+- **Tracking levels**: quantity, lot, serial.
 - **Event types**: pickup, loaded, departed, arrived, handover, out_for_delivery, delivered, delivery_exception, inventory_move, observed.
 
 ---
 
 ## 7) Implementation Notes Implementation Notes
 
-- **Where to store**: Embed `component_management` in each component; keep heavy logs (EPCIS, AI, audit) paged/segmented for scale.  
-- **Approvals**: Use `approvals.records[]` and gate state transitions (`status`) via RBAC.  
-- **Connect to instances**: On delivery/installation, update `instances[]` with serial/lot placement and commissioning results.  
-- **Analytics**: Compute KPIs from `orders`, `shipments.events`, `returns.records`, `warranty.claims`.  
+- **Where to store**: Embed `component_management` in each component; keep heavy logs (EPCIS, AI, audit) paged/segmented for scale.
+- **Approvals**: Use `approvals.records[]` and gate state transitions (`status`) via RBAC.
+- **Connect to instances**: On delivery/installation, update `instances[]` with serial/lot placement and commissioning results.
+- **Analytics**: Compute KPIs from `orders`, `shipments.events`, `returns.records`, `warranty.claims`.
 - **Interoperability**: Expose EPCIS capture/query endpoints, and export UBL docs where partners require them.
 
 ---
 
 ## 8) Minimal Data Flow (Happy Paths)
 
-1) **Create & Approve**: upload datasheet → parse → enrich → dedupe → approve → available.  
-2) **Buy & Track**: RFQ → bids → award → PO → shipments (SSCC, events) → receipt → inventory.  
-3) **Install & Operate**: pick to site → scan (Geo/GLN) → install → commission → operational.  
+1) **Create & Approve**: upload datasheet → parse → enrich → dedupe → approve → available.
+2) **Buy & Track**: RFQ → bids → award → PO → shipments (SSCC, events) → receipt → inventory.
+3) **Install & Operate**: pick to site → scan (Geo/GLN) → install → commission → operational.
 4) **Service & Return**: claim or wrong order → RMA → ship back (SSCC) → credit note → restock/scrap.
 
 ---
@@ -1245,9 +1245,9 @@ Append the following definitions to `$defs` in the schema:
 ---
 
 ### 9.8 Best‑Practice Symbol Sets (Reference)
-- **IEC 60617**: Graphical symbols for diagrams (SLD, wiring). 
-- **IEC 60417**: Symbols for use on equipment (nameplates, markings). 
-- **ISO 7010**: Safety signs (site photos, hazard overlays). 
+- **IEC 60617**: Graphical symbols for diagrams (SLD, wiring).
+- **IEC 60417**: Symbols for use on equipment (nameplates, markings).
+- **ISO 7010**: Safety signs (site photos, hazard overlays).
 
 ---
 

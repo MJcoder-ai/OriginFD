@@ -7,11 +7,17 @@ import random
 from datetime import datetime
 from typing import Dict, List
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
-from pydantic import BaseModel, Field
-
 from api.routers.auth import get_current_user
 from core.database import SessionDep
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 
@@ -20,18 +26,28 @@ class Alarm(BaseModel):
     """Alarm data model."""
 
     id: str = Field(..., description="Unique alarm identifier")
-    device_id: str = Field(..., description="Identifier of the device raising the alarm")
+    device_id: str = Field(
+        ..., description="Identifier of the device raising the alarm"
+    )
     severity: str = Field(..., description="Alarm severity level")
     message: str = Field(..., description="Human readable alarm message")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    trend: List[float] = Field(default_factory=list, description="Recent metric values for trend charts")
+    trend: List[float] = Field(
+        default_factory=list, description="Recent metric values for trend charts"
+    )
 
 
 # Simple in-memory alarm store used for the prototype implementation
 _ALARMS: Dict[str, Alarm] = {
-    "1": Alarm(id="1", device_id="inverter-1", severity="critical", message="Overvoltage"),
-    "2": Alarm(id="2", device_id="inverter-1", severity="warning", message="Temperature high"),
-    "3": Alarm(id="3", device_id="batt-2", severity="warning", message="State of charge low"),
+    "1": Alarm(
+        id="1", device_id="inverter-1", severity="critical", message="Overvoltage"
+    ),
+    "2": Alarm(
+        id="2", device_id="inverter-1", severity="warning", message="Temperature high"
+    ),
+    "3": Alarm(
+        id="3", device_id="batt-2", severity="warning", message="State of charge low"
+    ),
 }
 
 
@@ -58,9 +74,15 @@ async def correlate_alarm(
 
     alarm = _ALARMS.get(alarm_id)
     if not alarm:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alarm not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alarm not found"
+        )
 
-    return [a for a in _ALARMS.values() if a.device_id == alarm.device_id and a.id != alarm.id]
+    return [
+        a
+        for a in _ALARMS.values()
+        if a.device_id == alarm.device_id and a.id != alarm.id
+    ]
 
 
 @router.websocket("/ws")

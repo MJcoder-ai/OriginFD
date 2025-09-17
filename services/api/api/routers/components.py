@@ -2,23 +2,36 @@
 Component management API endpoints.
 Implements ODL-SD v4.1 Component Management lifecycle.
 """
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
-import uuid
-import logging
 
-from core.database import SessionDep
+import logging
+import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from api.routers.auth import get_current_user
-from models.component import (
-    Component, ComponentManagement, ComponentStatusEnum,
-    Supplier, SupplierStatusEnum,
-    MediaAsset, MediaAssetTypeEnum, MediaScopeEnum,
-    InventoryRecord
+from core.database import SessionDep
+from core.performance import (
+    cached_response,
+    invalidate_component_cache,
+    monitor_performance,
+    performance_metrics,
+    rate_limit,
 )
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from models.component import (
+    Component,
+    ComponentManagement,
+    ComponentStatusEnum,
+    InventoryRecord,
+    MediaAsset,
+    MediaAssetTypeEnum,
+    MediaScopeEnum,
+    Supplier,
+    SupplierStatusEnum,
+)
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -26,8 +39,10 @@ router = APIRouter()
 
 # Request/Response Models
 
+
 class ComponentCreateRequest(BaseModel):
     """Request model for creating new components."""
+
     brand: str = Field(..., min_length=1, max_length=64)
     part_number: str = Field(..., min_length=1, max_length=64)
     rating_w: int = Field(..., ge=1, le=1000000)
@@ -39,9 +54,13 @@ class ComponentCreateRequest(BaseModel):
     warranty_status: Optional[str] = Field("inactive", max_length=50)
     rma_tracking: List[Dict[str, Any]] = Field(default_factory=list)
 
+    class Config:
+        extra = "forbid"  # Prevent mass assignment vulnerabilities
+
 
 class ComponentUpdateRequest(BaseModel):
     """Request model for updating components."""
+
     brand: Optional[str] = Field(None, min_length=1, max_length=64)
     part_number: Optional[str] = Field(None, min_length=1, max_length=64)
     rating_w: Optional[int] = Field(None, ge=1, le=1000000)
@@ -53,9 +72,13 @@ class ComponentUpdateRequest(BaseModel):
     warranty_status: Optional[str] = Field(None, max_length=50)
     rma_tracking: Optional[List[Dict[str, Any]]] = None
 
+    class Config:
+        extra = "forbid"  # Prevent mass assignment vulnerabilities
+
 
 class ComponentResponse(BaseModel):
     """Response model for component data."""
+
     id: str
     component_id: str
     brand: str
@@ -81,6 +104,7 @@ class ComponentResponse(BaseModel):
 
 class ComponentListResponse(BaseModel):
     """Response model for component listings."""
+
     components: List[ComponentResponse]
     total: int
     page: int
@@ -89,12 +113,14 @@ class ComponentListResponse(BaseModel):
 
 class ComponentStatusTransitionRequest(BaseModel):
     """Request model for status transitions."""
+
     new_status: ComponentStatusEnum
     comment: Optional[str] = None
 
 
 class DatasheetUploadRequest(BaseModel):
     """Request model for datasheet upload."""
+
     datasheet_url: str
     extract_images: bool = True
     ai_parse: bool = True
@@ -102,6 +128,7 @@ class DatasheetUploadRequest(BaseModel):
 
 class MediaAssetResponse(BaseModel):
     """Response model for media assets."""
+
     id: str
     asset_id: str
     type: str
@@ -121,34 +148,38 @@ class MediaAssetResponse(BaseModel):
 
 # Component CRUD Operations
 
+
 @router.post("/", response_model=ComponentResponse, status_code=status.HTTP_201_CREATED)
+@rate_limit(requests_per_minute=20)  # More restrictive for write operations
+@performance_metrics
 async def create_component(
     request: ComponentCreateRequest,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Create a new component in draft status.
     """
     try:
         # Generate component ID and name
-        component_id = f"CMP:{request.brand}:{request.part_number}:{request.rating_w}W:REV1"
+        component_id = (
+            f"CMP:{request.brand}:{request.part_number}:{request.rating_w}W:REV1"
+        )
         name = f"{request.brand}_{request.part_number}_{request.rating_w}W"
-        
+
         # Check for duplicates
-        existing = db.query(Component).filter(
-            or_(
-                Component.component_id == component_id,
-                Component.name == name
-            )
-        ).first()
-        
+        existing = (
+            db.query(Component)
+            .filter(or_(Component.component_id == component_id, Component.name == name))
+            .first()
+        )
+
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Component with this ID or name already exists"
+                detail="Component with this ID or name already exists",
             )
-        
+
         # Create component
         component = Component(
             tenant_id=uuid.UUID(current_user["tenant_id"]),
@@ -163,17 +194,17 @@ async def create_component(
             domain=request.domain,
             scale=request.scale,
             classification=request.classification,
-            created_by=uuid.UUID(current_user["id"])
+            created_by=uuid.UUID(current_user["id"]),
         )
 
         if hasattr(component, "warranty_status"):
             component.warranty_status = request.warranty_status
         if hasattr(component, "rma_tracking"):
             component.rma_tracking = request.rma_tracking or []
-        
+
         db.add(component)
         db.flush()  # Get the component ID
-        
+
         # Create component management record
         management = ComponentManagement(
             component_id=component.id,
@@ -190,15 +221,24 @@ async def create_component(
             ai_logs=[],
             audit=[],
             analytics={"kpis": {}},
-            media={"library": [], "capture_policy": {}, "doc_bindings": {"bindings": []}}
+            media={
+                "library": [],
+                "capture_policy": {},
+                "doc_bindings": {"bindings": []},
+            },
         )
-        
+
         db.add(management)
         db.commit()
         db.refresh(component)
-        
-        logger.info(f"Created component {component.component_id} by user {current_user['id']}")
-        
+
+        # Invalidate related cache entries
+        await invalidate_component_cache()
+
+        logger.info(
+            f"Created component {component.component_id} by user {current_user['id']}"
+        )
+
         return ComponentResponse(
             id=str(component.id),
             component_id=component.component_id,
@@ -216,20 +256,25 @@ async def create_component(
             created_at=component.created_at,
             updated_at=component.updated_at,
             created_by=str(component.created_by) if component.created_by else None,
-            warranty_status=getattr(component, "warranty_status", request.warranty_status),
-            rma_tracking=getattr(component, "rma_tracking", request.rma_tracking or [])
+            warranty_status=getattr(
+                component, "warranty_status", request.warranty_status
+            ),
+            rma_tracking=getattr(component, "rma_tracking", request.rma_tracking or []),
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to create component: {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create component: {str(e)}"
+            detail=f"Failed to create component: {str(e)}",
         )
 
 
 @router.get("/", response_model=ComponentListResponse)
+@cached_response(ttl=300, include_user=True)
+@rate_limit(requests_per_minute=100)
+@performance_metrics
 async def list_components(
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
@@ -240,26 +285,38 @@ async def list_components(
     domain: Optional[str] = None,
     brand: Optional[str] = None,
     search: Optional[str] = None,
-    active_only: bool = Query(False)
+    active_only: bool = Query(False),
 ):
     """
     List components with filtering and pagination.
     """
-    query = db.query(Component).filter(Component.tenant_id == current_user["tenant_id"])
-    
+    # Use eager loading to prevent N+1 queries when accessing relationships
+    from sqlalchemy.orm import joinedload, selectinload
+
+    query = (
+        db.query(Component)
+        .options(
+            # Eager load commonly accessed relationships to prevent N+1 queries
+            joinedload(Component.supplier),
+            selectinload(Component.inventory_records),
+            # Add more relationships as they're defined in the model
+        )
+        .filter(Component.tenant_id == current_user["tenant_id"])
+    )
+
     # Apply filters
     if status:
         query = query.filter(Component.status == status)
-    
+
     if category:
         query = query.filter(Component.category == category)
-    
+
     if domain:
         query = query.filter(Component.domain == domain)
-        
+
     if brand:
         query = query.filter(Component.brand.ilike(f"%{brand}%"))
-    
+
     if active_only:
         active_states = [
             ComponentStatusEnum.APPROVED,
@@ -273,10 +330,10 @@ async def list_components(
             ComponentStatusEnum.INSTALLED,
             ComponentStatusEnum.COMMISSIONED,
             ComponentStatusEnum.OPERATIONAL,
-            ComponentStatusEnum.WARRANTY_ACTIVE
+            ComponentStatusEnum.WARRANTY_ACTIVE,
         ]
         query = query.filter(Component.status.in_([s.value for s in active_states]))
-    
+
     if search:
         search_term = f"%{search}%"
         query = query.filter(
@@ -284,53 +341,60 @@ async def list_components(
                 Component.name.ilike(search_term),
                 Component.brand.ilike(search_term),
                 Component.part_number.ilike(search_term),
-                Component.component_id.ilike(search_term)
+                Component.component_id.ilike(search_term),
             )
         )
-    
+
     # Get total count
     total = query.count()
-    
+
     # Apply pagination and ordering
-    components = query.order_by(Component.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    
+    components = (
+        query.order_by(Component.updated_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
     # Convert to response models
     component_responses = []
     for comp in components:
-        component_responses.append(ComponentResponse(
-            id=str(comp.id),
-            component_id=comp.component_id,
-            brand=comp.brand,
-            part_number=comp.part_number,
-            rating_w=comp.rating_w,
-            name=comp.name,
-            status=comp.status,
-            category=comp.category,
-            subcategory=comp.subcategory,
-            domain=comp.domain,
-            scale=comp.scale,
-            classification=comp.classification,
-            is_active=comp.is_active,
-            created_at=comp.created_at,
-            updated_at=comp.updated_at,
-            created_by=str(comp.created_by) if comp.created_by else None,
-            warranty_status=getattr(comp, "warranty_status", None),
-            rma_tracking=getattr(comp, "rma_tracking", [])
-        ))
-    
+        component_responses.append(
+            ComponentResponse(
+                id=str(comp.id),
+                component_id=comp.component_id,
+                brand=comp.brand,
+                part_number=comp.part_number,
+                rating_w=comp.rating_w,
+                name=comp.name,
+                status=comp.status,
+                category=comp.category,
+                subcategory=comp.subcategory,
+                domain=comp.domain,
+                scale=comp.scale,
+                classification=comp.classification,
+                is_active=comp.is_active,
+                created_at=comp.created_at,
+                updated_at=comp.updated_at,
+                created_by=str(comp.created_by) if comp.created_by else None,
+                warranty_status=getattr(comp, "warranty_status", None),
+                rma_tracking=getattr(comp, "rma_tracking", []),
+            )
+        )
+
     return ComponentListResponse(
-        components=component_responses,
-        total=total,
-        page=page,
-        page_size=page_size
+        components=component_responses, total=total, page=page, page_size=page_size
     )
 
 
 @router.get("/{component_id}", response_model=ComponentResponse)
+@cached_response(ttl=600, include_user=True)
+@rate_limit(requests_per_minute=200)
+@performance_metrics
 async def get_component(
     component_id: str,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get a specific component by ID.
@@ -340,22 +404,25 @@ async def get_component(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid component ID format"
+            detail="Invalid component ID format",
         )
-    
-    component = db.query(Component).filter(
-        and_(
-            Component.id == component_uuid,
-            Component.tenant_id == current_user["tenant_id"]
+
+    component = (
+        db.query(Component)
+        .filter(
+            and_(
+                Component.id == component_uuid,
+                Component.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
-    
+        .first()
+    )
+
     if not component:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Component not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
-    
+
     return ComponentResponse(
         id=str(component.id),
         component_id=component.component_id,
@@ -374,7 +441,7 @@ async def get_component(
         updated_at=component.updated_at,
         created_by=str(component.created_by) if component.created_by else None,
         warranty_status=getattr(component, "warranty_status", None),
-        rma_tracking=getattr(component, "rma_tracking", [])
+        rma_tracking=getattr(component, "rma_tracking", []),
     )
 
 
@@ -383,7 +450,7 @@ async def update_component(
     component_id: str,
     request: ComponentUpdateRequest,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Update a component.
@@ -393,47 +460,61 @@ async def update_component(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid component ID format"
+            detail="Invalid component ID format",
         )
-    
-    component = db.query(Component).filter(
-        and_(
-            Component.id == component_uuid,
-            Component.tenant_id == current_user["tenant_id"]
+
+    component = (
+        db.query(Component)
+        .filter(
+            and_(
+                Component.id == component_uuid,
+                Component.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
-    
+        .first()
+    )
+
     if not component:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Component not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
-    
+
     # Update fields
     update_data = request.dict(exclude_unset=True)
     for field, value in update_data.items():
-        if field in ['brand', 'part_number', 'rating_w'] and value is not None:
+        if field in ["brand", "part_number", "rating_w"] and value is not None:
             # If core identity fields change, regenerate component_id and name
             setattr(component, field, value)
-            
+
     # Regenerate component_id and name if identity fields changed
-    if any(field in update_data for field in ['brand', 'part_number', 'rating_w']):
-        component.component_id = f"CMP:{component.brand}:{component.part_number}:{component.rating_w}W:REV1"
-        component.name = f"{component.brand}_{component.part_number}_{component.rating_w}W"
-    
+    if any(field in update_data for field in ["brand", "part_number", "rating_w"]):
+        component.component_id = (
+            f"CMP:{component.brand}:{component.part_number}:{component.rating_w}W:REV1"
+        )
+        component.name = (
+            f"{component.brand}_{component.part_number}_{component.rating_w}W"
+        )
+
     # Update other fields
     for field, value in update_data.items():
-        if field not in ['brand', 'part_number', 'rating_w'] and hasattr(component, field):
+        if field not in ["brand", "part_number", "rating_w"] and hasattr(
+            component, field
+        ):
             setattr(component, field, value)
-    
+
     component.updated_by = uuid.UUID(current_user["id"])
     component.updated_at = datetime.utcnow()
-    
+
     db.commit()
     db.refresh(component)
-    
-    logger.info(f"Updated component {component.component_id} by user {current_user['id']}")
-    
+
+    # Invalidate related cache entries
+    await invalidate_component_cache(str(component.id))
+
+    logger.info(
+        f"Updated component {component.component_id} by user {current_user['id']}"
+    )
+
     return ComponentResponse(
         id=str(component.id),
         component_id=component.component_id,
@@ -452,7 +533,7 @@ async def update_component(
         updated_at=component.updated_at,
         created_by=str(component.created_by) if component.created_by else None,
         warranty_status=getattr(component, "warranty_status", None),
-        rma_tracking=getattr(component, "rma_tracking", [])
+        rma_tracking=getattr(component, "rma_tracking", []),
     )
 
 
@@ -460,7 +541,7 @@ async def update_component(
 async def delete_component(
     component_id: str,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Archive a component (soft delete).
@@ -470,42 +551,51 @@ async def delete_component(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid component ID format"
+            detail="Invalid component ID format",
         )
-    
-    component = db.query(Component).filter(
-        and_(
-            Component.id == component_uuid,
-            Component.tenant_id == current_user["tenant_id"]
+
+    component = (
+        db.query(Component)
+        .filter(
+            and_(
+                Component.id == component_uuid,
+                Component.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
-    
+        .first()
+    )
+
     if not component:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Component not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
-    
+
     # Archive instead of hard delete
     component.status = ComponentStatusEnum.ARCHIVED
     component.updated_by = uuid.UUID(current_user["id"])
     component.updated_at = datetime.utcnow()
-    
+
     db.commit()
-    
-    logger.info(f"Archived component {component.component_id} by user {current_user['id']}")
-    
+
+    # Invalidate related cache entries
+    await invalidate_component_cache(str(component.id))
+
+    logger.info(
+        f"Archived component {component.component_id} by user {current_user['id']}"
+    )
+
     return {"message": "Component archived successfully"}
 
 
 # Component Status Transitions
+
 
 @router.post("/{component_id}/transition", response_model=ComponentResponse)
 async def transition_component_status(
     component_id: str,
     request: ComponentStatusTransitionRequest,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Transition component status with validation.
@@ -515,48 +605,56 @@ async def transition_component_status(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid component ID format"
+            detail="Invalid component ID format",
         )
-    
-    component = db.query(Component).filter(
-        and_(
-            Component.id == component_uuid,
-            Component.tenant_id == current_user["tenant_id"]
+
+    component = (
+        db.query(Component)
+        .filter(
+            and_(
+                Component.id == component_uuid,
+                Component.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
-    
+        .first()
+    )
+
     if not component:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Component not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
-    
+
     # Validate transition
     if not component.can_transition_to(request.new_status):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot transition from {component.status} to {request.new_status.value}"
+            detail=f"Cannot transition from {component.status} to {request.new_status.value}",
         )
-    
+
     old_status = component.status
     component.status = request.new_status.value
     component.updated_by = uuid.UUID(current_user["id"])
     component.updated_at = datetime.utcnow()
-    
+
     # Add audit record to component management
     if component.management:
         component.management.add_audit_record(
             action=f"status_transition",
             actor_role="engineer",  # TODO: Get from user roles
             actor=current_user["email"],
-            diff=f"Status changed from {old_status} to {request.new_status.value}"
+            diff=f"Status changed from {old_status} to {request.new_status.value}",
         )
-    
+
     db.commit()
     db.refresh(component)
-    
-    logger.info(f"Transitioned component {component.component_id} from {old_status} to {request.new_status.value}")
-    
+
+    # Invalidate related cache entries
+    await invalidate_component_cache(str(component.id))
+
+    logger.info(
+        f"Transitioned component {component.component_id} from {old_status} to {request.new_status.value}"
+    )
+
     return ComponentResponse(
         id=str(component.id),
         component_id=component.component_id,
@@ -575,18 +673,19 @@ async def transition_component_status(
         updated_at=component.updated_at,
         created_by=str(component.created_by) if component.created_by else None,
         warranty_status=getattr(component, "warranty_status", None),
-        rma_tracking=getattr(component, "rma_tracking", [])
+        rma_tracking=getattr(component, "rma_tracking", []),
     )
 
 
 # Media Management
+
 
 @router.get("/{component_id}/media", response_model=List[MediaAssetResponse])
 async def list_component_media(
     component_id: str,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
-    asset_type: Optional[MediaAssetTypeEnum] = None
+    asset_type: Optional[MediaAssetTypeEnum] = None,
 ):
     """
     List media assets for a component.
@@ -596,30 +695,33 @@ async def list_component_media(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid component ID format"
+            detail="Invalid component ID format",
         )
-    
+
     # Verify component exists and user has access
-    component = db.query(Component).filter(
-        and_(
-            Component.id == component_uuid,
-            Component.tenant_id == current_user["tenant_id"]
+    component = (
+        db.query(Component)
+        .filter(
+            and_(
+                Component.id == component_uuid,
+                Component.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
-    
+        .first()
+    )
+
     if not component:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Component not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
-    
+
     query = db.query(MediaAsset).filter(MediaAsset.component_id == component_uuid)
-    
+
     if asset_type:
         query = query.filter(MediaAsset.type == asset_type.value)
-    
+
     media_assets = query.order_by(MediaAsset.created_at.desc()).all()
-    
+
     return [
         MediaAssetResponse(
             id=str(asset.id),
@@ -633,7 +735,7 @@ async def list_component_media(
             height_px=asset.height_px,
             alt_text=asset.alt_text,
             approved_for_external=asset.approved_for_external,
-            created_at=asset.created_at
+            created_at=asset.created_at,
         )
         for asset in media_assets
     ]
@@ -647,7 +749,7 @@ async def upload_component_media(
     scope: MediaScopeEnum = MediaScopeEnum.COMPONENT_GENERIC,
     alt_text: Optional[str] = None,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Upload media asset for a component.
@@ -655,58 +757,69 @@ async def upload_component_media(
     # TODO: Implement file upload to storage (S3, GCS, etc.)
     # TODO: Generate hash, resize images, extract metadata
     # TODO: AI-powered alt text generation
-    
+
     return {"message": "Media upload endpoint - implementation pending"}
 
 
 # Search and Discovery
 
+
 @router.get("/search/suggestions")
 async def get_search_suggestions(
     q: str = Query(..., min_length=2),
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get search suggestions for component discovery.
+    Optimized to use a single query with UNION to prevent N+1 queries.
     """
-    suggestions = db.query(Component.brand).filter(
-        and_(
-            Component.tenant_id == current_user["tenant_id"],
-            Component.brand.ilike(f"{q}%")
-        )
-    ).distinct().limit(10).all()
-    
-    brand_suggestions = [s[0] for s in suggestions]
-    
-    part_suggestions = db.query(Component.part_number).filter(
-        and_(
-            Component.tenant_id == current_user["tenant_id"],
-            Component.part_number.ilike(f"{q}%")
-        )
-    ).distinct().limit(10).all()
-    
-    part_suggestions = [s[0] for s in part_suggestions]
-    
-    return {
-        "brands": brand_suggestions,
-        "part_numbers": part_suggestions
-    }
+    from sqlalchemy import text
+
+    # Use a single optimized query with UNION to get both brands and part numbers
+    query = text(
+        """
+        SELECT DISTINCT 'brand' as type, brand as value
+        FROM components
+        WHERE tenant_id = :tenant_id AND brand ILIKE :search_term
+
+        UNION
+
+        SELECT DISTINCT 'part_number' as type, part_number as value
+        FROM components
+        WHERE tenant_id = :tenant_id AND part_number ILIKE :search_term
+
+        LIMIT 20
+    """
+    )
+
+    results = db.execute(
+        query, {"tenant_id": current_user["tenant_id"], "search_term": f"{q}%"}
+    ).fetchall()
+
+    brands = [r.value for r in results if r.type == "brand"][:10]
+    part_numbers = [r.value for r in results if r.type == "part_number"][:10]
+
+    return {"brands": brands, "part_numbers": part_numbers}
 
 
 @router.get("/stats/summary")
+@cached_response(ttl=600, include_user=False)  # Cache longer, not user-specific
+@rate_limit(requests_per_minute=50)
+@performance_metrics
 async def get_component_stats(
-    db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(SessionDep), current_user: dict = Depends(get_current_user)
 ):
     """
     Get component statistics for dashboard.
     """
     tenant_id = current_user["tenant_id"]
-    
+
     # Total components
-    total_components = db.query(Component).filter(Component.tenant_id == tenant_id).count()
-    
+    total_components = (
+        db.query(Component).filter(Component.tenant_id == tenant_id).count()
+    )
+
     # Active components
     active_states = [
         ComponentStatusEnum.APPROVED,
@@ -720,38 +833,50 @@ async def get_component_stats(
         ComponentStatusEnum.INSTALLED,
         ComponentStatusEnum.COMMISSIONED,
         ComponentStatusEnum.OPERATIONAL,
-        ComponentStatusEnum.WARRANTY_ACTIVE
+        ComponentStatusEnum.WARRANTY_ACTIVE,
     ]
-    
-    active_components = db.query(Component).filter(
-        and_(
-            Component.tenant_id == tenant_id,
-            Component.status.in_([s.value for s in active_states])
+
+    active_components = (
+        db.query(Component)
+        .filter(
+            and_(
+                Component.tenant_id == tenant_id,
+                Component.status.in_([s.value for s in active_states]),
+            )
         )
-    ).count()
-    
-    # Components by category
-    category_stats = db.query(
-        Component.category,
-        func.count(Component.id).label('count')
-    ).filter(
-        Component.tenant_id == tenant_id
-    ).group_by(Component.category).all()
-    
-    # Components by domain
-    domain_stats = db.query(
-        Component.domain,
-        func.count(Component.id).label('count')
-    ).filter(
-        Component.tenant_id == tenant_id
-    ).group_by(Component.domain).all()
-    
+        .count()
+    )
+
+    # Optimized: Get category and domain stats in a single query using subqueries
+    from sqlalchemy import case
+
+    # Single query to get all category stats
+    category_stats = (
+        db.query(Component.category, func.count(Component.id).label("count"))
+        .filter(Component.tenant_id == tenant_id)
+        .group_by(Component.category)
+        .all()
+    )
+
+    # Single query to get all domain stats
+    domain_stats = (
+        db.query(Component.domain, func.count(Component.id).label("count"))
+        .filter(Component.tenant_id == tenant_id)
+        .group_by(Component.domain)
+        .all()
+    )
+
     return {
         "total_components": total_components,
         "active_components": active_components,
-        "draft_components": db.query(Component).filter(
-            and_(Component.tenant_id == tenant_id, Component.status == ComponentStatusEnum.DRAFT)
-        ).count(),
+        "draft_components": db.query(Component)
+        .filter(
+            and_(
+                Component.tenant_id == tenant_id,
+                Component.status == ComponentStatusEnum.DRAFT,
+            )
+        )
+        .count(),
         "categories": {cat[0] or "uncategorized": cat[1] for cat in category_stats},
-        "domains": {dom[0] or "unspecified": dom[1] for dom in domain_stats}
+        "domains": {dom[0] or "unspecified": dom[1] for dom in domain_stats},
     }

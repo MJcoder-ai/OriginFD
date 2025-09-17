@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 class PSUMeter:
@@ -8,7 +8,9 @@ class PSUMeter:
     def __init__(self) -> None:
         self._usage: Dict[str, List[Dict[str, Any]]] = {}
 
-    def record_usage(self, tenant_id: str, psu: int, metadata: Dict[str, Any] | None = None) -> None:
+    def record_usage(
+        self, tenant_id: str, psu: int, metadata: Dict[str, Any] | None = None
+    ) -> None:
         """Record PSU usage event for a tenant."""
         event = {
             "timestamp": datetime.utcnow(),

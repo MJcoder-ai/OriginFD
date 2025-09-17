@@ -1,24 +1,19 @@
 """Project model and schemas."""
+
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum as SqlEnum,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-)
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy.orm import relationship
 from pydantic import BaseModel
+from sqlalchemy import Boolean, Column, DateTime
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from .base import Base
 
@@ -65,7 +60,7 @@ class Project(Base):
     longitude = Column(Float, nullable=True)
     country_code = Column(String(3), nullable=True)
     total_capacity_kw = Column(Float, nullable=True)
-    tags = Column(ARRAY(String), default=list)
+    tags = Column(String, default="[]")  # JSON string for SQLite compatibility
     owner_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id"),
@@ -83,6 +78,30 @@ class Project(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+
+    def can_edit(self, user_id: str) -> bool:
+        """Check if a user can edit this project."""
+        return str(self.owner_id) == user_id
+
+    def can_view(self, user_id: str) -> bool:
+        """Check if a user can view this project."""
+        # For now, only owner can view - expand this for team permissions later
+        return str(self.owner_id) == user_id
+
+    @property
+    def tags_list(self) -> List[str]:
+        """Get tags as a list from JSON string."""
+        if not self.tags:
+            return []
+        try:
+            return json.loads(self.tags)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    @tags_list.setter
+    def tags_list(self, value: List[str]):
+        """Set tags as JSON string from list."""
+        self.tags = json.dumps(value) if value else "[]"
 
 
 class ProjectSchema(BaseModel):

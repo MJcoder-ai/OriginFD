@@ -12,6 +12,34 @@ export type HierarchyType = 'PORTFOLIO' | 'SITE' | 'PLANT' | 'BLOCK' | 'ARRAY' |
 export type TaskStatus = 'pending' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed' | 'cancelled'
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
 
+// ODL-SD v4.1 Component Lifecycle Status
+export type ODLComponentStatus =
+  | 'draft'
+  | 'parsed'
+  | 'enriched'
+  | 'dedupe_pending'
+  | 'compliance_pending'
+  | 'approved'
+  | 'available'
+  | 'sourcing'
+  | 'rfq_open'
+  | 'rfq_awarded'
+  | 'purchasing'
+  | 'ordered'
+  | 'shipped'
+  | 'received'
+  | 'installed'
+  | 'commissioned'
+  | 'operational'
+  | 'warranty_active'
+  | 'maintenance'
+  | 'retired'
+  | 'recycling'
+  | 'archived'
+  | 'quarantine'
+  | 'returned'
+  | 'cancelled'
+
 export interface Units {
   system: UnitSystem
   currency: string

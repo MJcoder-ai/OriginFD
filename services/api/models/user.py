@@ -1,14 +1,16 @@
 """SQLAlchemy models and Pydantic schemas for users."""
+
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, String
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from .base import Base
 
@@ -25,7 +27,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
-    roles = Column(ARRAY(String), default=list)
+    role = Column(String, default="user")  # Single role for SQLite compatibility
     created_at = Column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )
@@ -53,7 +55,7 @@ class UserSchema(BaseModel):
     is_active: bool = True
     is_verified: bool = False
     is_superuser: bool = False
-    roles: List[str] = []
+    role: str = "user"
     created_at: datetime
     updated_at: datetime
 

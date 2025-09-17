@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronsUpDown, Search, Package, Plus, X } from 'lucide-react'
+import { Check, ChevronsUpDown, Search, Package, Plus, X, AlertCircle, CheckCircle, Clock, Warehouse } from 'lucide-react'
 
 import {
   Button,
@@ -25,9 +25,9 @@ import { componentAPI } from '@/lib/api-client'
 import type { ComponentResponse } from '@/lib/types'
 
 // Inline UI components for missing dependencies
-const Badge = ({ children, variant = "secondary", className = "" }: { 
-  children: React.ReactNode; 
-  variant?: "secondary" | "outline"; 
+const Badge = ({ children, variant = "secondary", className = "" }: {
+  children: React.ReactNode;
+  variant?: "secondary" | "outline";
   className?: string;
 }) => (
   <span className={cn(
@@ -70,6 +70,40 @@ const CommandItem = ({ children, onSelect }: { children: React.ReactNode; onSele
   </div>
 )
 
+// Helper functions for ODL-SD v4.1 component display
+const getODLStatusDisplay = (status?: string) => {
+  const statuses = {
+    draft: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Draft' },
+    parsed: { icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Parsed' },
+    enriched: { icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Enriched' },
+    approved: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Approved' },
+    available: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Available' },
+    rfq_open: { icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50', label: 'RFQ Open' },
+    operational: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Operational' },
+    archived: { icon: Package, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Archived' }
+  }
+  return statuses[status as keyof typeof statuses] || statuses.draft
+}
+
+const getComplianceDisplay = (certificates?: Array<{standard: string, valid_until: string}>) => {
+  if (!certificates || certificates.length === 0) {
+    return { icon: AlertCircle, color: 'text-red-600', label: 'No Certificates' }
+  }
+
+  const now = new Date()
+  const expiringSoon = certificates.some(cert => {
+    const validUntil = new Date(cert.valid_until)
+    const monthsUntilExpiry = (validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
+    return monthsUntilExpiry < 6
+  })
+
+  if (expiringSoon) {
+    return { icon: AlertCircle, color: 'text-orange-600', label: 'Expiring Soon' }
+  }
+
+  return { icon: CheckCircle, color: 'text-green-600', label: `${certificates.length} Certs` }
+}
+
 interface ComponentSelectorProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -107,18 +141,20 @@ export function ComponentSelector({
   const [selectedComponents, setSelectedComponents] = React.useState<SelectedComponent[]>([])
   const [categoryFilter, setCategoryFilter] = React.useState<string>('')
   const [domainFilter, setDomainFilter] = React.useState<string>(projectDomain || '')
+  const [lifecycleFilter, setLifecycleFilter] = React.useState<string>('')
+  const [showInventoryOnly, setShowInventoryOnly] = React.useState<boolean>(false)
 
   // Fetch components with filters
   const {
     data: componentsData,
     isLoading,
   } = useQuery({
-    queryKey: ['components', searchQuery, categoryFilter, domainFilter],
+    queryKey: ['components', searchQuery, categoryFilter, domainFilter, lifecycleFilter, showInventoryOnly],
     queryFn: () => componentAPI.listComponents({
       search: searchQuery || undefined,
       category: categoryFilter || undefined,
       domain: domainFilter || undefined,
-      active_only: true,
+      status: lifecycleFilter || undefined,
       page_size: 50
     }),
     enabled: open,
@@ -220,7 +256,7 @@ export function ComponentSelector({
               </div>
 
               {/* Filters */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -239,20 +275,14 @@ export function ComponentSelector({
                           <CommandItem onSelect={() => setCategoryFilter('')}>
                             All Categories
                           </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('generation')}>
-                            Generation
+                          <CommandItem onSelect={() => setCategoryFilter('pv_modules')}>
+                            PV Modules
                           </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('storage')}>
-                            Storage
+                          <CommandItem onSelect={() => setCategoryFilter('inverters')}>
+                            Inverters
                           </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('conversion')}>
-                            Conversion
-                          </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('protection')}>
-                            Protection
-                          </CommandItem>
-                          <CommandItem onSelect={() => setCategoryFilter('monitoring')}>
-                            Monitoring
+                          <CommandItem onSelect={() => setCategoryFilter('batteries')}>
+                            Batteries
                           </CommandItem>
                         </CommandGroup>
                       </CommandList>
@@ -295,6 +325,55 @@ export function ComponentSelector({
                     </Command>
                   </PopoverContent>
                 </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-[110px] justify-between"
+                    >
+                      {lifecycleFilter || "Lifecycle"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[110px] p-0">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem onSelect={() => setLifecycleFilter('')}>
+                            All Statuses
+                          </CommandItem>
+                          <CommandItem onSelect={() => setLifecycleFilter('draft')}>
+                            Draft
+                          </CommandItem>
+                          <CommandItem onSelect={() => setLifecycleFilter('approved')}>
+                            Approved
+                          </CommandItem>
+                          <CommandItem onSelect={() => setLifecycleFilter('available')}>
+                            Available
+                          </CommandItem>
+                          <CommandItem onSelect={() => setLifecycleFilter('operational')}>
+                            Operational
+                          </CommandItem>
+                          <CommandItem onSelect={() => setLifecycleFilter('archived')}>
+                            Archived
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                <Button
+                  variant={showInventoryOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowInventoryOnly(!showInventoryOnly)}
+                  className="gap-2"
+                >
+                  <Warehouse className="h-4 w-4" />
+                  {showInventoryOnly ? "In Stock" : "Stock"}
+                </Button>
               </div>
             </div>
 
@@ -310,46 +389,83 @@ export function ComponentSelector({
                   <p className="mt-2 text-sm text-muted-foreground">No components found</p>
                 </div>
               ) : (
-                components.map((component) => (
-                  <Card
-                    key={component.id}
-                    className={cn(
-                      "cursor-pointer transition-colors",
-                      isComponentSelected(component) && "ring-2 ring-primary"
-                    )}
-                    onClick={() => handleComponentToggle(component)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 rounded bg-muted">
-                            <Package className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {component.brand} {component.part_number}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {component.rating_w}W • {component.category}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {component.domain && (
-                            <Badge variant="outline" className="text-xs">
-                              {component.domain}
-                            </Badge>
-                          )}
-                          {isComponentSelected(component) && (
-                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="h-3 w-3 text-primary-foreground" />
+                components.map((component: any) => {
+                  const statusDisplay = getODLStatusDisplay(component.component_management.status)
+                  const complianceDisplay = getComplianceDisplay(component.component_management.compliance.certificates)
+                  const StatusIcon = statusDisplay.icon
+                  const ComplianceIcon = complianceDisplay.icon
+                  const identity = component.component_management.component_identity
+                  const hasInventory = component.component_management.inventory.stocks.length > 0
+                  const inventoryQty = hasInventory ? component.component_management.inventory.stocks[0].on_hand_qty : 0
+
+                  return (
+                    <Card
+                      key={component.id}
+                      className={cn(
+                        "cursor-pointer transition-colors",
+                        isComponentSelected(component) && "ring-2 ring-primary"
+                      )}
+                      onClick={() => handleComponentToggle(component)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="p-2 rounded bg-muted flex-shrink-0">
+                              <Package className="h-4 w-4" />
                             </div>
-                          )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">
+                                {identity.brand} {identity.part_number}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {identity.rating_w}W • {identity.classification?.unspsc ?
+                                  (identity.classification.unspsc === '26111704' ? 'PV Modules' :
+                                   identity.classification.unspsc === '26111705' ? 'Inverters' :
+                                   identity.classification.unspsc === '26111706' ? 'Batteries' : 'Component')
+                                  : 'Component'}
+                              </p>
+
+                              {/* ODL-SD v4.1 status indicators */}
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className={cn("flex items-center gap-1 px-1.5 py-0.5 rounded text-xs", statusDisplay.bg)}>
+                                  <StatusIcon className={cn("h-3 w-3", statusDisplay.color)} />
+                                  <span className={statusDisplay.color}>{statusDisplay.label}</span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  <ComplianceIcon className={cn("h-3 w-3", complianceDisplay.color)} />
+                                  <span className={cn("text-xs", complianceDisplay.color)}>
+                                    {complianceDisplay.label}
+                                  </span>
+                                </div>
+
+                                {hasInventory && (
+                                  <div className="flex items-center gap-1">
+                                    <Warehouse className="h-3 w-3 text-blue-600" />
+                                    <span className="text-xs text-blue-600">{inventoryQty} pcs</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                            {component.component_management.warranty.terms.duration_years > 0 && (
+                              <Badge variant="outline" className="text-xs">
+                                {component.component_management.warranty.terms.duration_years}yr warranty
+                              </Badge>
+                            )}
+                            {isComponentSelected(component) && (
+                              <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                <Check className="h-3 w-3 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  )
+                })
               )}
             </div>
           </div>
@@ -371,10 +487,10 @@ export function ComponentSelector({
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="text-sm">
-                              {selectedComponent.component.brand} {selectedComponent.component.part_number}
+                              {selectedComponent.component.component_management?.component_identity?.brand} {selectedComponent.component.component_management?.component_identity?.part_number}
                             </CardTitle>
                             <CardDescription className="text-xs">
-                              {selectedComponent.component.rating_w}W
+                              {selectedComponent.component.component_management?.component_identity?.rating_w}W
                             </CardDescription>
                           </div>
                           <Button

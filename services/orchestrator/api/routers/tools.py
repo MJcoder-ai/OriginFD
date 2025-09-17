@@ -1,11 +1,11 @@
 """API endpoints for interacting with typed tools."""
+
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
-
-from tools.registry import ToolMetadata, ToolResult, ToolRegistry
-from tools.generate_sdk import generate_typescript_sdk, generate_python_sdk
+from tools.generate_sdk import generate_python_sdk, generate_typescript_sdk
+from tools.registry import ToolMetadata, ToolRegistry, ToolResult
 
 router = APIRouter()
 

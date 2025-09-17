@@ -1,7 +1,7 @@
 # **ODL-SD UI/UX Challenges and Strategy Report**
 
-**Date:** September 2, 2025  
- **Audience:** Senior Frontend Engineer & UI Lead  
+**Date:** September 2, 2025
+ **Audience:** Senior Frontend Engineer & UI Lead
  **Scope:** Identify UI/UX challenges across all lifecycle phases of the ODL-SD platform and propose role-aware design strategies. This report builds upon prior analysis and dives deeper into phase-specific UX issues, innovative solutions, design patterns, and implementation considerations.
 
 ## **Introduction**
@@ -344,7 +344,7 @@ To ensure a coherent and effective UI, we will adhere to a design system with sp
 
   * Hide non-essential visuals: e.g., background grid lines in charts might be hidden on mobile to reduce clutter, or secondary charts might be omitted or available on demand (e.g., swipe to a second chart).
 
-  * Gestures and controls: Some UI controls might be replaced – e.g., a hover tooltip is not applicable on mobile, so we replace with tap-to-reveal info or always-visible info if space permits.  
+  * Gestures and controls: Some UI controls might be replaced – e.g., a hover tooltip is not applicable on mobile, so we replace with tap-to-reveal info or always-visible info if space permits.
      We’ll document these rules and test each major page at breakpoints (mobile \< 768px, tablet \~768-1024px, desktop \> 1024px, plus consider large monitors \> 1440px for maybe showing more data or white space).
 
 * **Loading States for AI/Tool Execution:** When users invoke heavy operations (like running a simulation, AI query, or loading a big model), the UI must provide immediate feedback to avoid the appearance of freezing. We will use **skeleton screens** or spinners judiciously. For example, when loading a data table, show gray bars as placeholder rows (skeleton) until data arrives, which is better than a blank screen. For AI responses (which might take a couple seconds), display a placeholder chat bubble “Thinking…” or a progress bar if we can estimate time. Also possibly use playful yet professional messages for AI loading (“Analyzing the system…”) to reassure the user. For real-time tasks (like an agent performing multi-step actions), a small log or progress list can update step-by-step. It's crucial to also allow cancellation if possible – e.g., if an AI query is taking too long, give the user an option to cancel or retry, rather than locking the UI. We'll also handle error states (if a tool fails, show a message with next suggestions rather than just failing silently). These loading and error states will be consistent in style across the app, likely using a unified component for spinner+message that can be dropped into any view that needs to wait.

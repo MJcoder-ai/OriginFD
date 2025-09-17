@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbol Selector</title>
+    <style>
+        /* Styling for symbol palette */
+        #symbolPalette {
+            border: 1px solid black;
+            width: 200px;
+            height: auto;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        /* Styling for canvas area */
+        #canvasArea {
+            border: 1px solid black;
+            height: 500px;
+            margin-top: 20px;
+            position: relative;
+            background-size: 50px 50px; /* Grid cell size */
+            background-image: linear-gradient(to right, rgb(195, 206, 206) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgb(195, 206, 206) 1px, transparent 1px);
+        }
+
+        /* Styling for draggable symbols */
+        .draggable {
+            width: 50px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        /* Styling for symbols placed on the canvas */
+        .symbol {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            z-index: 10; /* Ensure symbols are above lines */
+        }
+
+
+        .symbol-id {
+            position: absolute;
+            color: white;
+            font-size: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 100%;
+            bottom: 0;
+        }
+
+
+        /* Styling for line placeholder, now with grey color */
+        .line-placeholder {
+            background-color: grey; /* Changed line color to grey */
+            position: absolute;
+            height: 2px;
+            z-index: 1; /* Ensure lines are below symbols */
+        }
+
+        /* Styling for control panel and buttons */
+        #controlPanel {
+            margin-top: 20px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    
+<div id="symbolPalette">
+    <img src="https://drive.google.com/uc?export=view&id=190ff8p-6cfom1nshE3yk4vlnDr1XrHGZ" class="draggable" id="factory_grid" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1uXCylCbVPnFXkK13kicBW4kEXos7X863" class="draggable" id="home_grid" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1GOb73e-MAgzj8lTqYC3rLU4g7WWlvlLl" class="draggable" id="solar_Inverter_5kW" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1bGL5ie8svwp-F_d5TRAmCvXeA6-XxoN4" class="draggable" id="monitoring" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1-ABgfWbbN1fJy6oN8rSlzd0naB7xzhCx" class="draggable" id="solar_Panel_550W" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1sh9Erta4xI-IbLwJ-wSjynNnfsjmvi-d" class="draggable" id="DC_Disconnect_20A" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1O4R-58orMtTye8dZLWkgrqQx-Rbeo6OZ" class="draggable" id="AC_MCB_30A" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1Ie2JXc_DJp4fncAY_lQnjbFUEFdMQQpr" class="draggable" id="surge_arrestor_DC_20A" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1YXKchizyliUMlucvUPYpN2tDYj3Kc9I8" class="draggable" id="surge_arrestor_AC_100A" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1wC7GPkUtoCDxlvevwVCsfU2S1YrBTH9E" class="draggable" id="off_grid_inverter" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=12MA9QS5YfPZvyZZVQP69ytdBWGuMjbys" class="draggable" id="Bus_bar_DC" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1kAMDZPntydPif0pYBc_0QDMKv1n3gCdP" class="draggable" id="Bus_bar_AC" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=10a2LrIkJTcxovDb203SIiRDJvmBVABMR" class="draggable" id="distribution_fuse_board_AC" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1Fks_NeizGcGwvYgLAdNt9izuggyR2s92" class="draggable" id="distribution_fuse_board_DC" draggable="true">
+    <img src="https://drive.google.com/uc?export=view&id=1WsppXpJ7hXVZU30v5aO1h397HaLMgI-u" class="draggable" id="earth" draggable="true">
+    
+    <!-- Add more draggable symbols as needed -->
+</div>
+
+<div id="canvasArea">
+    <!-- Users will drop symbols or lines here -->
+</div>
+
+<div id="controlPanel">
+    <input type="file" id="openButton" class="button">
+    <button id="saveButton" class="button">Save</button>
+    <button id="undoButton" class="button">Undo</button>
+</div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+    const canvasArea = document.getElementById('canvasArea');
+    let lineStartSymbol = null;
+    let symbolCounter = 0;
+    let lineCounter = 0;
+    let symbols = [];
+    let lines = [];
+    let selectedSymbol = null;
+    let selectedLine = null;
+
+    // Updated to use "text/plain" for broader compatibility
+    document.querySelectorAll('.draggable').forEach(item => {
+        item.addEventListener('dragstart', e => {
+            const dragData = { id: e.target.id, src: e.target.src };
+            e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+        });
+    });
+
+    canvasArea.addEventListener('dragover', e => {
+        e.preventDefault();
+    });
+
+    canvasArea.addEventListener('drop', e => {
+        e.preventDefault();
+        const data = JSON.parse(e.dataTransfer.getData("text/plain"));
+        createSymbol(data.src, data.id, e.offsetX - 25, e.offsetY - 25);
+    });
+
+    function createSymbolFromPalette(id, x, y) {
+        const paletteElement = document.getElementById(id);
+        if (!paletteElement) {
+           // console.error(`Palette element with ID ${id} not found`);
+            return;
+        }
+        createSymbol(paletteElement.src, id, x, y);
+    }
+
+    function resizeCanvas() {
+        let maxWidth = 0;
+        let maxHeight = 0;
+
+        // Find the farthest edge of all symbols and lines
+        symbols.forEach(symbol => {
+            const rightEdge = parseInt(symbol.style.left, 10) + symbol.offsetWidth;
+            const bottomEdge = parseInt(symbol.style.top, 10) + symbol.offsetHeight;
+            maxWidth = Math.max(maxWidth, rightEdge);
+            maxHeight = Math.max(maxHeight, bottomEdge);
+        });
+        lines.forEach(line => {
+            // Assuming lines are absolutely positioned and have a left and width style
+            const rightEdge = parseInt(line.style.left, 10) + parseInt(line.style.width, 10);
+            const bottomEdge = parseInt(line.style.top, 10); // Add thickness if needed
+            maxWidth = Math.max(maxWidth, rightEdge);
+            maxHeight = Math.max(maxHeight, bottomEdge);
+        });
+
+        // Update canvas size, adding some margins
+        canvasArea.style.width = `${maxWidth + 10}px`;
+        canvasArea.style.height = `${maxHeight + 10}px`;
+    }
+
+    const gridSize = 50; // Define grid size (50x50 pixels)
+
+    function snapToGrid(value) {
+        return Math.round(value / gridSize) * gridSize;
+    }
+
+
+    function makeSymbolDraggable(symbol) {
+        let offsetX, offsetY;
+
+        symbol.onmousedown = function(event) {
+            offsetX = event.clientX - symbol.getBoundingClientRect().left;
+            offsetY = event.clientY - symbol.getBoundingClientRect().top;
+            canvasArea.onmousemove = dragSymbol;
+        };
+
+        function dragSymbol(event) {
+            let newX = event.clientX - offsetX - canvasArea.getBoundingClientRect().left;
+            let newY = event.clientY - offsetY - canvasArea.getBoundingClientRect().top;
+
+            // Update symbol position only; don't update lines here
+            symbol.style.left = `${newX}px`;
+            symbol.style.top = `${newY}px`;
+        }
+
+        symbol.onmouseup = function() {
+            // Snap symbol to grid on drop
+            symbol.style.left = `${snapToGrid(parseInt(symbol.style.left))}px`;
+            symbol.style.top = `${snapToGrid(parseInt(symbol.style.top))}px`;
+
+            // Update lines only after the symbol is dropped
+            updateLines(symbol);
+
+            canvasArea.onmousemove = null; // Stop dragging
+        };
+
+        symbol.ondragstart = function() {
+            return false; // Prevent default drag behavior
+        };
+
+        symbol.onclick = function() {
+            if(selectedSymbol) { // Deselect if another symbol was previously selected
+                selectedSymbol.classList.remove('selected'); // Assuming 'selected' class changes style
+            }
+            selectedSymbol = symbol; // Set the new symbol as selected
+            selectedLine = null; // Deselect any selected line
+            symbol.classList.add('selected'); // Highlight the selected symbol
+        };
+    }
+
+
+    function createSymbol(src, id, x, y, symbolRef) {
+        // Snap x and y to the nearest grid point
+        x = snapToGrid(x);
+        y = snapToGrid(y);
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('symbol');
+        wrapper.style.left = `${x}px`;
+        wrapper.style.top = `${y}px`;
+        wrapper.dataset.id = id;
+
+        // Use provided symbolRef if available, otherwise generate a new one
+        wrapper.dataset.symbolRef = symbolRef || `symbol${++symbolCounter}`;
+
+        // Make the symbol draggable within the canvas
+        makeSymbolDraggable(wrapper);
+
+        
+        const img = document.createElement('img');
+        img.src = src;
+        img.classList.add('draggable');
+        wrapper.appendChild(img);
+
+        const idOverlay = document.createElement('div');
+        idOverlay.classList.add('symbol-id');
+        idOverlay.innerText = id;
+        wrapper.appendChild(idOverlay);
+
+        wrapper.addEventListener('dblclick', () => {
+            if (!lineStartSymbol) {
+                lineStartSymbol = wrapper;
+            } else {
+                drawLine(lineStartSymbol, wrapper);
+                lineStartSymbol = null;
+            }
+        });
+
+        wrapper.onclick = function() { // Add click event to each symbol
+            if(selectedSymbol) {
+                selectedSymbol.classList.remove('selected');
+            }
+            selectedSymbol = wrapper;
+            selectedLine = null; // Deselect any selected line
+            wrapper.classList.add('selected');
+        };
+
+        canvasArea.appendChild(wrapper);
+        symbols.push(wrapper); // Keep track of the symbol
+        return wrapper;
+
+        // After symbol is added, adjust canvas size
+        //resizeCanvas();
+    }
+
+    canvasArea.addEventListener('drop', e => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text/plain");
+        createSymbolFromPalette(id, e.offsetX - 25, e.offsetY - 25);
+    });
+
+
+        document.onkeydown = function(event) {
+        if(event.key === "Delete" || event.keyCode === 46) { // Check if delete key is pressed
+            if(selectedSymbol) {
+                canvasArea.removeChild(selectedSymbol);
+                symbols = symbols.filter(sym => sym !== selectedSymbol); // Remove from array
+                selectedSymbol = null;
+            } else if(selectedLine) {
+                canvasArea.removeChild(selectedLine);
+                lines = lines.filter(line => line !== selectedLine); // Remove from array
+                selectedLine = null;
+            }
+        }
+    };
+
+
+    function updateLine(line) {
+        const fromSymbol = symbols.find(s => s.dataset.symbolRef === line.dataset.from);
+        const toSymbol = symbols.find(s => s.dataset.symbolRef === line.dataset.to);
+
+
+        if (!fromSymbol || !toSymbol) return; // Ensure symbols are found
+
+        // Calculate midpoints for line drawing
+        const x1 = parseInt(fromSymbol.style.left, 10) + fromSymbol.offsetWidth / 2;
+        const y1 = parseInt(fromSymbol.style.top, 10) + fromSymbol.offsetHeight / 2;
+        const x2 = parseInt(toSymbol.style.left, 10) + toSymbol.offsetWidth / 2;
+        const y2 = parseInt(toSymbol.style.top, 10) + toSymbol.offsetHeight / 2;
+
+        const deltaX = x2 - x1;
+        const deltaY = y2 - y1;
+        const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+
+        line.style.width = `${length}px`;
+        line.style.left = `${x1}px`;
+        line.style.top = `${y1 - 1}px`; // Adjust as needed
+        line.style.transform = `rotate(${angle}deg)`;
+        line.style.transformOrigin = '0 0';
+    }
+
+
+    function drawLine(symbol1, symbol2) {
+        const x1 = parseInt(symbol1.style.left, 10) + 25;
+        const y1 = parseInt(symbol1.style.top, 10) + 25;
+        const x2 = parseInt(symbol2.style.left, 10) + 25;
+        const y2 = parseInt(symbol2.style.top, 10) + 25;
+
+        const line = document.createElement('div');
+        line.className = 'line-placeholder';
+        const lineId = `line${++lineCounter}`;
+        line.dataset.id = lineId;
+        line.dataset.fromSymbolRef = symbol1.dataset.symbolRef; // Add fromSymbolRef
+        line.dataset.toSymbolRef = symbol2.dataset.symbolRef; // Add toSymbolRef
+
+        const length = Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+        line.style.width = `${length}px`;
+        line.style.left = `${x1}px`;
+        line.style.top = `${y1}px`;
+        line.style.transform = `rotate(${angle}deg)`;
+        line.style.transformOrigin = '0 0';
+
+        canvasArea.appendChild(line);
+        lines.push(line); // Push the line with fromSymbolRef and toSymbolRef
+
+        // After line is drawn, adjust canvas size
+        resizeCanvas();
+
+        line.onclick = function() {
+            if(selectedLine) {
+                selectedLine.classList.remove('selected');
+            }
+            selectedLine = line;
+            selectedSymbol = null; // Deselect any selected symbol
+            line.classList.add('selected');
+        };
+    }
+
+
+    function updateLines(updatedSymbol) {
+        // Update all lines connected to the moved symbol
+        lines.forEach(line => {
+            if (line.dataset.from === updatedSymbol.dataset.symbolRef || line.dataset.to === updatedSymbol.dataset.symbolRef) {
+                updateLine(line);  // Make sure this function is being called correctly
+            }
+        });
+    }
+
+
+   
+    document.getElementById('saveButton').addEventListener('click', () => {
+        const uniqueSymbolRefs = new Set(); // Create a Set to store unique symbolRefs
+        const savedData = {
+            symbols: symbols
+                .filter((symbol) => {
+                    const symbolRef = symbol.dataset.symbolRef;
+                    if (!uniqueSymbolRefs.has(symbolRef)) {
+                        // If it's not in the set, add it and return true to keep this symbol
+                        uniqueSymbolRefs.add(symbolRef);
+                        return true;
+                    }
+                    return false; // If it's already in the set, return false to filter it out
+                })
+                .map((symbol) => {
+                    const id = symbol.dataset.id;
+                    const symbolRef = symbol.dataset.symbolRef; // Keep the original symbolRef
+                    const src = symbol.firstChild.src;
+                    const x = symbol.style.left;
+                    const y = symbol.style.top;
+
+                    return {
+                        id: id,
+                        symbolRef: symbolRef, // Keep the original symbolRef
+                        src: src,
+                        x: x,
+                        y: y,
+                    };
+                }),
+
+            lines: lines.map((line, index) => {
+                return {
+                    id: `line${index + 1}`,
+                    fromSymbolRef: line.dataset.fromSymbolRef,
+                    toSymbolRef: line.dataset.toSymbolRef,
+                };
+            }),
+        };
+
+        const blob = new Blob([JSON.stringify(savedData)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'canvasState.json');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+
+    document.getElementById('openButton').addEventListener('change', function () {
+        const fileReader = new FileReader();
+        fileReader.onload = function (event) {
+            const data = JSON.parse(event.target.result);
+
+
+            // Clear the canvas and existing symbol and line arrays
+            canvasArea.innerHTML = '';
+            symbols = [];
+            lines = [];
+
+
+            // Recreate symbols based on the saved data
+            data.symbols.forEach(sym => {
+            // Pass the symbolRef from the file to the createSymbol function
+            const newSymbol = createSymbol(sym.src, sym.id, parseInt(sym.x, 10), parseInt(sym.y, 10), sym.symbolRef);
+            symbols.push(newSymbol);
+            });
+
+
+            // Determine the maximum symbolRef number from the loaded symbols
+            const maxSymbolRef = Math.max(0, ...data.symbols.map(sym => 
+            parseInt(sym.symbolRef.replace('symbol', '')))); // Assuming symbolRef is like "symbol1", "symbol2", etc.
+
+            // Set the symbolCounter to one more than this maximum
+            symbolCounter = maxSymbolRef + 1;
+
+            // // Recreate symbols and lines based on the saved data
+            // data.symbols.forEach(sym => {
+            //     const newSymbol = createSymbol(sym.src, sym.id, parseInt(sym.x, 10), parseInt(sym.y, 10));
+            //     symbols.push(newSymbol);
+            // });
+
+            data.lines.forEach(lineData => {
+                const fromSymbolRef = lineData.fromSymbolRef;
+                const toSymbolRef = lineData.toSymbolRef;
+                const fromSymbol = symbols.find(s => s.dataset.symbolRef === fromSymbolRef);
+                const toSymbol = symbols.find(s => s.dataset.symbolRef === toSymbolRef);
+
+                if (fromSymbol && toSymbol) {
+                    drawLine(fromSymbol, toSymbol);
+                }
+            });
+
+            // // Adjust global counters as needed
+            // symbolCounter = data.symbols.length;
+            // lineCounter = data.lines.length;
+        };
+
+        if (this.files && this.files[0]) {
+            fileReader.readAsText(this.files[0]);
+        }
+    });
+
+
+    document.onmouseup = function() {
+        canvasArea.onmousemove = null;
+
+        symbols.forEach(symbol => {
+            // Snap each symbol to the grid and update lines
+            symbol.style.left = `${snapToGrid(parseInt(symbol.style.left))}px`;
+            symbol.style.top = `${snapToGrid(parseInt(symbol.style.top))}px`;
+            updateLines(symbol); // Update lines after symbol is placed
+        });
+    };
+
+    document.getElementById('undoButton').addEventListener('click', () => {
+        if (lines.length > 0) {
+            const lastLine = lines.pop();
+            canvasArea.removeChild(lastLine);
+        } else if (symbols.length > 0) {
+            const lastSymbol = symbols.pop();
+            canvasArea.removeChild(lastSymbol);
+        }
+    });
+});
+</script>
+</body>
+</html>
+

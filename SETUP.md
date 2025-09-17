@@ -54,7 +54,7 @@ OriginFD/
 
 ## Environment Variables
 
-Default values are provided in `apps/web/.env.local`. No additional configuration required for development.
+The web app can proxy API requests when `NEXT_PUBLIC_API_URL` is defined, but during local development without a backend you can leave this variable unset to use mock handlers under `app/api/bridge/*`.
 
 ## Status
 

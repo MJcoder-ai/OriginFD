@@ -1,4 +1,5 @@
 """Generate TypeScript and Python SDK types from tool schemas."""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,73 +8,74 @@ from typing import Any, Dict, Optional
 
 from .registry import ToolRegistry
 
-
 # --------- Code generation helpers ---------
 
+
 def _to_camel(name: str) -> str:
-    return ''.join(part.capitalize() for part in name.split('_'))
+    return "".join(part.capitalize() for part in name.split("_"))
 
 
 def _ts_type(prop: Dict[str, Any]) -> str:
-    typ = prop.get('type')
-    if typ == 'string':
-        return 'string'
-    if typ in ('integer', 'number'):
-        return 'number'
-    if typ == 'boolean':
-        return 'boolean'
-    if typ == 'array':
-        return 'any[]'
-    if typ == 'object':
-        return 'Record<string, any>'
-    return 'any'
+    typ = prop.get("type")
+    if typ == "string":
+        return "string"
+    if typ in ("integer", "number"):
+        return "number"
+    if typ == "boolean":
+        return "boolean"
+    if typ == "array":
+        return "any[]"
+    if typ == "object":
+        return "Record<string, any>"
+    return "any"
 
 
 def _py_type(prop: Dict[str, Any]) -> str:
-    typ = prop.get('type')
-    if typ == 'string':
-        return 'str'
-    if typ == 'integer':
-        return 'int'
-    if typ == 'number':
-        return 'float'
-    if typ == 'boolean':
-        return 'bool'
-    if typ == 'array':
-        return 'list[Any]'
-    if typ == 'object':
-        return 'dict[str, Any]'
-    return 'Any'
+    typ = prop.get("type")
+    if typ == "string":
+        return "str"
+    if typ == "integer":
+        return "int"
+    if typ == "number":
+        return "float"
+    if typ == "boolean":
+        return "bool"
+    if typ == "array":
+        return "list[Any]"
+    if typ == "object":
+        return "dict[str, Any]"
+    return "Any"
 
 
 def _ts_interface(name: str, schema: Dict[str, Any]) -> str:
     lines = [f"export interface {name} {{"]
-    props = schema.get('properties', {})
-    required = set(schema.get('required', []))
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
     for field, prop in props.items():
-        optional = '' if field in required else '?'
+        optional = "" if field in required else "?"
         lines.append(f"  {field}{optional}: {_ts_type(prop)};")
-    lines.append('}')
-    return '\n'.join(lines)
+    lines.append("}")
+    return "\n".join(lines)
 
 
 def _py_model(name: str, schema: Dict[str, Any]) -> str:
     lines = [f"class {name}(BaseModel):"]
-    props = schema.get('properties', {})
-    required = set(schema.get('required', []))
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
     if not props:
-        lines.append('    pass')
-        return '\n'.join(lines)
+        lines.append("    pass")
+        return "\n".join(lines)
     for field, prop in props.items():
         typ = _py_type(prop)
         if field in required:
             lines.append(f"    {field}: {typ}")
         else:
             lines.append(f"    {field}: Optional[{typ}] = None")
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 # --------- Public generation functions ---------
+
 
 def generate_typescript_sdk(registry: ToolRegistry) -> str:
     """Generate TypeScript interfaces for all tools."""
@@ -82,10 +84,10 @@ def generate_typescript_sdk(registry: ToolRegistry) -> str:
         input_name = f"{_to_camel(meta.name)}Input"
         output_name = f"{_to_camel(meta.name)}Output"
         pieces.append(_ts_interface(input_name, meta.inputs_schema))
-        pieces.append('')
+        pieces.append("")
         pieces.append(_ts_interface(output_name, meta.outputs_schema))
-        pieces.append('')
-    return '\n'.join(pieces)
+        pieces.append("")
+    return "\n".join(pieces)
 
 
 def generate_python_sdk(registry: ToolRegistry) -> str:
@@ -101,10 +103,10 @@ def generate_python_sdk(registry: ToolRegistry) -> str:
         input_name = f"{_to_camel(meta.name)}Input"
         output_name = f"{_to_camel(meta.name)}Output"
         pieces.append(_py_model(input_name, meta.inputs_schema))
-        pieces.append('')
+        pieces.append("")
         pieces.append(_py_model(output_name, meta.outputs_schema))
-        pieces.append('')
-    return '\n'.join(pieces)
+        pieces.append("")
+    return "\n".join(pieces)
 
 
 async def main(out_dir: Optional[Path] = None) -> None:
@@ -113,17 +115,17 @@ async def main(out_dir: Optional[Path] = None) -> None:
     ts_code = generate_typescript_sdk(registry)
     py_code = generate_python_sdk(registry)
 
-    target = out_dir or Path(__file__).parent / 'sdk'
+    target = out_dir or Path(__file__).parent / "sdk"
     target.mkdir(parents=True, exist_ok=True)
-    (target / 'sdk.ts').write_text(ts_code)
-    (target / 'sdk.py').write_text(py_code)
+    (target / "sdk.ts").write_text(ts_code)
+    (target / "sdk.py").write_text(py_code)
     print(f"Generated SDK types in {target}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Generate tool SDK types')
-    parser.add_argument('--out', type=str, default=None, help='Output directory')
+    parser = argparse.ArgumentParser(description="Generate tool SDK types")
+    parser.add_argument("--out", type=str, default=None, help="Output directory")
     args = parser.parse_args()
     asyncio.run(main(Path(args.out) if args.out else None))

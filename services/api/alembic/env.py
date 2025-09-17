@@ -1,27 +1,28 @@
 """
 Alembic environment configuration for OriginFD database migrations.
 """
+
 import logging
-from logging.config import fileConfig
 import os
 import sys
+from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config, pool
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Add the parent directory to Python path to import models
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models.base import Base
-from core.config import get_settings
+import models.component
+import models.document
+import models.project
 
 # Import all models to ensure they're registered with Base
 import models.tenant
 import models.user
-import models.project
-import models.document
-import models.component
+from core.config import get_settings
+from models.base import Base
 
 # Alembic Config object
 config = context.config
@@ -30,7 +31,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-logger = logging.getLogger('alembic.env')
+logger = logging.getLogger("alembic.env")
 
 # Add model's MetaData object for 'autogenerate' support
 target_metadata = Base.metadata
@@ -71,7 +72,7 @@ def run_migrations_online() -> None:
     """
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
-    
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
@@ -79,23 +80,33 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, 
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             # Enable PostgreSQL extensions if using PostgreSQL
             from sqlalchemy import text
-            if connection.dialect.name == 'postgresql':
-                connection.execute(text("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""))
-                
+
+            if connection.dialect.name == "postgresql":
+                connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+
                 # Enable Row Level Security on tables that need it
-                connection.execute(text("ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY"))
-                connection.execute(text("ALTER TABLE IF EXISTS document_versions ENABLE ROW LEVEL SECURITY"))
-                connection.execute(text("ALTER TABLE IF EXISTS document_access ENABLE ROW LEVEL SECURITY"))
-                connection.execute(text("ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY"))
-            
+                connection.execute(
+                    text("ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY")
+                )
+                connection.execute(
+                    text(
+                        "ALTER TABLE IF EXISTS document_versions ENABLE ROW LEVEL SECURITY"
+                    )
+                )
+                connection.execute(
+                    text(
+                        "ALTER TABLE IF EXISTS document_access ENABLE ROW LEVEL SECURITY"
+                    )
+                )
+                connection.execute(
+                    text("ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY")
+                )
+
             context.run_migrations()
 
 

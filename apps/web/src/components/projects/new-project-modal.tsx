@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Loader2, Sun, Battery, Zap, Grid3x3, Building, Home, Factory, Warehouse } from 'lucide-react'
 
@@ -130,7 +131,8 @@ const scaleOptions = [
 
 export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjectModalProps) {
   const queryClient = useQueryClient()
-  
+  const router = useRouter()
+
   const form = useForm<NewProjectFormData>({
     resolver: zodResolver(newProjectSchema),
     defaultValues: {
@@ -204,9 +206,8 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       onOpenChange(false)
       form.reset()
-      
-      // Navigate to the new project (you might want to use router.push here)
-      window.location.href = `/projects/${data.id}`
+      // Navigate SPA-style
+      router.push(`/projects/${data.id}`)
     },
     onError: (error: any) => {
       console.error('Failed to create project:', error)
@@ -223,8 +224,8 @@ export function NewProjectModal({ open, onOpenChange, defaultDomain }: NewProjec
 
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={onOpenChange}
     >
         <DialogContent className="sm:max-w-[600px]">

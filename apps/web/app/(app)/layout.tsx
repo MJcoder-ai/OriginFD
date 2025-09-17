@@ -11,9 +11,9 @@ export default function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isLoading } = useRequireAuth()
+  const { isAuthenticated, isLoading } = useRequireAuth()
 
-  if (isLoading) {
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -28,12 +28,12 @@ export default function AppLayout({
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <AppSidebar />
-      
+
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <AppHeader />
-        
+
         {/* Page content */}
         <main className="flex-1 overflow-auto p-6">
           {children}

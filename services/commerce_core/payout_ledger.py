@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 class PayoutLedger:
@@ -8,7 +8,13 @@ class PayoutLedger:
     def __init__(self) -> None:
         self._ledger: Dict[str, List[Dict[str, Any]]] = {}
 
-    def record_transaction(self, tenant_id: str, psu: int, fee: float, metadata: Dict[str, Any] | None = None) -> None:
+    def record_transaction(
+        self,
+        tenant_id: str,
+        psu: int,
+        fee: float,
+        metadata: Dict[str, Any] | None = None,
+    ) -> None:
         entry = {
             "timestamp": datetime.utcnow(),
             "psu": psu,

@@ -5,24 +5,24 @@ OriginFD API with Simplified Database Integration.
 This version includes basic authentication and role-based access control for
 project operations.
 """
+import uuid
+from datetime import datetime
+from typing import List, Optional
+
 import uvicorn
-from fastapi import FastAPI, HTTPException, status, Depends
+from core.auth import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    create_token_pair,
+    get_current_user,
+    get_password_hash,
+    verify_password,
+)
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Boolean, DateTime, Text
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy import Boolean, Column, DateTime, String, Text, create_engine
 from sqlalchemy.dialects.sqlite import CHAR
-import uuid
-
-from core.auth import (
-    create_token_pair,
-    verify_password,
-    get_password_hash,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    get_current_user,
-)
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 # Simple database setup
 DATABASE_URL = "sqlite:///./originfd_simple.db"
@@ -447,11 +447,14 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
 
 
 if __name__ == "__main__":
+    import os
+
+    port = int(os.environ.get("PORT", 8000))
     print("Starting OriginFD API with Simple Database...")
-    print("Available at: http://localhost:8000")
-    print("API docs at: http://localhost:8000/docs")
+    print(f"Available at: http://localhost:{port}")
+    print(f"API docs at: http://localhost:{port}/docs")
     print("Demo credentials: admin@originfd.com / admin")
 
     uvicorn.run(
-        "simple_db_api:app", host="0.0.0.0", port=8000, reload=True, log_level="info"
+        "simple_db_api:app", host="0.0.0.0", port=port, reload=True, log_level="info"
     )

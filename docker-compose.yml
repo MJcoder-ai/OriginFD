@@ -63,7 +63,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Uncomment to proxy API requests to a backend service
+      # - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=dev-secret-change-in-production
     depends_on:

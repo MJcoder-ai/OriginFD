@@ -6,7 +6,7 @@ import { Plus, Search, Filter, MoreHorizontal, Zap, Battery, Sun, Grid3x3 } from
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth/auth-provider'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@originfd/ui'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, LoadingSpinner, ErrorBoundary } from '@originfd/ui'
 import { NewProjectModal } from '@/components/projects/new-project-modal'
 import type { DocumentResponse } from '@/lib/types'
 
@@ -231,7 +231,7 @@ export default function DashboardPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <LoadingSpinner />
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground">
@@ -290,8 +290,8 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow" 
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -312,8 +312,8 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow" 
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -334,8 +334,8 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow" 
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()

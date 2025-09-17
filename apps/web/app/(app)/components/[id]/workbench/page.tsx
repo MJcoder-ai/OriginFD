@@ -68,7 +68,7 @@ export default function ComponentWorkbenchPage() {
       <div className="space-y-4">
         <Input type="file" onChange={handleFileChange} />
         {Object.keys(parsedAttrs).length > 0 && (
-          <Button variant="secondary" onClick={() => analyzeMutation.mutate()} disabled={analyzeMutation.isLoading}>
+          <Button variant="secondary" onClick={() => analyzeMutation.mutate()} disabled={analyzeMutation.isPending}>
             Analyze with Copilot
           </Button>
         )}
@@ -109,7 +109,7 @@ export default function ComponentWorkbenchPage() {
                 ))}
               </TableBody>
             </Table>
-            <Button className="mt-4" onClick={() => proposeMutation.mutate()} disabled={proposeMutation.isLoading}>
+            <Button className="mt-4" onClick={() => proposeMutation.mutate()} disabled={proposeMutation.isPending}>
               Propose Change
             </Button>
           </CardContent>

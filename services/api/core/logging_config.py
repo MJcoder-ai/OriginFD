@@ -12,11 +12,11 @@ from .config import get_settings
 def setup_logging():
     """Configure logging for the application."""
     settings = get_settings()
-    
+
     # Create logs directory if it doesn't exist
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
-    
+
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -81,14 +81,14 @@ def setup_logging():
             },
         },
     }
-    
+
     # Use JSON formatter in production
     if settings.ENVIRONMENT == "production":
         logging_config["handlers"]["console"]["formatter"] = "json"
         logging_config["handlers"]["file"]["formatter"] = "json"
-    
+
     logging.config.dictConfig(logging_config)
-    
+
     # Set third-party loggers to WARNING to reduce noise
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("openai").setLevel(logging.WARNING)

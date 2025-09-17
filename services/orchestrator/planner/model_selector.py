@@ -1,6 +1,8 @@
 """Select appropriate models from the registry for tasks."""
+
 from typing import List, Optional
-from model_registry import ModelRegistry, ModelInfo
+
+from model_registry import ModelInfo, ModelRegistry
 
 
 class ModelSelector:
@@ -9,7 +11,9 @@ class ModelSelector:
     def __init__(self, registry: Optional[ModelRegistry] = None):
         self.registry = registry or ModelRegistry()
 
-    def select_model(self, task_type: str, region: Optional[str] = None) -> Optional[ModelInfo]:
+    def select_model(
+        self, task_type: str, region: Optional[str] = None
+    ) -> Optional[ModelInfo]:
         """Return the best model for a task type and region."""
         candidates = self._filter_models(region)
         if not candidates:
@@ -21,7 +25,9 @@ class ModelSelector:
         )
         return candidates[0]
 
-    def get_fallback_models(self, task_type: str, region: Optional[str] = None) -> List[ModelInfo]:
+    def get_fallback_models(
+        self, task_type: str, region: Optional[str] = None
+    ) -> List[ModelInfo]:
         """Return models ordered by preference for fallback strategies."""
         candidates = self._filter_models(region)
         candidates.sort(

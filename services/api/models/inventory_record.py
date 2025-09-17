@@ -1,14 +1,15 @@
 """Inventory record model and schema."""
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 from typing import Optional
 
+from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel
 
 from .base import Base
 

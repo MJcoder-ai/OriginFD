@@ -13,7 +13,7 @@ os.environ["DATABASE_URL"] = "sqlite:///test.db"
 sys.path.append(str(Path(__file__).parent))
 sys.path.append(str(Path(__file__).parent.parent / "api"))
 
-from memory.graph_rag import ODLSDGraphRAG, GraphQuery
+from memory.graph_rag import GraphQuery, ODLSDGraphRAG
 
 
 @pytest.mark.asyncio
@@ -44,4 +44,3 @@ async def test_semantic_similarity_search(tmp_path):
     result = await graph.query_graph(query)
     assert result.nodes, "No nodes returned from semantic search"
     assert result.nodes[0].properties["component_id"] == "solar"
-
