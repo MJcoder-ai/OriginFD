@@ -23,6 +23,7 @@ COPY --from=deps /app/ ./
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV TURBO_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
 # Build the Next.js application with complete workspace
