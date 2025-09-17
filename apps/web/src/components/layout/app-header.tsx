@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Bell, Search, Settings, User, LogOut, Moon, Sun, Monitor } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/lib/auth/auth-provider'
-import { Button } from '@/components/ui/button'
+import { Button } from '@originfd/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,8 +16,10 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+  Avatar,
+  AvatarFallback,
+  AvatarImage
+} from '@originfd/ui'
 
 export function AppHeader() {
   const router = useRouter()
@@ -57,7 +59,7 @@ export function AppHeader() {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" aria-label="Open notifications">
               <Bell className="h-4 w-4" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
                 3
@@ -106,7 +108,7 @@ export function AppHeader() {
         {/* Theme Toggle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Toggle theme">
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
@@ -131,7 +133,7 @@ export function AppHeader() {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User menu">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" alt={user?.email} />
                 <AvatarFallback>

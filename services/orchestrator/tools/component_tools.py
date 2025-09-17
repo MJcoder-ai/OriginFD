@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class ParseDatasheetTool(BaseTool):
     """AI tool for parsing component datasheets and extracting specifications."""
-    
+
     @property
     def metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -25,17 +25,17 @@ class ParseDatasheetTool(BaseTool):
                 "type": "object",
                 "properties": {
                     "datasheet_url": {
-                        "type": "string", 
+                        "type": "string",
                         "format": "uri",
                         "description": "URL to the component datasheet PDF"
                     },
                     "component_type": {
-                        "type": "string", 
+                        "type": "string",
                         "enum": ["pv_module", "inverter", "battery", "combiner", "meter", "other"],
                         "description": "Type of component for context-aware parsing"
                     },
                     "extract_images": {
-                        "type": "boolean", 
+                        "type": "boolean",
                         "default": True,
                         "description": "Extract images and diagrams from datasheet"
                     },
@@ -80,8 +80,8 @@ class ParseDatasheetTool(BaseTool):
                         }
                     },
                     "confidence_score": {
-                        "type": "number", 
-                        "minimum": 0, 
+                        "type": "number",
+                        "minimum": 0,
                         "maximum": 1,
                         "description": "Confidence in extraction accuracy"
                     },
@@ -98,22 +98,22 @@ class ParseDatasheetTool(BaseTool):
             psu_cost_estimate=10,
             tags=["ai", "parsing", "datasheet", "ocr"]
         )
-    
+
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
         """Execute datasheet parsing."""
         start_time = datetime.utcnow()
-        
+
         try:
             # Validate inputs
             validated_inputs = self.validate_inputs(inputs)
-            
+
             datasheet_url = validated_inputs["datasheet_url"]
             component_type = validated_inputs["component_type"]
             extract_images = validated_inputs.get("extract_images", True)
             extract_symbols = validated_inputs.get("extract_symbols", True)
-            
+
             logger.info(f"Parsing datasheet: {datasheet_url} (type: {component_type})")
-            
+
             # TODO: Implement actual AI parsing logic
             # This would integrate with:
             # - PDF processing library (PyPDF2, pdfplumber)
@@ -154,7 +154,7 @@ class ParseDatasheetTool(BaseTool):
                 execution_time_ms=processing_time,
                 intent=f"Parsed {component_type} datasheet with {outputs['confidence_score']:.0%} confidence",
             )
-            
+
         except Exception as e:
             logger.error(f"Datasheet parsing failed: {str(e)}")
             return ToolResult(
@@ -163,7 +163,7 @@ class ParseDatasheetTool(BaseTool):
                 execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
                 intent="Failed to parse component datasheet"
             )
-    
+
     # --- Parsing helpers -------------------------------------------------
 
     async def _download_pdf(self, url: str) -> bytes:
@@ -351,7 +351,7 @@ class ParseDatasheetTool(BaseTool):
 
 class ComponentDeduplicationTool(BaseTool):
     """AI tool for detecting duplicate components using multiple matching strategies."""
-    
+
     @property
     def metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -418,16 +418,16 @@ class ComponentDeduplicationTool(BaseTool):
             psu_cost_estimate=2,
             tags=["ai", "deduplication", "matching"]
         )
-    
+
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
         """Execute component deduplication."""
         start_time = datetime.utcnow()
-        
+
         try:
             validated_inputs = self.validate_inputs(inputs)
             component_data = validated_inputs["component_data"]
             threshold = validated_inputs.get("similarity_threshold", 0.8)
-            
+
             # TODO: Implement actual deduplication logic
             # This would:
             # - Query database for similar components
@@ -435,27 +435,27 @@ class ComponentDeduplicationTool(BaseTool):
             # - Compare GTIN codes
             # - Use ML similarity for specifications
             # - Apply business rules for matching
-            
+
             # Mock implementation
             mock_matches = []
             is_duplicate = len(mock_matches) > 0
-            
+
             outputs = {
                 "is_duplicate": is_duplicate,
                 "matches": mock_matches,
                 "suggested_action": "create_new" if not is_duplicate else "merge_or_variant",
                 "confidence": 0.92
             }
-            
+
             processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             return ToolResult(
                 success=True,
                 outputs=self.validate_outputs(outputs),
                 execution_time_ms=processing_time,
                 intent=f"Checked for duplicates - {'found matches' if is_duplicate else 'no duplicates found'}"
             )
-            
+
         except Exception as e:
             logger.error(f"Component deduplication failed: {str(e)}")
             return ToolResult(
@@ -468,7 +468,7 @@ class ComponentDeduplicationTool(BaseTool):
 
 class ComponentClassificationTool(BaseTool):
     """AI tool for auto-classifying components using UNSPSC, eCl@ss, and HS codes."""
-    
+
     @property
     def metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -532,30 +532,30 @@ class ComponentClassificationTool(BaseTool):
             psu_cost_estimate=1,
             tags=["ai", "classification", "standards"]
         )
-    
+
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
         """Execute component classification."""
         start_time = datetime.utcnow()
-        
+
         try:
             validated_inputs = self.validate_inputs(inputs)
             component_data = validated_inputs["component_data"]
             systems = validated_inputs.get("classification_systems", ["unspsc", "eclass", "hs_code"])
-            
+
             # TODO: Implement actual classification logic
             # This would use:
             # - ML models trained on classification standards
             # - Keyword matching and semantic similarity
             # - Integration with official classification APIs
             # - Business rules for energy components
-            
+
             # Mock implementation based on component type
             category = component_data.get("category", "").lower()
             subcategory = component_data.get("subcategory", "").lower()
-            
+
             mock_classifications = {}
             mock_confidence = {}
-            
+
             if "pv" in category or "solar" in category:
                 mock_classifications = {
                     "unspsc": "26111701",  # Solar energy generation equipment
@@ -578,23 +578,23 @@ class ComponentClassificationTool(BaseTool):
                     "hs_code": "850000"  # Electrical machinery
                 }
                 mock_confidence = {"unspsc": 0.70, "eclass": 0.65, "hs_code": 0.60}
-            
+
             outputs = {
                 "classifications": mock_classifications,
                 "confidence_scores": mock_confidence,
                 "suggested_category": "generation" if "pv" in category else "conversion",
                 "suggested_subcategory": "pv_module" if "pv" in category else "inverter"
             }
-            
+
             processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             return ToolResult(
                 success=True,
                 outputs=self.validate_outputs(outputs),
                 execution_time_ms=processing_time,
                 intent=f"Classified component with {max(mock_confidence.values()):.0%} confidence"
             )
-            
+
         except Exception as e:
             logger.error(f"Component classification failed: {str(e)}")
             return ToolResult(
@@ -607,7 +607,7 @@ class ComponentClassificationTool(BaseTool):
 
 class ComponentRecommendationTool(BaseTool):
     """AI tool for recommending similar or compatible components."""
-    
+
     @property
     def metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -673,14 +673,14 @@ class ComponentRecommendationTool(BaseTool):
             psu_cost_estimate=3,
             tags=["ai", "recommendation", "compatibility"]
         )
-    
+
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
         """Execute component recommendation."""
         start_time = datetime.utcnow()
-        
+
         try:
             validated_inputs = self.validate_inputs(inputs)
-            
+
             # TODO: Implement actual recommendation logic
             # This would use:
             # - Vector similarity search on specifications
@@ -688,7 +688,7 @@ class ComponentRecommendationTool(BaseTool):
             # - Price and availability data
             # - User preference learning
             # - Project context and constraints
-            
+
             # Mock implementation
             outputs = {
                 "recommendations": [
@@ -704,16 +704,16 @@ class ComponentRecommendationTool(BaseTool):
                 "search_strategy": "specification_similarity",
                 "total_candidates": 45
             }
-            
+
             processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             return ToolResult(
                 success=True,
                 outputs=self.validate_outputs(outputs),
                 execution_time_ms=processing_time,
                 intent=f"Found {len(outputs['recommendations'])} component recommendations"
             )
-            
+
         except Exception as e:
             logger.error(f"Component recommendation failed: {str(e)}")
             return ToolResult(

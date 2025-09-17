@@ -45,7 +45,7 @@ async def health_check():
     Returns 200 if the service is healthy.
     """
     settings = get_settings()
-    
+
     return HealthResponse(
         status="healthy",
         timestamp=time.time(),
@@ -62,7 +62,7 @@ async def readiness_check():
     Returns 200 if the service is ready to serve traffic.
     """
     settings = get_settings()
-    
+
     # Check database connection
     db_healthy = await check_database_connection()
     if not db_healthy:
@@ -70,10 +70,10 @@ async def readiness_check():
             status_code=503,
             detail="Database connection failed"
         )
-    
+
     # TODO: Add Redis connection check
     # TODO: Add other service dependency checks
-    
+
     return HealthResponse(
         status="ready",
         timestamp=time.time(),
@@ -90,10 +90,10 @@ async def detailed_health_check():
     Use for monitoring and debugging.
     """
     settings = get_settings()
-    
+
     # Check service dependencies
     db_healthy = await check_database_connection()
-    
+
     services = {
         "database": {
             "status": "healthy" if db_healthy else "unhealthy",
@@ -104,7 +104,7 @@ async def detailed_health_check():
             "url": settings.REDIS_URL.split("@")[-1] if "@" in settings.REDIS_URL else "configured"
         }
     }
-    
+
     # Get system metrics
     try:
         memory = psutil.virtual_memory()
@@ -119,12 +119,12 @@ async def detailed_health_check():
         }
     except Exception as e:
         system = {"error": f"Could not get system metrics: {str(e)}"}
-    
+
     # Determine overall status
     overall_status = "healthy"
     if not db_healthy:
         overall_status = "degraded"
-    
+
     return DetailedHealthResponse(
         status=overall_status,
         timestamp=time.time(),

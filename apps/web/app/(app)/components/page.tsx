@@ -2,11 +2,11 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
   Grid3x3,
   List,
   Sun,
@@ -19,16 +19,17 @@ import {
   Edit,
   Archive,
   Download,
-  Upload
+  Upload,
+  Settings
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   Input,
   Select,
@@ -44,36 +45,32 @@ import {
 } from '@originfd/ui'
 import { componentAPI } from '@/lib/api-client'
 import { ComponentCreationWizard } from '@/components/components/component-creation-wizard'
-import type { ComponentResponse, ComponentCategory, ComponentDomain, ComponentStatus } from '@/lib/types'
+import type { ComponentResponse, ComponentCategory, ComponentDomain } from '@/lib/types'
+import { ComponentLifecycleManager } from '@/lib/component-lifecycle'
+import type { ODLComponentStatus } from '@originfd/types-odl'
 
 const categoryIcons = {
   generation: Sun,
+  transmission: Zap,
+  distribution: Package,
   storage: Battery,
-  conversion: Zap,
-  protection: Shield,
   monitoring: Activity,
-  structural: Package,
-  other: Grid3x3
+  control: Settings
 }
 
 const categoryColors = {
   generation: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  transmission: 'bg-purple-100 text-purple-800 border-purple-200',
+  distribution: 'bg-gray-100 text-gray-800 border-gray-200',
   storage: 'bg-green-100 text-green-800 border-green-200',
-  conversion: 'bg-purple-100 text-purple-800 border-purple-200',
-  protection: 'bg-red-100 text-red-800 border-red-200',
   monitoring: 'bg-blue-100 text-blue-800 border-blue-200',
-  structural: 'bg-gray-100 text-gray-800 border-gray-200',
-  other: 'bg-slate-100 text-slate-800 border-slate-200'
+  control: 'bg-indigo-100 text-indigo-800 border-indigo-200'
 }
 
-const statusColors = {
-  draft: 'bg-gray-100 text-gray-800',
-  parsed: 'bg-blue-100 text-blue-800',
-  enriched: 'bg-indigo-100 text-indigo-800',
-  approved: 'bg-green-100 text-green-800',
-  available: 'bg-emerald-100 text-emerald-800',
-  operational: 'bg-teal-100 text-teal-800',
-  archived: 'bg-red-100 text-red-800'
+const getStatusColor = (status: ODLComponentStatus) => {
+  const metadata = ComponentLifecycleManager.getStatusMetadata(status)
+  const color = metadata?.color || 'gray'
+  return `bg-${color}-100 text-${color}-800`
 }
 
 export default function ComponentsPage() {
@@ -118,13 +115,10 @@ export default function ComponentsPage() {
   }
 
   const getCategoryColor = (category?: ComponentCategory) => {
-    if (!category) return categoryColors.other
-    return categoryColors[category] || categoryColors.other
+    if (!category) return 'bg-slate-100 text-slate-800 border-slate-200'
+    return categoryColors[category] || 'bg-slate-100 text-slate-800 border-slate-200'
   }
 
-  const getStatusColor = (status: ComponentStatus) => {
-    return statusColors[status] || 'bg-gray-100 text-gray-800'
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -302,13 +296,13 @@ export default function ComponentsPage() {
         </div>
       ) : (
         <div className={
-          viewMode === 'grid' 
+          viewMode === 'grid'
             ? 'grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             : 'space-y-4'
         }>
-          {components.map((component) => {
-            const CategoryIcon = getCategoryIcon(component.category)
-            
+          {components.map((component: ComponentResponse) => {
+            const CategoryIcon = getCategoryIcon()
+
             if (viewMode === 'grid') {
               return (
                 <Card
@@ -324,10 +318,10 @@ export default function ComponentsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-sm font-medium truncate">
-                            {component.brand} {component.part_number}
+                            {component.component_management?.component_identity?.brand} {component.component_management?.component_identity?.part_number}
                           </CardTitle>
                           <CardDescription className="text-xs">
-                            {component.rating_w}W
+                            {component.component_management?.component_identity?.rating_w}W
                           </CardDescription>
                         </div>
                       </div>
@@ -340,21 +334,21 @@ export default function ComponentsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Status</span>
-                        <Badge variant="secondary" className={getStatusColor(component.status)}>
-                          {component.status}
+                        <Badge variant="secondary" className={getStatusColor(component.component_management?.status || 'draft')}>
+                          {component.component_management?.status || 'draft'}
                         </Badge>
                       </div>
-                      {component.category && (
+                      {false && (
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Category</span>
-                          <Badge variant="outline" className={getCategoryColor(component.category)}>
-                            {component.category}
+                          <Badge variant="outline" className={getCategoryColor()}>
+                            Category
                           </Badge>
                         </div>
                       )}
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Updated</span>
-                        <span>{formatDate(component.updated_at)}</span>
+                        <span>{formatDate(component.component_management?.audit?.updated_at || '')}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -375,24 +369,24 @@ export default function ComponentsPage() {
                         </div>
                         <div>
                           <div className="font-medium">
-                            {component.brand} {component.part_number}
+                            {component.component_management?.component_identity?.brand} {component.component_management?.component_identity?.part_number}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {component.rating_w}W • {component.component_id}
+                            {component.component_management?.component_identity?.rating_w}W • {component.component_management?.component_identity?.component_id}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {component.category && (
-                          <Badge variant="outline" className={getCategoryColor(component.category)}>
-                            {component.category}
+                        {false && (
+                          <Badge variant="outline" className={getCategoryColor()}>
+                            Category
                           </Badge>
                         )}
-                        <Badge variant="secondary" className={getStatusColor(component.status)}>
-                          {component.status}
+                        <Badge variant="secondary" className={getStatusColor(component.component_management?.status || 'draft')}>
+                          {component.component_management?.status || 'draft'}
                         </Badge>
                         <div className="text-sm text-muted-foreground">
-                          {formatDate(component.updated_at)}
+                          {formatDate(component.component_management?.audit?.updated_at || '')}
                         </div>
                         <Button variant="ghost" size="sm">
                           <MoreHorizontal className="h-4 w-4" />

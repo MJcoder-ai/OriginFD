@@ -2,11 +2,11 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
   CheckCircle,
   Clock,
   XCircle,
@@ -17,12 +17,12 @@ import {
   Award
 } from 'lucide-react'
 
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   Input,
   Select,
@@ -60,7 +60,7 @@ const suppliersAPI = {
           created_at: '2024-01-15T10:00:00Z'
         },
         {
-          id: '2', 
+          id: '2',
           supplier_id: 'SUP-DEF456',
           name: 'JinkoSolar',
           contact: {
@@ -77,7 +77,7 @@ const suppliersAPI = {
         },
         {
           id: '3',
-          supplier_id: 'SUP-GHI789', 
+          supplier_id: 'SUP-GHI789',
           name: 'SMA Solar Technology',
           contact: {
             email: 'info@sma.de',
@@ -110,7 +110,7 @@ const suppliersAPI = {
 
 const statusColors = {
   approved: 'bg-green-100 text-green-800 border-green-200',
-  draft: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
+  draft: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   inactive: 'bg-red-100 text-red-800 border-red-200'
 }
 
@@ -291,7 +291,7 @@ export default function SuppliersPage() {
             <div className="space-y-4">
               {suppliers.map((supplier) => {
                 const StatusIcon = getStatusIcon(supplier.status)
-                
+
                 return (
                   <Card key={supplier.id} className="cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-6">

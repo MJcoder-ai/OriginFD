@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
   Tabs,
   TabsContent,
@@ -13,7 +13,7 @@ import {
   TabsTrigger,
   Button
 } from '@originfd/ui'
-import { 
+import {
   ChevronDown,
   ChevronRight,
   Download,
@@ -35,9 +35,9 @@ import { OdlDocument, ComponentInstance, Connection } from '@/lib/types'
 import { apiClient } from '@/lib/api-client'
 
 // Simple inline components since they're not in the UI library yet
-const Badge = ({ children, variant = "secondary", className = "" }: { 
-  children: React.ReactNode; 
-  variant?: "secondary" | "outline"; 
+const Badge = ({ children, variant = "secondary", className = "" }: {
+  children: React.ReactNode;
+  variant?: "secondary" | "outline";
   className?: string;
 }) => (
   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
@@ -47,18 +47,18 @@ const Badge = ({ children, variant = "secondary", className = "" }: {
   </span>
 )
 
-const Collapsible = ({ children, open, onOpenChange }: { 
+const Collapsible = ({ children, open, onOpenChange }: {
   children: React.ReactNode;
   open?: boolean;
-  onOpenChange?: () => void; 
+  onOpenChange?: () => void;
 }) => <div>{children}</div>
 
-const CollapsibleTrigger = ({ children, onClick, asChild }: { 
-  children: React.ReactNode; 
+const CollapsibleTrigger = ({ children, onClick, asChild }: {
+  children: React.ReactNode;
   onClick?: () => void;
   asChild?: boolean;
 }) => (
-  asChild ? <div className="cursor-pointer">{children}</div> : 
+  asChild ? <div className="cursor-pointer">{children}</div> :
   <button onClick={onClick} className="flex items-center w-full text-left">{children}</button>
 )
 
@@ -168,15 +168,15 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
   const downloadDocument = async (format: 'json' | 'yaml') => {
     if (!projectId) {
       // Fallback: download current document as JSON
-      const content = format === 'json' 
+      const content = format === 'json'
         ? JSON.stringify(document, null, 2)
         : JSON.stringify(document, null, 2) // Would need yaml library for proper YAML conversion
-      
+
       const blob = new Blob([content], { type: `application/${format}` })
       const url = URL.createObjectURL(blob)
       const a = window.document.createElement('a')
       a.href = url
-      a.download = `${document.meta.project.replace(/\s+/g, '-').toLowerCase()}.${format}`
+      a.download = `${document.meta?.project?.replace(/\s+/g, '-').toLowerCase() || 'document'}.${format}`
       window.document.body.appendChild(a)
       a.click()
       window.document.body.removeChild(a)
@@ -190,7 +190,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
       const url = URL.createObjectURL(blob)
       const a = window.document.createElement('a')
       a.href = url
-      a.download = `${document.meta.project.replace(/\s+/g, '-').toLowerCase()}.${format}`
+      a.download = `${document.meta?.project?.replace(/\s+/g, '-').toLowerCase() || 'document'}.${format}`
       window.document.body.appendChild(a)
       a.click()
       window.document.body.removeChild(a)
@@ -258,7 +258,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Capacity</p>
                   <p className="text-lg font-semibold">
-                    {formatCapacity(document.requirements.functional.capacity_kw)}
+                    {formatCapacity(document.requirements?.functional?.capacity_kw)}
                   </p>
                 </div>
                 <div>
@@ -272,13 +272,13 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Connected</p>
                   <div className="flex items-center gap-2">
-                    {document.requirements.technical.grid_connection ? (
+                    {document.requirements?.technical?.grid_connection ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <div className="h-4 w-4 rounded-full bg-red-200" />
                     )}
                     <span className="text-sm">
-                      {document.requirements.technical.grid_connection ? 'Yes' : 'No'}
+                      {document.requirements?.technical?.grid_connection ? 'Yes' : 'No'}
                     </span>
                   </div>
                 </div>
@@ -296,23 +296,23 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Version</p>
-                  <p className="text-sm">{document.meta.versioning.document_version}</p>
+                  <p className="text-sm">{document.meta?.versioning?.document_version || 'Not specified'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Content Hash</p>
                   <p className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                    {document.meta.versioning.content_hash.substring(7, 19)}...
+                    {document.meta?.versioning?.content_hash?.substring(7, 19) || 'N/A'}...
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
                   <p className="text-sm">
-                    {new Date(document.meta.timestamps.updated_at).toLocaleDateString()}
+                    {document.meta?.timestamps?.updated_at ? new Date(document.meta.timestamps.updated_at).toLocaleDateString() : 'Not available'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Units</p>
-                  <p className="text-sm">{document.meta.units.system} / {document.meta.units.currency}</p>
+                  <p className="text-sm">{document.meta?.units?.system || 'N/A'} / {document.meta?.units?.currency || 'N/A'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -330,7 +330,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {document.instances.map((component) => (
+                {document.instances.map((component: any) => (
                   <Card key={component.id} className="border-l-4 border-l-blue-200">
                         <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50" onClick={() => toggleComponent(component.id)}>
                           <div className="flex items-center justify-between">
@@ -360,7 +360,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                                       {key.replace('_', ' ')}:
                                     </span>
                                     <span className="text-sm font-mono">
-                                      {typeof value === 'number' && key.includes('kw') 
+                                      {typeof value === 'number' && key.includes('kw')
                                         ? formatCapacity(value)
                                         : String(value)
                                       }
@@ -403,7 +403,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {document.connections.map((connection) => (
+                {document.connections.map((connection: any) => (
                   <Card key={connection.id} className="border-l-4 border-l-green-200">
                         <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50" onClick={() => toggleConnection(connection.id)}>
                           <div className="flex items-center justify-between">
@@ -415,8 +415,8 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                                   {connection.from_component} → {connection.to_component}
                                 </CardDescription>
                               </div>
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={getConnectionTypeColor(connection.connection_type)}
                               >
                                 {connection.connection_type.replace('_', ' ').toUpperCase()}
@@ -468,13 +468,13 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">System Capacity</p>
                   <p className="text-sm">
-                    {formatCapacity(document.requirements.functional.capacity_kw)}
+                    {formatCapacity(document.requirements?.functional?.capacity_kw)}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Annual Generation</p>
                   <p className="text-sm">
-                    {document.requirements.functional.annual_generation_kwh 
+                    {document.requirements?.functional?.annual_generation_kwh
                       ? `${(document.requirements.functional.annual_generation_kwh / 1000).toFixed(0)} MWh`
                       : 'Not specified'
                     }
@@ -483,7 +483,10 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Performance Requirements</p>
                   <p className="text-sm">
-                    {Object.keys(document.requirements.functional.performance_requirements).length} defined
+                    {document.requirements?.functional?.performance_requirements
+                      ? Object.keys(document.requirements.functional.performance_requirements).length
+                      : 0
+                    } defined
                   </p>
                 </div>
               </CardContent>
@@ -501,24 +504,24 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Connection</p>
                   <div className="flex items-center gap-2">
-                    {document.requirements.technical.grid_connection ? (
+                    {document.requirements?.technical?.grid_connection ? (
                       <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
                       <div className="h-4 w-4 rounded-full bg-red-200" />
                     )}
                     <span className="text-sm">
-                      {document.requirements.technical.grid_connection ? 'Required' : 'Not required'}
+                      {document.requirements?.technical?.grid_connection ? 'Required' : 'Not required'}
                     </span>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Voltage Level</p>
-                  <p className="text-sm">{document.requirements.technical.voltage_level || 'Not specified'}</p>
+                  <p className="text-sm">{document.requirements?.technical?.voltage_level || 'Not specified'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Frequency</p>
                   <p className="text-sm">
-                    {document.requirements.technical.frequency_hz 
+                    {document.requirements?.technical?.frequency_hz
                       ? `${document.requirements.technical.frequency_hz} Hz`
                       : 'Not specified'
                     }
@@ -539,7 +542,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Grid Codes</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {document.requirements.regulatory.grid_codes.map((code) => (
+                    {document.requirements?.regulatory?.grid_codes?.map((code: any) => (
                       <Badge key={code} variant="outline" className="text-xs">
                         {code}
                       </Badge>
@@ -549,7 +552,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Safety Standards</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {document.requirements.regulatory.safety_standards.map((standard) => (
+                    {document.requirements?.regulatory?.safety_standards?.map((standard: any) => (
                       <Badge key={standard} variant="outline" className="text-xs">
                         {standard}
                       </Badge>
@@ -559,7 +562,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Environmental Permits</p>
                   <p className="text-sm">
-                    {document.requirements.regulatory.environmental_permits.length 
+                    {document.requirements?.regulatory?.environmental_permits?.length
                       ? `${document.requirements.regulatory.environmental_permits.length} required`
                       : 'None required'
                     }
@@ -584,7 +587,7 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {document.audit.map((entry, index) => (
+                {document.audit.map((entry: any, index: number) => (
                   <div key={index} className="flex items-start gap-3 pb-4 border-b last:border-b-0">
                     <div className="mt-1">
                       <User className="h-4 w-4 text-muted-foreground" />
@@ -640,8 +643,8 @@ export function DocumentViewer({ document, projectId, className }: DocumentViewe
                     )}
                     {copiedTab === 'json' ? 'Copied!' : 'Copy JSON'}
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => downloadDocument('json')}
                   >

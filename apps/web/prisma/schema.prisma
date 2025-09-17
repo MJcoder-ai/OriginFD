@@ -1,0 +1,22 @@
+// Phase‑1.2: Persist canvas node positions (view overrides)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = env("DB_PROVIDER") // e.g., postgresql | mysql | sqlite
+  url      = env("DATABASE_URL")
+}
+
+model ViewOverride {
+  id         Int      @id @default(autoincrement())
+  canvasId   String
+  instanceId String
+  x          Float
+  y          Float
+  rotation   Float?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([canvasId, instanceId])
+}

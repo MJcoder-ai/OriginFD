@@ -72,13 +72,13 @@ async def create_document(
         # Validate ODL-SD document structure
         odl_doc = OdlSdDocument.parse_obj(request.document_data)
         validation_result = odl_doc.validate_document()
-        
+
         if not validation_result.is_valid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid ODL-SD document: {validation_result.errors}"
             )
-        
+
         # Create database record
         document = Document(
             tenant_id=uuid.UUID(current_user["tenant_id"]),  # From JWT
@@ -90,11 +90,11 @@ async def create_document(
             content_hash=odl_doc.meta.versioning.content_hash,
             document_data=request.document_data
         )
-        
+
         db.add(document)
         db.commit()
         db.refresh(document)
-        
+
         # Create initial version record
         version = DocumentVersion(
             tenant_id=document.tenant_id,
@@ -104,10 +104,10 @@ async def create_document(
             created_by=uuid.UUID(current_user["id"]),
             document_data=request.document_data
         )
-        
+
         db.add(version)
         db.commit()
-        
+
         return DocumentResponse(
             id=str(document.id),
             project_name=document.project_name,
@@ -119,7 +119,7 @@ async def create_document(
             created_at=document.created_at,
             updated_at=document.updated_at
         )
-        
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -145,23 +145,23 @@ async def get_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid document ID format"
         )
-    
+
     # Get document
     document = db.query(Document).filter(
         Document.id == doc_uuid,
         Document.tenant_id == uuid.UUID(current_user["tenant_id"])
     ).first()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
     # TODO: Check document access permissions
     # if not has_document_access(current_user, document, "read"):
     #     raise HTTPException(status_code=403, detail="Access denied")
-    
+
     if version is None:
         # Return current version
         return document.document_data
@@ -172,13 +172,13 @@ async def get_document(
             DocumentVersion.version_number == version,
             DocumentVersion.tenant_id == uuid.UUID(current_user["tenant_id"])
         ).first()
-        
+
         if not doc_version:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Version {version} not found"
             )
-        
+
         return doc_version.document_data
 
 
@@ -199,26 +199,26 @@ async def apply_document_patch(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid document ID format"
         )
-    
+
     # Get current document with row lock
     document = db.query(Document).filter(
         Document.id == doc_uuid,
         Document.tenant_id == uuid.UUID(current_user["tenant_id"])
     ).with_for_update().first()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
     # Version conflict check (optimistic concurrency)
     if document.current_version != request.doc_version:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Version conflict. Expected {request.doc_version}, got {document.current_version}"
         )
-    
+
     # TODO: RBAC and phase gate checks
     # guard_patch(
     #     user=current_user,
@@ -226,11 +226,11 @@ async def apply_document_patch(
     #     patch=request.patch,
     #     db=db
     # )
-    
+
     try:
         # Generate inverse patch before applying changes
         inverse_ops = inverse_patch(request.patch, document.document_data)
-        
+
         # Apply patch
         patched_doc = apply_patch(
             document.document_data,
@@ -239,7 +239,7 @@ async def apply_document_patch(
             dry_run=request.dry_run,
             actor=current_user["id"]
         )
-        
+
         if request.dry_run:
             # Return preview without saving
             return PatchResponse(
@@ -249,27 +249,27 @@ async def apply_document_patch(
                 inverse_patch=inverse_ops,
                 applied_at=datetime.utcnow()
             )
-        
+
         # Validate patched document
         odl_doc = OdlSdDocument.parse_obj(patched_doc)
         validation_result = odl_doc.validate_document()
-        
+
         if not validation_result.is_valid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Patched document invalid: {validation_result.errors}"
             )
-        
+
         # Update database
         new_version = document.current_version + 1
         new_hash = odl_doc.meta.versioning.content_hash
-        
+
         # Update document record
         document.current_version = new_version
         document.content_hash = new_hash
         document.document_data = patched_doc
         document.updated_at = datetime.utcnow()
-        
+
         # Create version record
         version = DocumentVersion(
             tenant_id=document.tenant_id,
@@ -283,10 +283,10 @@ async def apply_document_patch(
             created_by=uuid.UUID(current_user["id"]),
             document_data=patched_doc
         )
-        
+
         db.add(version)
         db.commit()
-        
+
         return PatchResponse(
             success=True,
             doc_version=new_version,
@@ -294,7 +294,7 @@ async def apply_document_patch(
             inverse_patch=inverse_ops,
             applied_at=datetime.utcnow()
         )
-        
+
     except PatchValidationError as e:
         db.rollback()
         raise HTTPException(
@@ -327,19 +327,19 @@ async def get_document_versions(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid document ID format"
         )
-    
+
     # Check document exists and user has access
     document = db.query(Document).filter(
         Document.id == doc_uuid,
         Document.tenant_id == uuid.UUID(current_user["tenant_id"])
     ).first()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
     # Get versions
     versions = db.query(DocumentVersion).filter(
         DocumentVersion.document_id == doc_uuid,
@@ -347,7 +347,7 @@ async def get_document_versions(
     ).order_by(
         DocumentVersion.version_number.desc()
     ).offset(offset).limit(limit).all()
-    
+
     return [
         {
             "version_number": v.version_number,
@@ -377,21 +377,21 @@ async def get_document_audit_trail(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid document ID format"
         )
-    
+
     document = db.query(Document).filter(
         Document.id == doc_uuid,
         Document.tenant_id == uuid.UUID(current_user["tenant_id"])
     ).first()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
     # Extract audit trail from document
     audit_trail = document.document_data.get("audit", [])
-    
+
     return {
         "document_id": doc_id,
         "total_entries": len(audit_trail),

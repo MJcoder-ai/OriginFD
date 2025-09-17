@@ -1,0 +1,7 @@
+# OriginFD Workers Service Dependencies
+# Service-specific dependencies only (shared deps installed separately)
+
+# Workers-specific dependencies
+pandas==2.1.4
+pillow==10.1.0
+python-magic==0.4.27

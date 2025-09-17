@@ -42,7 +42,7 @@ class ComponentBindingResponse(BaseModel):
     location_path: str
     metadata: Optional[Dict[str, Any]]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -80,13 +80,13 @@ async def bind_component_to_document(
                 Component.tenant_id == current_user["tenant_id"]
             )
         ).first()
-        
+
         if not component:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Component not found"
             )
-        
+
         # Validate document exists and user has access
         document = db.query(Document).filter(
             and_(
@@ -94,30 +94,30 @@ async def bind_component_to_document(
                 Document.tenant_id == current_user["tenant_id"]
             )
         ).first()
-        
+
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Document not found"
             )
-        
+
         # Get current document content
         current_version = db.query(DocumentVersion).filter(
             DocumentVersion.document_id == document.id
         ).order_by(DocumentVersion.version_number.desc()).first()
-        
+
         if not current_version:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Document has no versions"
             )
-        
+
         # Parse ODL-SD document
         odl_document = OdlDocument.model_validate(current_version.content)
-        
+
         # Create component reference based on binding type
         component_ref = create_component_reference(component, request.binding_type, request.metadata)
-        
+
         # Apply component binding to document
         patch_ops = create_component_binding_patch(
             odl_document,
@@ -125,13 +125,13 @@ async def bind_component_to_document(
             request.location_path,
             request.binding_type
         )
-        
+
         # Apply patches to document
         updated_content = apply_patch(current_version.content, patch_ops)
-        
+
         # Validate updated document
         updated_odl = OdlDocument.model_validate(updated_content)
-        
+
         # Create new document version
         new_version = DocumentVersion(
             document_id=document.id,
@@ -141,18 +141,18 @@ async def bind_component_to_document(
             change_summary=f"Added component binding: {component.name}",
             created_by=uuid.UUID(current_user["id"])
         )
-        
+
         db.add(new_version)
-        
+
         # Update document current version
         document.current_version = new_version.version_number
         document.updated_at = datetime.utcnow()
-        
+
         # Update component management with binding info
         if component.management:
             if not component.management.media:
                 component.management.media = {"library": [], "capture_policy": {}, "doc_bindings": {"bindings": []}}
-            
+
             binding_record = {
                 "id": f"BIND-{uuid.uuid4().hex[:8].upper()}",
                 "document_id": str(document.id),
@@ -162,7 +162,7 @@ async def bind_component_to_document(
                 "created_at": datetime.utcnow().isoformat(),
                 "metadata": request.metadata
             }
-            
+
             component.management.media["doc_bindings"]["bindings"].append(binding_record)
             component.management.add_audit_record(
                 action="document_binding",
@@ -170,11 +170,11 @@ async def bind_component_to_document(
                 actor=current_user["email"],
                 diff=f"Bound to document {document.project_name} at {request.location_path}"
             )
-        
+
         db.commit()
-        
+
         logger.info(f"Bound component {component.component_id} to document {document.project_name}")
-        
+
         return ComponentBindingResponse(
             id=binding_record["id"],
             component_id=request.component_id,
@@ -184,7 +184,7 @@ async def bind_component_to_document(
             metadata=request.metadata,
             created_at=datetime.utcnow()
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to bind component to document: {str(e)}")
         db.rollback()
@@ -211,34 +211,34 @@ async def add_components_to_project(
                 Document.tenant_id == current_user["tenant_id"]
             )
         ).first()
-        
+
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Project document not found"
             )
-        
+
         # Get current version
         current_version = db.query(DocumentVersion).filter(
             DocumentVersion.document_id == document.id
         ).order_by(DocumentVersion.version_number.desc()).first()
-        
+
         # Parse ODL-SD document
         odl_document = OdlDocument.model_validate(current_version.content)
-        
+
         # Ensure libraries.components exists
         if not hasattr(odl_document, 'libraries') or not odl_document.libraries:
             odl_document.libraries = {"components": []}
         elif not hasattr(odl_document.libraries, 'components') or not odl_document.libraries.get('components'):
             odl_document.libraries['components'] = []
-        
+
         # Add component instances
         components_added = []
         for comp_data in request.components:
             component_id = comp_data.get('component_id')
             if not component_id:
                 continue
-            
+
             # Get component from database
             component = db.query(Component).filter(
                 and_(
@@ -246,16 +246,16 @@ async def add_components_to_project(
                     Component.tenant_id == current_user["tenant_id"]
                 )
             ).first()
-            
+
             if not component:
                 logger.warning(f"Component {component_id} not found, skipping")
                 continue
-            
+
             # Create component instance in ODL-SD format
             component_instance = create_odl_component_instance(component, comp_data)
             odl_document.libraries['components'].append(component_instance)
             components_added.append(component.name)
-        
+
         # Create new document version
         new_content = odl_document.model_dump()
         new_version = DocumentVersion(
@@ -266,23 +266,23 @@ async def add_components_to_project(
             change_summary=f"Added {len(components_added)} components: {', '.join(components_added)}",
             created_by=uuid.UUID(current_user["id"])
         )
-        
+
         db.add(new_version)
-        
+
         # Update document
         document.current_version = new_version.version_number
         document.updated_at = datetime.utcnow()
-        
+
         db.commit()
-        
+
         logger.info(f"Added {len(components_added)} components to project {document.project_name}")
-        
+
         return {
             "message": f"Successfully added {len(components_added)} components to project",
             "components_added": components_added,
             "new_version": new_version.version_number
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to add components to project: {str(e)}")
         db.rollback()
@@ -309,42 +309,42 @@ async def update_component_specifications(
                 Component.tenant_id == current_user["tenant_id"]
             )
         ).first()
-        
+
         if not component:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Component not found"
             )
-        
+
         # Get all document bindings for this component
         bindings = []
         if component.management and component.management.media:
             bindings = component.management.media.get("doc_bindings", {}).get("bindings", [])
-        
+
         updated_documents = []
-        
+
         # Update each bound document
         for binding in bindings:
             document_id = binding.get("document_id")
             if not document_id:
                 continue
-            
+
             try:
                 document = db.query(Document).filter(
                     Document.id == uuid.UUID(document_id)
                 ).first()
-                
+
                 if not document:
                     continue
-                
+
                 # Get current version
                 current_version = db.query(DocumentVersion).filter(
                     DocumentVersion.document_id == document.id
                 ).order_by(DocumentVersion.version_number.desc()).first()
-                
+
                 # Parse and update document
                 odl_document = OdlDocument.model_validate(current_version.content)
-                
+
                 # Update component specifications in document
                 updated = update_component_specs_in_document(
                     odl_document,
@@ -352,7 +352,7 @@ async def update_component_specifications(
                     request.specifications,
                     request.merge_strategy
                 )
-                
+
                 if updated:
                     # Create new version
                     new_version = DocumentVersion(
@@ -363,17 +363,17 @@ async def update_component_specifications(
                         change_summary=f"Updated specifications for component {component.name}",
                         created_by=uuid.UUID(current_user["id"])
                     )
-                    
+
                     db.add(new_version)
                     document.current_version = new_version.version_number
                     document.updated_at = datetime.utcnow()
-                    
+
                     updated_documents.append(document.project_name)
-            
+
             except Exception as e:
                 logger.warning(f"Failed to update document {document_id}: {str(e)}")
                 continue
-        
+
         # Update component management
         if component.management:
             component.management.add_audit_record(
@@ -382,15 +382,15 @@ async def update_component_specifications(
                 actor=current_user["email"],
                 diff=f"Updated specifications in {len(updated_documents)} documents"
             )
-        
+
         db.commit()
-        
+
         return {
             "message": f"Updated specifications in {len(updated_documents)} documents",
             "updated_documents": updated_documents,
             "component_id": component_id
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to update component specifications: {str(e)}")
         db.rollback()
@@ -416,17 +416,17 @@ async def get_component_bindings(
                 Component.tenant_id == current_user["tenant_id"]
             )
         ).first()
-        
+
         if not component:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Component not found"
             )
-        
+
         bindings = []
         if component.management and component.management.media:
             doc_bindings = component.management.media.get("doc_bindings", {}).get("bindings", [])
-            
+
             for binding in doc_bindings:
                 bindings.append(ComponentBindingResponse(
                     id=binding.get("id", ""),
@@ -437,9 +437,9 @@ async def get_component_bindings(
                     metadata=binding.get("metadata"),
                     created_at=datetime.fromisoformat(binding.get("created_at", datetime.utcnow().isoformat()))
                 ))
-        
+
         return bindings
-        
+
     except Exception as e:
         logger.error(f"Failed to get component bindings: {str(e)}")
         raise HTTPException(
@@ -463,7 +463,7 @@ def create_component_reference(component: Component, binding_type: str, metadata
         "domain": component.domain,
         "scale": component.scale
     }
-    
+
     if binding_type == "library":
         # Library reference includes full component definition
         base_ref.update({
@@ -483,7 +483,7 @@ def create_component_reference(component: Component, binding_type: str, metadata
         base_ref.update({
             "specifications": metadata.get("specifications", {})
         })
-    
+
     return base_ref
 
 
@@ -495,17 +495,17 @@ def create_component_binding_patch(
 ) -> List[Dict[str, Any]]:
     """Create JSON patch operations for component binding."""
     patches = []
-    
+
     # Ensure the target path exists
     path_parts = location_path.split('.')
     current_path = ""
-    
+
     for i, part in enumerate(path_parts):
         if current_path:
             current_path += f".{part}"
         else:
             current_path = part
-        
+
         # Check if path exists and create if needed
         if i == len(path_parts) - 1:
             # Final path - add the component
@@ -521,7 +521,7 @@ def create_component_binding_patch(
                 "path": f"/{current_path.replace('.', '/')}",
                 "value": None
             })
-    
+
     return patches
 
 
@@ -544,7 +544,7 @@ def create_odl_component_instance(component: Component, instance_data: Dict[str,
         "connections": instance_data.get("connections", []),
         "status": "planned"
     }
-    
+
     # Add component management if available
     if component.management:
         instance["component_management"] = {
@@ -552,7 +552,7 @@ def create_odl_component_instance(component: Component, instance_data: Dict[str,
             "tracking_policy": component.management.tracking_policy,
             "traceability": component.management.traceability
         }
-    
+
     return instance
 
 
@@ -564,11 +564,11 @@ def update_component_specs_in_document(
 ) -> bool:
     """Update component specifications in ODL-SD document."""
     updated = False
-    
+
     # Search for component instances in the document
     if hasattr(odl_document, 'libraries') and odl_document.libraries:
         components = odl_document.libraries.get('components', [])
-        
+
         for i, comp in enumerate(components):
             if comp.get('component_id') == component_id:
                 if merge_strategy == "deep_merge":
@@ -579,9 +579,9 @@ def update_component_specs_in_document(
                 else:
                     # Replace specifications
                     comp['specifications'] = specifications
-                
+
                 updated = True
-    
+
     return updated
 
 

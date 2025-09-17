@@ -2,13 +2,13 @@
 
 import * as React from 'react'
 import { useState, useRef, useEffect } from 'react'
-import { 
-  MessageCircle, 
-  Mic, 
-  MicOff, 
-  Send, 
-  Bot, 
-  User, 
+import {
+  MessageCircle,
+  Mic,
+  MicOff,
+  Send,
+  Bot,
+  User,
   Loader2,
   Lightbulb,
   Zap,
@@ -116,7 +116,7 @@ export class AICopilotService {
       capabilities: ['ODL-SD Validation', 'Energy Simulation', 'Cost Optimization']
     },
     {
-      id: 'sales-agent', 
+      id: 'sales-agent',
       name: 'Sales Advisor',
       description: 'Handles quotes, ROI calculations, and proposals',
       status: 'idle',
@@ -126,7 +126,7 @@ export class AICopilotService {
       id: 'sourcing-agent',
       name: 'Sourcing Specialist',
       description: 'Manages procurement and supplier relationships',
-      status: 'idle', 
+      status: 'idle',
       capabilities: ['RFQ Generation', 'Supplier Matching', 'Logistics Optimization']
     }
   ]
@@ -141,7 +141,7 @@ export class AICopilotService {
   async sendMessage(message: string, context?: any): Promise<AIMessage> {
     // Simulate AI processing
     await new Promise(resolve => setTimeout(resolve, 1500))
-    
+
     const responses = [
       "I can help you with that! Let me analyze your project and suggest some optimizations.",
       "Based on your current design, I notice a few areas where we could improve efficiency.",
@@ -166,7 +166,7 @@ export class AICopilotService {
         },
         {
           id: 'action-2',
-          type: 'button', 
+          type: 'button',
           label: 'Show Details',
           description: 'View detailed analysis results'
         }
@@ -227,7 +227,7 @@ export class AICopilotService {
     return this.agents
   }
 
-  isConnected(): boolean {
+  getConnectionStatus(): boolean {
     return this.isConnected
   }
 }
@@ -277,7 +277,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
       const connected = await aiService.connect()
       setIsConnected(connected)
       setAgents(aiService.getAgents())
-      
+
       const initialSuggestions = await aiService.getSuggestions()
       setSuggestions(initialSuggestions)
     }
@@ -329,7 +329,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
   const executeAction = async (action: AIAction) => {
     // Simulate action execution
     console.log('Executing action:', action)
-    
+
     const responseMessage: AIMessage = {
       id: `action-response-${Date.now()}`,
       role: 'assistant',
@@ -372,7 +372,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
         metadata: m.metadata
       }))
     }
-    
+
     const blob = new Blob([JSON.stringify(conversationData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -482,7 +482,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                             <Bot className="h-4 w-4 text-white" />
                           </div>
                         )}
-                        
+
                         <div
                           className={cn(
                             "max-w-[80%] rounded-lg p-3 space-y-2",
@@ -492,7 +492,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                           )}
                         >
                           <p className="text-sm">{message.content}</p>
-                          
+
                           {message.actions && (
                             <div className="flex flex-wrap gap-2 pt-2">
                               {message.actions.map((action) => (
@@ -508,7 +508,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                               ))}
                             </div>
                           )}
-                          
+
                           {message.metadata && (
                             <div className="flex items-center justify-between pt-2 text-xs opacity-70">
                               <div className="flex items-center space-x-2">
@@ -550,7 +550,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                             </div>
                           )}
                         </div>
-                        
+
                         {message.role === 'user' && (
                           <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
                             <User className="h-4 w-4 text-gray-600" />
@@ -558,7 +558,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                         )}
                       </div>
                     ))}
-                    
+
                     {isLoading && (
                       <div className="flex gap-3 justify-start">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
@@ -651,8 +651,8 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                           <h4 className="font-medium text-sm">{suggestion.title}</h4>
                           <p className="text-xs text-gray-600 mt-1">{suggestion.description}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <Badge 
-                              variant="outline" 
+                            <Badge
+                              variant="outline"
                               className={cn(
                                 "text-xs",
                                 suggestion.priority === 'high' && "border-red-200 text-red-600",
@@ -690,7 +690,7 @@ export function AICopilot({ className, defaultOpen = false }: AICopilotProps) {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge 
+                          <Badge
                             variant={agent.status === 'idle' ? 'default' : 'secondary'}
                             className="text-xs"
                           >

@@ -5,12 +5,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'react-hot-toast'
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
-  Globe, 
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
   CreditCard,
   Key,
   Users,

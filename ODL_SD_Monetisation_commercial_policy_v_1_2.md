@@ -5,8 +5,8 @@
 **Purpose:** Full and final commercial canon for the ODL‑SD Platform. This revision incorporates final polish from the latest peer review: backward‑compatibility, clearer definitions, additional examples, escrow release triggers, crypto pilot terms, Right‑to‑Switch details, audit‑retention, referral metrics, and a new Provider‑Switch flow, while preserving our **simple money story** and anti‑exploitation posture.
 
 > **Simple Money Story (unchanged):**
-> 1) **Subscriptions** — Free, Pro (per user), Enterprise (org + own domain/SSO).  
-> 2) **Transactions** — flat, visible fees on (a) components orders and (b) service handovers; payment processing is shown **at cost**.  
+> 1) **Subscriptions** — Free, Pro (per user), Enterprise (org + own domain/SSO).
+> 2) **Transactions** — flat, visible fees on (a) components orders and (b) service handovers; payment processing is shown **at cost**.
 > 3) **Design Marketplace** — transparent platform take‑rate on digital design/template sales with clear royalty splits.
 
 ---
@@ -422,16 +422,16 @@ flowchart TD
 ---
 
 ## 14. Pricing Page Copy (rev2)
-**Simple pricing. No surprises.**  
-Free for homeowners. One **Pro** seat for all roles. **Enterprise** on your own domain with SSO.  
-Design Marketplace lets pros earn royalties; enterprises can resell curated templates with transparent splits.  
+**Simple pricing. No surprises.**
+Free for homeowners. One **Pro** seat for all roles. **Enterprise** on your own domain with SSO.
+Design Marketplace lets pros earn royalties; enterprises can resell curated templates with transparent splits.
 For purchases, payment processing is shown **at cost**, and platform fees are flat and disclosed.
 
 - **Free** — $0: 3 designs/mo, 1 active project, basic checks, export preview.
 - **Pro** — $79/user/mo: unlimited projects, advanced AI checks & simulations (100 PSUs/mo), roles included.
 - **Enterprise** — from $25,000/year: your domain, SSO, APIs, SLAs, connectors.
 
-**Two transaction fees:** 5% on component orders (**supplier‑paid**); 3% service handover success fee (**managing‑company‑paid**).  
+**Two transaction fees:** 5% on component orders (**supplier‑paid**); 3% service handover success fee (**managing‑company‑paid**).
 **Design Marketplace:** 15% platform fee on direct template sales (Designer keeps 85%). Enterprise resale defaults: Platform 10% / Designer 30% / Enterprise 60%.
 
 **Global Pricing Note:** In select regions, prices may be adjusted for **PPP** and local taxes; regional pages disclose exact amounts.

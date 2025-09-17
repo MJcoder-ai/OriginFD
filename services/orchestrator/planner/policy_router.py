@@ -82,7 +82,7 @@ class RateLimit(BaseModel):
 class PolicyRouter:
     """
     Policy Router for managing execution policies, budgets, and permissions.
-    
+
     Features:
     - PSU budget management per tenant/user
     - Rate limiting and resource quotas
@@ -91,12 +91,12 @@ class PolicyRouter:
     - Dynamic policy adjustment
     - Violation tracking and reporting
     """
-    
+
     def __init__(self):
         # Budget management
         self.budget_allocations: Dict[str, BudgetAllocation] = {}
         self.rate_limits: Dict[str, RateLimit] = {}
-        
+
         # Policy violations
         self.violations: List[PolicyViolation] = []
         self.violation_thresholds = {
@@ -115,7 +115,7 @@ class PolicyRouter:
             "require_approval_above_psu": 50,
             "content_filtering_enabled": True
         }
-        
+
         # Permission mappings
         self.role_permissions = {
             "admin": ["*"],
@@ -159,7 +159,7 @@ class PolicyRouter:
                 self.active_tasks_by_user[key] = max(0, self.active_tasks_by_user[key] - 1)
                 if self.active_tasks_by_user[key] == 0:
                     del self.active_tasks_by_user[key]
-    
+
     async def check_policy_compliance(
         self,
         task_id: str,
@@ -172,14 +172,14 @@ class PolicyRouter:
     ) -> Tuple[PolicyDecision, Optional[str], Dict[str, Any]]:
         """
         Check if a task complies with all applicable policies.
-        
+
         Returns:
             (decision, reason, modifications)
         """
         try:
             violations = []
             modifications = {}
-            
+
             # Check PSU budget
             budget_check = await self._check_psu_budget(
                 tenant_id, user_id, estimated_psu_cost
@@ -196,7 +196,7 @@ class PolicyRouter:
                     timestamp=datetime.utcnow(),
                     metadata={"requested_psu": estimated_psu_cost, "available_psu": budget_check.get("available", 0)}
                 ))
-            
+
             # Check permissions
             permission_check = await self._check_permissions(
                 user_id, required_permissions, context
@@ -213,7 +213,7 @@ class PolicyRouter:
                     timestamp=datetime.utcnow(),
                     metadata={"required_permissions": required_permissions}
                 ))
-            
+
             # Check rate limits
             rate_check = await self._check_rate_limits(
                 tenant_id, user_id, "task_execution"
@@ -229,7 +229,7 @@ class PolicyRouter:
                     severity="medium",
                     timestamp=datetime.utcnow()
                 ))
-            
+
             # Check resource limits
             resource_check = await self._check_resource_limits(
                 estimated_duration_ms, context
@@ -245,7 +245,7 @@ class PolicyRouter:
                     severity="medium",
                     timestamp=datetime.utcnow()
                 ))
-            
+
             # Check content policy
             content_check = await self._check_content_policy(context)
             if not content_check["approved"]:
@@ -259,31 +259,31 @@ class PolicyRouter:
                     severity="high",
                     timestamp=datetime.utcnow()
                 ))
-            
+
             # Record violations
             self.violations.extend(violations)
-            
+
             # Make policy decision
             if not violations:
                 # All checks passed
                 await self._reserve_psu_budget(tenant_id, user_id, estimated_psu_cost)
                 await self._update_rate_limits(tenant_id, user_id, "task_execution")
                 return PolicyDecision.APPROVE, None, {}
-            
+
             # Check if we can modify the task to make it compliant
             critical_violations = [v for v in violations if v.severity == "critical"]
             high_violations = [v for v in violations if v.severity == "high"]
-            
+
             if critical_violations:
                 # Cannot proceed with critical violations
                 reason = f"Critical policy violations: {', '.join(v.description for v in critical_violations)}"
                 return PolicyDecision.DENY, reason, {}
-            
+
             elif high_violations:
                 # High violations require escalation
                 reason = f"High severity violations require approval: {', '.join(v.description for v in high_violations)}"
                 return PolicyDecision.ESCALATE, reason, {"violations": [v.dict() for v in violations]}
-            
+
             else:
                 # Try to modify task to address medium/low violations
                 modifications = await self._generate_modifications(violations, context)
@@ -293,11 +293,11 @@ class PolicyRouter:
                 else:
                     reason = f"Cannot resolve policy violations: {', '.join(v.description for v in violations)}"
                     return PolicyDecision.DENY, reason, {}
-        
+
         except Exception as e:
             logger.error(f"Policy check failed: {str(e)}")
             return PolicyDecision.DENY, f"Policy check error: {str(e)}", {}
-    
+
     async def allocate_psu_budget(
         self,
         tenant_id: str,
@@ -309,7 +309,7 @@ class PolicyRouter:
         """Allocate PSU budget for a tenant."""
         period_start = datetime.utcnow()
         period_end = period_start + timedelta(days=period_days)
-        
+
         allocation = BudgetAllocation(
             tenant_id=tenant_id,
             total_budget=total_budget,
@@ -320,11 +320,11 @@ class PolicyRouter:
             rollover_allowed=rollover_allowed,
             overage_limit=overage_limit
         )
-        
+
         self.budget_allocations[tenant_id] = allocation
-        
+
         logger.info(f"Allocated {total_budget} PSU budget for tenant {tenant_id}")
-    
+
     async def set_rate_limit(
         self,
         resource_type: str,
@@ -335,7 +335,7 @@ class PolicyRouter:
     ):
         """Set rate limit for a resource."""
         key = f"{tenant_id or 'global'}:{user_id or 'all'}:{resource_type}"
-        
+
         rate_limit = RateLimit(
             tenant_id=tenant_id,
             user_id=user_id,
@@ -345,11 +345,11 @@ class PolicyRouter:
             current_count=0,
             window_start=datetime.utcnow()
         )
-        
+
         self.rate_limits[key] = rate_limit
-        
+
         logger.info(f"Set rate limit: {resource_type} = {limit_count}/{time_window_seconds}s for {key}")
-    
+
     async def consume_psu_budget(
         self,
         tenant_id: str,
@@ -370,7 +370,7 @@ class PolicyRouter:
             logger.debug(f"Consumed {actual_psu_cost} PSU for tenant {tenant_id} (task: {task_id})")
         else:
             logger.warning(f"No budget allocation found for tenant {tenant_id}")
-    
+
     async def release_psu_reservation(
         self,
         tenant_id: str,
@@ -381,17 +381,17 @@ class PolicyRouter:
         if tenant_id in self.budget_allocations:
             allocation = self.budget_allocations[tenant_id]
             allocation.reserved_budget = max(0, allocation.reserved_budget - reserved_psu)
-            
+
             logger.debug(f"Released {reserved_psu} PSU reservation for tenant {tenant_id} (task: {task_id})")
-    
+
     async def get_budget_status(self, tenant_id: str) -> Dict[str, Any]:
         """Get current budget status for a tenant."""
         if tenant_id not in self.budget_allocations:
             return {"error": "No budget allocation found"}
-        
+
         allocation = self.budget_allocations[tenant_id]
         available = allocation.total_budget - allocation.used_budget - allocation.reserved_budget
-        
+
         return {
             "tenant_id": tenant_id,
             "total_budget": allocation.total_budget,
@@ -403,7 +403,7 @@ class PolicyRouter:
             "utilization_percent": (allocation.used_budget / allocation.total_budget) * 100,
             "overage_limit": allocation.overage_limit
         }
-    
+
     async def get_violations(
         self,
         tenant_id: Optional[str] = None,
@@ -412,18 +412,18 @@ class PolicyRouter:
     ) -> List[PolicyViolation]:
         """Get policy violations within specified timeframe."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
-        
+
         filtered_violations = [
             v for v in self.violations
             if v.timestamp >= cutoff_time
             and (not tenant_id or v.tenant_id == tenant_id)
             and (not user_id or v.user_id == user_id)
         ]
-        
+
         return filtered_violations
-    
+
     # Private methods
-    
+
     async def _check_psu_budget(
         self,
         tenant_id: Optional[str],
@@ -434,7 +434,7 @@ class PolicyRouter:
         if not tenant_id:
             # No tenant-specific budget, allow for now
             return {"approved": True}
-        
+
         if tenant_id not in self.budget_allocations:
             # No budget allocation, deny
             return {
@@ -442,9 +442,9 @@ class PolicyRouter:
                 "reason": f"No PSU budget allocation for tenant {tenant_id}",
                 "available": 0
             }
-        
+
         allocation = self.budget_allocations[tenant_id]
-        
+
         # Check if budget period has expired
         if datetime.utcnow() > allocation.period_end:
             # Reset budget for new period
@@ -452,12 +452,12 @@ class PolicyRouter:
             allocation.reserved_budget = 0
             allocation.period_start = datetime.utcnow()
             allocation.period_end = allocation.period_start + timedelta(days=30)
-        
+
         available = (
-            allocation.total_budget + allocation.overage_limit 
+            allocation.total_budget + allocation.overage_limit
             - allocation.used_budget - allocation.reserved_budget
         )
-        
+
         if requested_psu <= available:
             return {"approved": True, "available": available}
         else:
@@ -466,7 +466,7 @@ class PolicyRouter:
                 "reason": f"Insufficient PSU budget: requested {requested_psu}, available {available}",
                 "available": available
             }
-    
+
     async def _check_permissions(
         self,
         user_id: Optional[str],
@@ -476,21 +476,21 @@ class PolicyRouter:
         """Check if user has required permissions."""
         if not required_permissions:
             return {"approved": True}
-        
+
         # Get user role from context
         user_role = context.get("user_role", "viewer")
         user_permissions = self.role_permissions.get(user_role, [])
-        
+
         # Admin has all permissions
         if "*" in user_permissions:
             return {"approved": True}
-        
+
         # Check specific permissions
         missing_permissions = [
-            perm for perm in required_permissions 
+            perm for perm in required_permissions
             if perm not in user_permissions
         ]
-        
+
         if missing_permissions:
             return {
                 "approved": False,
@@ -498,7 +498,7 @@ class PolicyRouter:
             }
         else:
             return {"approved": True}
-    
+
     async def _check_rate_limits(
         self,
         tenant_id: Optional[str],
@@ -513,7 +513,7 @@ class PolicyRouter:
                 limit_check = await self._check_single_rate_limit(user_key)
                 if not limit_check["approved"]:
                     return limit_check
-        
+
         # Check tenant-wide rate limit
         if tenant_id:
             tenant_key = f"{tenant_id}:all:{resource_type}"
@@ -521,26 +521,26 @@ class PolicyRouter:
                 limit_check = await self._check_single_rate_limit(tenant_key)
                 if not limit_check["approved"]:
                     return limit_check
-        
+
         # Check global rate limit
         global_key = f"global:all:{resource_type}"
         if global_key in self.rate_limits:
             return await self._check_single_rate_limit(global_key)
-        
+
         return {"approved": True}
-    
+
     async def _check_single_rate_limit(self, key: str) -> Dict[str, Any]:
         """Check a single rate limit."""
         rate_limit = self.rate_limits[key]
         current_time = datetime.utcnow()
-        
+
         # Check if window has expired
         window_elapsed = (current_time - rate_limit.window_start).total_seconds()
         if window_elapsed >= rate_limit.time_window_seconds:
             # Reset window
             rate_limit.current_count = 0
             rate_limit.window_start = current_time
-        
+
         if rate_limit.current_count >= rate_limit.limit_count:
             return {
                 "approved": False,
@@ -548,7 +548,7 @@ class PolicyRouter:
             }
         else:
             return {"approved": True}
-    
+
     async def _check_resource_limits(
         self,
         estimated_duration_ms: int,
@@ -556,7 +556,7 @@ class PolicyRouter:
     ) -> Dict[str, Any]:
         """Check resource usage limits."""
         max_duration_ms = self.default_policies["max_task_duration_minutes"] * 60 * 1000
-        
+
         if estimated_duration_ms > max_duration_ms:
             return {
                 "approved": False,
@@ -585,7 +585,7 @@ class PolicyRouter:
                 }
 
         return {"approved": True}
-    
+
     async def _check_content_policy(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Check content policy compliance."""
         if not self.default_policies["content_filtering_enabled"]:
@@ -618,7 +618,7 @@ class PolicyRouter:
             return {"approved": False, "reason": "Content appears to contain PII"}
 
         return {"approved": True}
-    
+
     async def _reserve_psu_budget(
         self,
         tenant_id: Optional[str],
@@ -629,7 +629,7 @@ class PolicyRouter:
         if tenant_id and tenant_id in self.budget_allocations:
             allocation = self.budget_allocations[tenant_id]
             allocation.reserved_budget += psu_amount
-    
+
     async def _update_rate_limits(
         self,
         tenant_id: Optional[str],
@@ -642,18 +642,18 @@ class PolicyRouter:
             user_key = f"{tenant_id or 'global'}:{user_id}:{resource_type}"
             if user_key in self.rate_limits:
                 self.rate_limits[user_key].current_count += 1
-        
+
         # Update tenant-wide rate limit
         if tenant_id:
             tenant_key = f"{tenant_id}:all:{resource_type}"
             if tenant_key in self.rate_limits:
                 self.rate_limits[tenant_key].current_count += 1
-        
+
         # Update global rate limit
         global_key = f"global:all:{resource_type}"
         if global_key in self.rate_limits:
             self.rate_limits[global_key].current_count += 1
-    
+
     async def _generate_modifications(
         self,
         violations: List[PolicyViolation],
@@ -661,7 +661,7 @@ class PolicyRouter:
     ) -> Dict[str, Any]:
         """Generate task modifications to address policy violations."""
         modifications = {}
-        
+
         for violation in violations:
             if violation.violation_type == PolicyViolationType.BUDGET_EXCEEDED:
                 # Suggest reducing PSU cost
@@ -670,15 +670,15 @@ class PolicyRouter:
                 if available_psu > 0:
                     modifications["max_psu_cost"] = available_psu
                     modifications["reduce_tool_usage"] = True
-            
+
             elif violation.violation_type == PolicyViolationType.RESOURCE_LIMIT_EXCEEDED:
                 # Suggest reducing task scope
                 modifications["max_duration_ms"] = self.default_policies["max_task_duration_minutes"] * 60 * 1000
                 modifications["simplify_task"] = True
-            
+
             elif violation.violation_type == PolicyViolationType.RATE_LIMIT_EXCEEDED:
                 # Suggest deferring task
                 modifications["defer_seconds"] = 300  # 5 minutes
-        
+
         return modifications
 
