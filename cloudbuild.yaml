@@ -371,38 +371,100 @@ steps:
       - '-c'
       - |
         echo "Running database migrations..."
+
+        # Delete existing job if it exists, then create new one
+        gcloud run jobs delete db-migrate --region=${_REGION} --quiet || echo "No existing migration job to delete"
+
+        echo "Creating migration job..."
         gcloud run jobs create db-migrate \
           --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA \
           --region=${_REGION} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
           --task-timeout=600 \
-          --replace || echo "Migration job already exists"
+          --parallelism=1 \
+          --task-count=1 \
+          --max-retries=3 \
+          --args="/bin/bash,-c,cd /app/services/api && alembic upgrade head"
 
-        # Execute the migration job
+        echo "Executing database migration job..."
         gcloud run jobs execute db-migrate --region=${_REGION} --wait
 
-        # Clean up the migration job after completion
-        gcloud run jobs delete db-migrate --region=${_REGION} --quiet || echo "Job cleanup failed"
+        echo "Migration completed successfully"
 
-  # Step 5: Setup Load Balancer and Custom Domain (Optional)
+  # Step 5: Configure IAM Policies for Cloud Run Services
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
-    id: 'setup-load-balancer'
+    id: 'configure-iam-policies'
+    waitFor: ['run-migrations']
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        echo "Setting up Cloud Load Balancer..."
+        echo "Configuring IAM policies for Cloud Run services..."
 
-        # Create backend service for web frontend
+        # Ensure web service is publicly accessible (required for frontend)
+        gcloud run services add-iam-policy-binding web \
+          --region=${_REGION} \
+          --member="allUsers" \
+          --role="roles/run.invoker" || echo "Web service IAM policy already configured"
+
+        # Ensure backend services are NOT publicly accessible (security best practice)
+        echo "Verifying backend services are not publicly accessible..."
+
+        # Remove any public access from API service if it exists
+        gcloud run services remove-iam-policy-binding api \
+          --region=${_REGION} \
+          --member="allUsers" \
+          --role="roles/run.invoker" || echo "API service was not publicly accessible"
+
+        # Remove any public access from orchestrator service if it exists
+        gcloud run services remove-iam-policy-binding orchestrator \
+          --region=${_REGION} \
+          --member="allUsers" \
+          --role="roles/run.invoker" || echo "Orchestrator service was not publicly accessible"
+
+        # Remove any public access from workers service if it exists
+        gcloud run services remove-iam-policy-binding workers \
+          --region=${_REGION} \
+          --member="allUsers" \
+          --role="roles/run.invoker" || echo "Workers service was not publicly accessible"
+
+        echo "IAM policies configured: Web service public, backend services private"
+
+  # Step 6: Setup Load Balancer and Custom Domain (Optional)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
+    id: 'setup-load-balancer'
+    waitFor: ['configure-iam-policies']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Setting up Cloud Load Balancer for Cloud Run services..."
+
+        # Get the web service URL for backend configuration
+        WEB_SERVICE_URL=$$(gcloud run services describe web --region=${_REGION} --format="value(status.url)")
+        echo "Web service URL: $$WEB_SERVICE_URL"
+
+        # Create Network Endpoint Group for Cloud Run
+        gcloud compute network-endpoint-groups create originfd-web-neg \
+          --region=${_REGION} \
+          --network-endpoint-type=serverless \
+          --cloud-run-service=web || echo "NEG already exists"
+
+        # Create backend service for Cloud Run
         gcloud compute backend-services create originfd-web-backend \
           --global \
-          --load-balancing-scheme=EXTERNAL_MANAGED \
-          --protocol=HTTP || echo "Backend service already exists"
+          --load-balancing-scheme=EXTERNAL_MANAGED || echo "Backend service already exists"
 
-        # Create URL map
+        # Add the NEG as backend to the service
+        gcloud compute backend-services add-backend originfd-web-backend \
+          --global \
+          --network-endpoint-group=originfd-web-neg \
+          --network-endpoint-group-region=${_REGION} || echo "Backend already added"
+
+        # Create URL map with corrected parameter name
         gcloud compute url-maps create originfd-url-map \
-          --default-backend-service=originfd-web-backend || echo "URL map already exists"
+          --default-service=originfd-web-backend || echo "URL map already exists"
 
         # Create HTTP(S) proxy
         gcloud compute target-http-proxies create originfd-http-proxy \
@@ -418,6 +480,8 @@ steps:
           --target-http-proxy=originfd-http-proxy \
           --address=$$EXTERNAL_IP \
           --ports=80 || echo "Forwarding rule already exists"
+
+        echo "Load balancer configured. External IP: $$EXTERNAL_IP"
 
 options:
   logging: CLOUD_LOGGING_ONLY
