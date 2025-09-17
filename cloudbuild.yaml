@@ -302,6 +302,7 @@ steps:
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-orchestrator'
+    waitFor: ['deploy-api']
     entrypoint: 'bash'
     args:
       - '-c'
@@ -322,6 +323,7 @@ steps:
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-workers'
+    waitFor: ['deploy-orchestrator']
     entrypoint: 'bash'
     args:
       - '-c'
@@ -342,6 +344,7 @@ steps:
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-web'
+    waitFor: ['deploy-workers']
     entrypoint: 'bash'
     args:
       - '-c'
