@@ -5,5 +5,5 @@
 passlib[bcrypt]==1.7.4
 networkx==3.2.1
 
-# Production server dependency
-gunicorn==22.0.0
+# Note: gunicorn is provided by shared requirements.txt
+# Removed duplicate to prevent dependency conflicts

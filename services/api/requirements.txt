@@ -5,6 +5,5 @@
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
-# JWT and production server dependencies
-PyJWT==2.8.0
-gunicorn==22.0.0
+# Note: PyJWT and gunicorn are provided by shared requirements.txt
+# Removed duplicates to prevent dependency conflicts

@@ -35,13 +35,34 @@ WORKER_CONCURRENCY = int(os.getenv("CELERY_WORKER_CONCURRENCY", "4"))
 # Initialize Redis client for idempotency tracking
 redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
-# Initialize database connection for workers
-if DATABASE_URL:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-else:
-    engine = None
-    SessionLocal = None
+# Initialize database connection for workers (lazy initialization)
+engine = None
+SessionLocal = None
+
+
+def initialize_database():
+    """Initialize database connection with proper error handling."""
+    global engine, SessionLocal
+
+    if DATABASE_URL:
+        try:
+            logger.info(f"Initializing database connection to: {DATABASE_URL[:50]}...")
+            engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+            # Test the connection
+            with engine.connect() as conn:
+                conn.execute("SELECT 1")
+            logger.info("Database connection initialized successfully")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize database connection: {e}")
+            logger.error("Workers will continue without database functionality")
+            engine = None
+            SessionLocal = None
+    else:
+        logger.warning("No DATABASE_URL provided, skipping database initialization")
+
 
 # Initialize Celery app with production-grade configuration
 app = Celery(
@@ -377,6 +398,9 @@ def main():
     """Main entry point for the workers service."""
     logger.info(f"Starting OriginFD Workers Service in {ENVIRONMENT} mode")
     logger.info(f"Redis URL: {REDIS_URL}")
+
+    # Initialize database connection
+    initialize_database()
 
     # Start the health check server in a separate thread
     health_thread = threading.Thread(target=run_health_server)
