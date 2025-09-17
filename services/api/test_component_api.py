@@ -2,6 +2,7 @@
 Basic test script for component management API.
 This is a simple test to verify the implementation works.
 """
+
 import asyncio
 import sys
 from pathlib import Path
@@ -32,7 +33,7 @@ async def test_component_models():
         "name": "TEST_COMP_100W",
         "status": ComponentStatusEnum.DRAFT,
         "category": "generation",
-        "subcategory": "pv_module"
+        "subcategory": "pv_module",
     }
 
     print("✅ Component model structure is valid")
@@ -44,7 +45,7 @@ async def test_component_models():
         "approvals": {"requested": False, "records": []},
         "supplier_chain": {"suppliers": []},
         "ai_logs": [],
-        "audit": []
+        "audit": [],
     }
 
     print("✅ Component management model structure is valid")
@@ -58,10 +59,10 @@ async def test_ai_tools():
 
     try:
         from tools.component_tools import (
-            ParseDatasheetTool,
-            ComponentDeduplicationTool,
             ComponentClassificationTool,
-            ComponentRecommendationTool
+            ComponentDeduplicationTool,
+            ComponentRecommendationTool,
+            ParseDatasheetTool,
         )
 
         # Test tool instantiation
@@ -81,10 +82,12 @@ async def test_ai_tools():
 
         # Test input validation
         try:
-            parse_tool.validate_inputs({
-                "datasheet_url": "https://example.com/datasheet.pdf",
-                "component_type": "pv_module"
-            })
+            parse_tool.validate_inputs(
+                {
+                    "datasheet_url": "https://example.com/datasheet.pdf",
+                    "component_type": "pv_module",
+                }
+            )
             print("✅ Input validation works")
         except Exception as e:
             print(f"❌ Input validation failed: {e}")

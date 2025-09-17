@@ -1,20 +1,23 @@
 """
 Database connection and session management with production-grade connection pooling.
 """
-from sqlalchemy import create_engine, MetaData, text, event
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import QueuePool
-from sqlalchemy.exc import OperationalError, DisconnectionError
-from typing import Generator
+
 import logging
-import time
 import random
+import time
+from typing import Generator
+
+from sqlalchemy import MetaData, create_engine, event, text
+from sqlalchemy.exc import DisconnectionError, OperationalError
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import QueuePool
 
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
 
 def create_database_engine():
     """Create database engine with production-grade configuration and retry logic."""
@@ -32,8 +35,8 @@ def create_database_engine():
             "connect_timeout": settings.DATABASE_CONNECT_TIMEOUT,
             "application_name": f"OriginFD-API-{settings.ENVIRONMENT}",
             # Enable prepared statements for better performance
-            "options": "-c default_transaction_isolation=read committed"
-        }
+            "options": "-c default_transaction_isolation=read committed",
+        },
     }
 
     # Create engine with retry logic
@@ -51,16 +54,22 @@ def create_database_engine():
 
         except (OperationalError, DisconnectionError) as e:
             if attempt == max_retries - 1:
-                logger.error(f"Failed to create database engine after {max_retries} attempts: {e}")
+                logger.error(
+                    f"Failed to create database engine after {max_retries} attempts: {e}"
+                )
                 raise
 
             # Exponential backoff with jitter
-            delay = settings.DATABASE_RETRY_DELAY * (2 ** attempt) + random.uniform(0, 1)
-            logger.warning(f"Database connection attempt {attempt + 1} failed, retrying in {delay:.2f}s: {e}")
+            delay = settings.DATABASE_RETRY_DELAY * (2**attempt) + random.uniform(0, 1)
+            logger.warning(
+                f"Database connection attempt {attempt + 1} failed, retrying in {delay:.2f}s: {e}"
+            )
             time.sleep(delay)
+
 
 # Create database engine with retry logic
 engine = create_database_engine()
+
 
 # Add connection event listeners for monitoring
 @event.listens_for(engine, "connect")
@@ -68,27 +77,29 @@ def receive_connect(dbapi_connection, connection_record):
     """Log successful database connections."""
     logger.debug("Database connection established")
 
+
 @event.listens_for(engine, "checkout")
 def receive_checkout(dbapi_connection, connection_record, connection_proxy):
     """Log connection pool checkouts."""
-    logger.debug(f"Connection checked out from pool. Pool size: {engine.pool.size()}, Checked out: {engine.pool.checkedout()}")
+    logger.debug(
+        f"Connection checked out from pool. Pool size: {engine.pool.size()}, Checked out: {engine.pool.checkedout()}"
+    )
+
 
 @event.listens_for(engine, "checkin")
 def receive_checkin(dbapi_connection, connection_record):
     """Log connection pool checkins."""
     logger.debug("Connection returned to pool")
 
+
 @event.listens_for(engine, "invalidate")
 def receive_invalidate(dbapi_connection, connection_record, exception):
     """Log connection invalidations."""
     logger.warning(f"Database connection invalidated: {exception}")
 
+
 # Create sessionmaker
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create base class for models
 Base = declarative_base()
@@ -120,7 +131,9 @@ def get_db_with_tenant(tenant_id: str) -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         # Set tenant context for Row Level Security
-        db.execute(text("SET app.current_tenant = :tenant_id"), {"tenant_id": tenant_id})
+        db.execute(
+            text("SET app.current_tenant = :tenant_id"), {"tenant_id": tenant_id}
+        )
         yield db
     except Exception as e:
         logger.error(f"Database session error for tenant {tenant_id}: {e}")
@@ -143,6 +156,7 @@ async def check_database_connection() -> bool:
 
 # Type hint for dependency injection
 from typing import Annotated
+
 from fastapi import Depends
 
 SessionDep = Annotated[Session, Depends(get_db)]
@@ -151,6 +165,7 @@ SessionDep = Annotated[Session, Depends(get_db)]
 def create_tables():
     """Create all database tables"""
     from models.base import Base
+
     logger.info("Creating database tables...")
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully!")
@@ -161,8 +176,8 @@ def init_database():
     create_tables()
 
     # Import models to ensure they're registered
-    from models.user import User
     from models.project import Project
+    from models.user import User
 
     # Create initial users
     db = SessionLocal()
@@ -179,7 +194,7 @@ def init_database():
                 is_active=True,
                 is_verified=True,
                 is_superuser=True,
-                role="engineer"
+                role="engineer",
             )
             db.add(admin_user)
 
@@ -190,7 +205,7 @@ def init_database():
                 is_active=True,
                 is_verified=True,
                 is_superuser=False,
-                role="user"
+                role="user",
             )
             db.add(regular_user)
 
@@ -209,7 +224,7 @@ def init_database():
                     scale=ProjectScale.UTILITY,
                     status=ProjectStatus.ACTIVE,
                     location_name="Arizona, USA",
-                    total_capacity_kw=500000.0
+                    total_capacity_kw=500000.0,
                 ),
                 Project(
                     name="Commercial BESS Installation",
@@ -219,7 +234,7 @@ def init_database():
                     scale=ProjectScale.COMMERCIAL,
                     status=ProjectStatus.DRAFT,
                     location_name="California, USA",
-                    total_capacity_kw=2000.0
+                    total_capacity_kw=2000.0,
                 ),
                 Project(
                     name="Hybrid Microgrid Campus",
@@ -229,8 +244,8 @@ def init_database():
                     scale=ProjectScale.INDUSTRIAL,
                     status=ProjectStatus.UNDER_REVIEW,
                     location_name="Texas, USA",
-                    total_capacity_kw=10000.0
-                )
+                    total_capacity_kw=10000.0,
+                ),
             ]
 
             for project in sample_projects:

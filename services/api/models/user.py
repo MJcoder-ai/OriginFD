@@ -1,15 +1,16 @@
 """SQLAlchemy models and Pydantic schemas for users."""
+
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
 from typing import List, Optional
 
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
-import json
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, EmailStr
 
 from .base import Base
 

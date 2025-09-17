@@ -1,10 +1,11 @@
 """
 AI tools for component management following ODL-SD v4.1 CMS.
 """
-from typing import Dict, Any, List
-import logging
+
 import json
+import logging
 from datetime import datetime
+from typing import Any, Dict, List
 
 from .registry import BaseTool, ToolMetadata, ToolResult
 
@@ -27,31 +28,38 @@ class ParseDatasheetTool(BaseTool):
                     "datasheet_url": {
                         "type": "string",
                         "format": "uri",
-                        "description": "URL to the component datasheet PDF"
+                        "description": "URL to the component datasheet PDF",
                     },
                     "component_type": {
                         "type": "string",
-                        "enum": ["pv_module", "inverter", "battery", "combiner", "meter", "other"],
-                        "description": "Type of component for context-aware parsing"
+                        "enum": [
+                            "pv_module",
+                            "inverter",
+                            "battery",
+                            "combiner",
+                            "meter",
+                            "other",
+                        ],
+                        "description": "Type of component for context-aware parsing",
                     },
                     "extract_images": {
                         "type": "boolean",
                         "default": True,
-                        "description": "Extract images and diagrams from datasheet"
+                        "description": "Extract images and diagrams from datasheet",
                     },
                     "extract_symbols": {
                         "type": "boolean",
                         "default": True,
-                        "description": "Extract electrical symbols and schematics"
+                        "description": "Extract electrical symbols and schematics",
                     },
                     "target_language": {
                         "type": "string",
                         "default": "en",
-                        "description": "Target language for extracted text"
-                    }
+                        "description": "Target language for extracted text",
+                    },
                 },
                 "required": ["datasheet_url", "component_type"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
@@ -64,8 +72,11 @@ class ParseDatasheetTool(BaseTool):
                             "mechanical": {"type": "object"},
                             "thermal": {"type": "object"},
                             "environmental": {"type": "object"},
-                            "certifications": {"type": "array", "items": {"type": "string"}}
-                        }
+                            "certifications": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
                     },
                     "extracted_images": {
                         "type": "array",
@@ -75,28 +86,28 @@ class ParseDatasheetTool(BaseTool):
                                 "url": {"type": "string"},
                                 "type": {"type": "string"},
                                 "description": {"type": "string"},
-                                "page": {"type": "integer"}
-                            }
-                        }
+                                "page": {"type": "integer"},
+                            },
+                        },
                     },
                     "confidence_score": {
                         "type": "number",
                         "minimum": 0,
                         "maximum": 1,
-                        "description": "Confidence in extraction accuracy"
+                        "description": "Confidence in extraction accuracy",
                     },
                     "processing_time_ms": {"type": "integer"},
                     "pages_processed": {"type": "integer"},
-                    "warnings": {"type": "array", "items": {"type": "string"}}
+                    "warnings": {"type": "array", "items": {"type": "string"}},
                 },
                 "required": ["specifications", "confidence_score"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="write",
             rbac_scope=["component_write", "ai_parse"],
             execution_time_estimate_ms=5000,
             psu_cost_estimate=10,
-            tags=["ai", "parsing", "datasheet", "ocr"]
+            tags=["ai", "parsing", "datasheet", "ocr"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -137,7 +148,9 @@ class ParseDatasheetTool(BaseTool):
                 text, component_type, validated_inputs.get("target_language", "en")
             )
 
-            processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            processing_time = int(
+                (datetime.utcnow() - start_time).total_seconds() * 1000
+            )
 
             outputs = {
                 "specifications": specifications,
@@ -160,8 +173,10 @@ class ParseDatasheetTool(BaseTool):
             return ToolResult(
                 success=False,
                 errors=[str(e)],
-                execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
-                intent="Failed to parse component datasheet"
+                execution_time_ms=int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                ),
+                intent="Failed to parse component datasheet",
             )
 
     # --- Parsing helpers -------------------------------------------------
@@ -196,6 +211,7 @@ class ParseDatasheetTool(BaseTool):
     ) -> tuple[str, List[Dict[str, Any]], int, List[str]]:
         """Extract text and optionally images from PDF."""
         import io
+
         warnings: List[str] = []
         images: List[Dict[str, Any]] = []
         pages_processed = 0
@@ -231,8 +247,8 @@ class ParseDatasheetTool(BaseTool):
     def _ocr_page(self, pdf_bytes: bytes, page_number: int) -> str:
         """Attempt OCR on a PDF page. Returns extracted text or empty string."""
         try:
-            from pdf2image import convert_from_bytes  # type: ignore
             import pytesseract  # type: ignore
+            from pdf2image import convert_from_bytes  # type: ignore
         except Exception:
             return ""
 
@@ -261,9 +277,10 @@ class ParseDatasheetTool(BaseTool):
                 if xobj.get("/Subtype") != "/Image":
                     continue
                 try:
-                    from PIL import Image
                     import base64
                     import io as _io
+
+                    from PIL import Image
 
                     data = xobj.get_data()
                     mode = "RGB"
@@ -370,25 +387,25 @@ class ComponentDeduplicationTool(BaseTool):
                             "part_number": {"type": "string"},
                             "rating_w": {"type": "integer"},
                             "gtin": {"type": "string"},
-                            "specifications": {"type": "object"}
+                            "specifications": {"type": "object"},
                         },
-                        "required": ["brand", "part_number", "rating_w"]
+                        "required": ["brand", "part_number", "rating_w"],
                     },
                     "similarity_threshold": {
                         "type": "number",
                         "minimum": 0.0,
                         "maximum": 1.0,
                         "default": 0.8,
-                        "description": "Similarity threshold for fuzzy matching"
+                        "description": "Similarity threshold for fuzzy matching",
                     },
                     "check_specifications": {
                         "type": "boolean",
                         "default": True,
-                        "description": "Include technical specifications in matching"
-                    }
+                        "description": "Include technical specifications in matching",
+                    },
                 },
                 "required": ["component_data"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
@@ -402,21 +419,24 @@ class ComponentDeduplicationTool(BaseTool):
                                 "component_id": {"type": "string"},
                                 "match_type": {"type": "string"},
                                 "similarity_score": {"type": "number"},
-                                "differences": {"type": "array", "items": {"type": "string"}}
-                            }
-                        }
+                                "differences": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                        },
                     },
                     "suggested_action": {"type": "string"},
-                    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
                 },
                 "required": ["is_duplicate", "matches", "confidence"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="read",
             rbac_scope=["component_read"],
             execution_time_estimate_ms=1000,
             psu_cost_estimate=2,
-            tags=["ai", "deduplication", "matching"]
+            tags=["ai", "deduplication", "matching"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -443,17 +463,21 @@ class ComponentDeduplicationTool(BaseTool):
             outputs = {
                 "is_duplicate": is_duplicate,
                 "matches": mock_matches,
-                "suggested_action": "create_new" if not is_duplicate else "merge_or_variant",
-                "confidence": 0.92
+                "suggested_action": (
+                    "create_new" if not is_duplicate else "merge_or_variant"
+                ),
+                "confidence": 0.92,
             }
 
-            processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            processing_time = int(
+                (datetime.utcnow() - start_time).total_seconds() * 1000
+            )
 
             return ToolResult(
                 success=True,
                 outputs=self.validate_outputs(outputs),
                 execution_time_ms=processing_time,
-                intent=f"Checked for duplicates - {'found matches' if is_duplicate else 'no duplicates found'}"
+                intent=f"Checked for duplicates - {'found matches' if is_duplicate else 'no duplicates found'}",
             )
 
         except Exception as e:
@@ -461,8 +485,10 @@ class ComponentDeduplicationTool(BaseTool):
             return ToolResult(
                 success=False,
                 errors=[str(e)],
-                execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
-                intent="Failed to check for duplicate components"
+                execution_time_ms=int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                ),
+                intent="Failed to check for duplicate components",
             )
 
 
@@ -487,18 +513,21 @@ class ComponentClassificationTool(BaseTool):
                             "category": {"type": "string"},
                             "subcategory": {"type": "string"},
                             "description": {"type": "string"},
-                            "specifications": {"type": "object"}
+                            "specifications": {"type": "object"},
                         },
-                        "required": ["brand", "part_number"]
+                        "required": ["brand", "part_number"],
                     },
                     "classification_systems": {
                         "type": "array",
-                        "items": {"type": "string", "enum": ["unspsc", "eclass", "hs_code"]},
-                        "default": ["unspsc", "eclass", "hs_code"]
-                    }
+                        "items": {
+                            "type": "string",
+                            "enum": ["unspsc", "eclass", "hs_code"],
+                        },
+                        "default": ["unspsc", "eclass", "hs_code"],
+                    },
                 },
                 "required": ["component_data"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
@@ -508,29 +537,32 @@ class ComponentClassificationTool(BaseTool):
                         "properties": {
                             "unspsc": {"type": "string", "pattern": "^\\d{8}$"},
                             "eclass": {"type": "string"},
-                            "hs_code": {"type": "string", "pattern": "^\\d{6}(\\d{2,4})?$"},
-                            "gtin": {"type": "string"}
-                        }
+                            "hs_code": {
+                                "type": "string",
+                                "pattern": "^\\d{6}(\\d{2,4})?$",
+                            },
+                            "gtin": {"type": "string"},
+                        },
                     },
                     "confidence_scores": {
                         "type": "object",
                         "properties": {
                             "unspsc": {"type": "number", "minimum": 0, "maximum": 1},
                             "eclass": {"type": "number", "minimum": 0, "maximum": 1},
-                            "hs_code": {"type": "number", "minimum": 0, "maximum": 1}
-                        }
+                            "hs_code": {"type": "number", "minimum": 0, "maximum": 1},
+                        },
                     },
                     "suggested_category": {"type": "string"},
-                    "suggested_subcategory": {"type": "string"}
+                    "suggested_subcategory": {"type": "string"},
                 },
                 "required": ["classifications", "confidence_scores"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="none",
             rbac_scope=["component_read"],
             execution_time_estimate_ms=800,
             psu_cost_estimate=1,
-            tags=["ai", "classification", "standards"]
+            tags=["ai", "classification", "standards"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -540,7 +572,9 @@ class ComponentClassificationTool(BaseTool):
         try:
             validated_inputs = self.validate_inputs(inputs)
             component_data = validated_inputs["component_data"]
-            systems = validated_inputs.get("classification_systems", ["unspsc", "eclass", "hs_code"])
+            systems = validated_inputs.get(
+                "classification_systems", ["unspsc", "eclass", "hs_code"]
+            )
 
             # TODO: Implement actual classification logic
             # This would use:
@@ -560,14 +594,14 @@ class ComponentClassificationTool(BaseTool):
                 mock_classifications = {
                     "unspsc": "26111701",  # Solar energy generation equipment
                     "eclass": "27-02-26-01",  # Photovoltaic modules
-                    "hs_code": "854140"  # Photosensitive semiconductor devices
+                    "hs_code": "854140",  # Photosensitive semiconductor devices
                 }
                 mock_confidence = {"unspsc": 0.95, "eclass": 0.92, "hs_code": 0.88}
             elif "inverter" in subcategory:
                 mock_classifications = {
                     "unspsc": "26111702",  # Power inverters
                     "eclass": "27-02-26-02",  # Inverters
-                    "hs_code": "850440"  # Static converters
+                    "hs_code": "850440",  # Static converters
                 }
                 mock_confidence = {"unspsc": 0.93, "eclass": 0.90, "hs_code": 0.85}
             else:
@@ -575,24 +609,30 @@ class ComponentClassificationTool(BaseTool):
                 mock_classifications = {
                     "unspsc": "26100000",  # Electrical equipment
                     "eclass": "27-00-00-00",  # Electrical engineering
-                    "hs_code": "850000"  # Electrical machinery
+                    "hs_code": "850000",  # Electrical machinery
                 }
                 mock_confidence = {"unspsc": 0.70, "eclass": 0.65, "hs_code": 0.60}
 
             outputs = {
                 "classifications": mock_classifications,
                 "confidence_scores": mock_confidence,
-                "suggested_category": "generation" if "pv" in category else "conversion",
-                "suggested_subcategory": "pv_module" if "pv" in category else "inverter"
+                "suggested_category": (
+                    "generation" if "pv" in category else "conversion"
+                ),
+                "suggested_subcategory": (
+                    "pv_module" if "pv" in category else "inverter"
+                ),
             }
 
-            processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            processing_time = int(
+                (datetime.utcnow() - start_time).total_seconds() * 1000
+            )
 
             return ToolResult(
                 success=True,
                 outputs=self.validate_outputs(outputs),
                 execution_time_ms=processing_time,
-                intent=f"Classified component with {max(mock_confidence.values()):.0%} confidence"
+                intent=f"Classified component with {max(mock_confidence.values()):.0%} confidence",
             )
 
         except Exception as e:
@@ -600,8 +640,10 @@ class ComponentClassificationTool(BaseTool):
             return ToolResult(
                 success=False,
                 errors=[str(e)],
-                execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
-                intent="Failed to classify component"
+                execution_time_ms=int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                ),
+                intent="Failed to classify component",
             )
 
 
@@ -624,25 +666,51 @@ class ComponentRecommendationTool(BaseTool):
                         "properties": {
                             "domain": {"type": "string"},
                             "scale": {"type": "string"},
-                            "power_range_w": {"type": "object", "properties": {"min": {"type": "number"}, "max": {"type": "number"}}},
-                            "voltage_range_v": {"type": "object", "properties": {"min": {"type": "number"}, "max": {"type": "number"}}},
-                            "budget_range": {"type": "object", "properties": {"min": {"type": "number"}, "max": {"type": "number"}}},
-                            "certifications_required": {"type": "array", "items": {"type": "string"}},
-                            "environmental_conditions": {"type": "object"}
-                        }
+                            "power_range_w": {
+                                "type": "object",
+                                "properties": {
+                                    "min": {"type": "number"},
+                                    "max": {"type": "number"},
+                                },
+                            },
+                            "voltage_range_v": {
+                                "type": "object",
+                                "properties": {
+                                    "min": {"type": "number"},
+                                    "max": {"type": "number"},
+                                },
+                            },
+                            "budget_range": {
+                                "type": "object",
+                                "properties": {
+                                    "min": {"type": "number"},
+                                    "max": {"type": "number"},
+                                },
+                            },
+                            "certifications_required": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "environmental_conditions": {"type": "object"},
+                        },
                     },
                     "existing_component_id": {
                         "type": "string",
-                        "description": "Find alternatives to this component"
+                        "description": "Find alternatives to this component",
                     },
                     "recommendation_type": {
                         "type": "string",
                         "enum": ["similar", "compatible", "alternative", "upgrade"],
-                        "default": "similar"
+                        "default": "similar",
                     },
-                    "max_results": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10}
+                    "max_results": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "default": 10,
+                    },
                 },
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
@@ -653,25 +721,35 @@ class ComponentRecommendationTool(BaseTool):
                             "type": "object",
                             "properties": {
                                 "component_id": {"type": "string"},
-                                "match_score": {"type": "number", "minimum": 0, "maximum": 1},
-                                "match_reasons": {"type": "array", "items": {"type": "string"}},
-                                "key_differences": {"type": "array", "items": {"type": "string"}},
+                                "match_score": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                },
+                                "match_reasons": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "key_differences": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
                                 "price_comparison": {"type": "string"},
-                                "availability": {"type": "string"}
-                            }
-                        }
+                                "availability": {"type": "string"},
+                            },
+                        },
                     },
                     "search_strategy": {"type": "string"},
-                    "total_candidates": {"type": "integer"}
+                    "total_candidates": {"type": "integer"},
                 },
                 "required": ["recommendations"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="read",
             rbac_scope=["component_read"],
             execution_time_estimate_ms=1500,
             psu_cost_estimate=3,
-            tags=["ai", "recommendation", "compatibility"]
+            tags=["ai", "recommendation", "compatibility"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -695,23 +773,32 @@ class ComponentRecommendationTool(BaseTool):
                     {
                         "component_id": "CMP:JINKO:JKM400M:400W:REV1",
                         "match_score": 0.95,
-                        "match_reasons": ["Similar power rating", "Same technology", "Compatible voltage"],
-                        "key_differences": ["5W higher power", "Slightly larger dimensions"],
+                        "match_reasons": [
+                            "Similar power rating",
+                            "Same technology",
+                            "Compatible voltage",
+                        ],
+                        "key_differences": [
+                            "5W higher power",
+                            "Slightly larger dimensions",
+                        ],
                         "price_comparison": "5% higher",
-                        "availability": "in_stock"
+                        "availability": "in_stock",
                     }
                 ],
                 "search_strategy": "specification_similarity",
-                "total_candidates": 45
+                "total_candidates": 45,
             }
 
-            processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            processing_time = int(
+                (datetime.utcnow() - start_time).total_seconds() * 1000
+            )
 
             return ToolResult(
                 success=True,
                 outputs=self.validate_outputs(outputs),
                 execution_time_ms=processing_time,
-                intent=f"Found {len(outputs['recommendations'])} component recommendations"
+                intent=f"Found {len(outputs['recommendations'])} component recommendations",
             )
 
         except Exception as e:
@@ -719,6 +806,8 @@ class ComponentRecommendationTool(BaseTool):
             return ToolResult(
                 success=False,
                 errors=[str(e)],
-                execution_time_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
-                intent="Failed to generate component recommendations"
+                execution_time_ms=int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                ),
+                intent="Failed to generate component recommendations",
             )

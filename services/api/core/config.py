@@ -3,10 +3,10 @@ Core configuration settings for OriginFD API.
 Implements centralized configuration management with Google Secret Manager.
 """
 
+import logging
 import os
 from functools import lru_cache
 from typing import List, Optional
-import logging
 
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
@@ -15,7 +15,9 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger(__name__)
 
 
-def get_secret_from_manager(secret_id: str, project_id: Optional[str] = None) -> Optional[str]:
+def get_secret_from_manager(
+    secret_id: str, project_id: Optional[str] = None
+) -> Optional[str]:
     """
     Retrieve secret from Google Secret Manager with fallback to environment variables.
     Implements centralized configuration management as recommended by Gemini.
@@ -42,7 +44,9 @@ def get_secret_from_manager(secret_id: str, project_id: Optional[str] = None) ->
         logger.info(f"Retrieved secret {secret_id} from environment variables")
         return env_value
 
-    logger.warning(f"Secret {secret_id} not found in Secret Manager or environment variables")
+    logger.warning(
+        f"Secret {secret_id} not found in Secret Manager or environment variables"
+    )
     return None
 
 
@@ -56,7 +60,9 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False, env="DEBUG")
 
     # Google Cloud Project (needed for Secret Manager)
-    GOOGLE_CLOUD_PROJECT: Optional[str] = Field(default=None, env="GOOGLE_CLOUD_PROJECT")
+    GOOGLE_CLOUD_PROJECT: Optional[str] = Field(
+        default=None, env="GOOGLE_CLOUD_PROJECT"
+    )
 
     # Security - With Secret Manager integration
     SECRET_KEY: Optional[str] = Field(default=None, env="JWT_SECRET_KEY")
@@ -69,7 +75,9 @@ class Settings(BaseSettings):
     DATABASE_POOL_SIZE: int = Field(default=10, env="DATABASE_POOL_SIZE")
     DATABASE_POOL_TIMEOUT: int = Field(default=30, env="DATABASE_POOL_TIMEOUT")
     DATABASE_MAX_OVERFLOW: int = Field(default=20, env="DATABASE_MAX_OVERFLOW")
-    DATABASE_POOL_RECYCLE: int = Field(default=3600, env="DATABASE_POOL_RECYCLE")  # 1 hour
+    DATABASE_POOL_RECYCLE: int = Field(
+        default=3600, env="DATABASE_POOL_RECYCLE"
+    )  # 1 hour
     DATABASE_POOL_PRE_PING: bool = Field(default=True, env="DATABASE_POOL_PRE_PING")
     DATABASE_ECHO: bool = Field(default=False, env="DATABASE_ECHO")
     DATABASE_CONNECT_TIMEOUT: int = Field(default=10, env="DATABASE_CONNECT_TIMEOUT")
@@ -82,7 +90,13 @@ class Settings(BaseSettings):
 
     # CORS
     ALLOWED_HOSTS: List[str] = Field(
-        default=["localhost", "127.0.0.1", "http://localhost:3000", "http://localhost:8000"], env="ALLOWED_HOSTS"
+        default=[
+            "localhost",
+            "127.0.0.1",
+            "http://localhost:3000",
+            "http://localhost:8000",
+        ],
+        env="ALLOWED_HOSTS",
     )
 
     # External APIs

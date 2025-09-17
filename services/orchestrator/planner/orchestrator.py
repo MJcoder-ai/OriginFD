@@ -2,27 +2,30 @@
 Core AI Orchestrator implementing the L1 architecture.
 Planner/Router -> Tool Caller -> Critic/Verifier -> Policy Router
 """
+
 import asyncio
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
-from enum import Enum
 import uuid
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
-from .planner import TaskPlanner, PlanningResult
-from .policy_router import PolicyRouter, PSUBudgetExceeded
-from .region_router import RegionRouter
-from .critic import CriticVerifier
-from .model_selector import ModelSelector
-from tools.registry import ToolRegistry, ToolError
 from memory.cag_store import CAGStore
 from memory.episodic import EpisodicMemory
+from tools.registry import ToolError, ToolRegistry
+
+from .critic import CriticVerifier
+from .model_selector import ModelSelector
+from .planner import PlanningResult, TaskPlanner
+from .policy_router import PolicyRouter, PSUBudgetExceeded
+from .region_router import RegionRouter
 
 logger = logging.getLogger(__name__)
 
 
 class TaskStatus(str, Enum):
     """Task execution status."""
+
     PENDING = "pending"
     PLANNING = "planning"
     EXECUTING = "executing"
@@ -34,6 +37,7 @@ class TaskStatus(str, Enum):
 
 class TaskPriority(str, Enum):
     """Task priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -51,7 +55,7 @@ class Task:
         context: Dict[str, Any],
         priority: TaskPriority = TaskPriority.NORMAL,
         tenant_id: Optional[str] = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
     ):
         self.id = task_id
         self.type = task_type
@@ -139,7 +143,7 @@ class AIOrchestrator:
         context: Dict[str, Any],
         priority: TaskPriority = TaskPriority.NORMAL,
         tenant_id: Optional[str] = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
     ) -> str:
         """
         Submit a new task for processing.
@@ -155,7 +159,7 @@ class AIOrchestrator:
             context=context,
             priority=priority,
             tenant_id=tenant_id,
-            user_id=user_id
+            user_id=user_id,
         )
 
         self.active_tasks[task_id] = task
@@ -180,7 +184,7 @@ class AIOrchestrator:
             "started_at": task.started_at,
             "completed_at": task.completed_at,
             "errors": task.errors,
-            "patches_generated": len(task.patches)
+            "patches_generated": len(task.patches),
         }
 
     async def cancel_task(self, task_id: str) -> bool:
@@ -189,7 +193,11 @@ class AIOrchestrator:
         if not task:
             return False
 
-        if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
+        if task.status in [
+            TaskStatus.COMPLETED,
+            TaskStatus.FAILED,
+            TaskStatus.CANCELLED,
+        ]:
             return False
 
         task.status = TaskStatus.CANCELLED
@@ -203,10 +211,7 @@ class AIOrchestrator:
         while not self._shutdown_event.is_set():
             try:
                 # Get task with timeout
-                task = await asyncio.wait_for(
-                    self.task_queue.get(),
-                    timeout=1.0
-                )
+                task = await asyncio.wait_for(self.task_queue.get(), timeout=1.0)
 
                 if task.status == TaskStatus.CANCELLED:
                     continue
@@ -266,7 +271,9 @@ class AIOrchestrator:
             if not verification_result.is_valid:
                 task.status = TaskStatus.FAILED
                 task.errors.extend(verification_result.errors)
-                logger.error(f"Task {task.id} failed verification: {verification_result.errors}")
+                logger.error(
+                    f"Task {task.id} failed verification: {verification_result.errors}"
+                )
                 return
 
             # Step 6: Generate JSON-Patches if needed
@@ -291,7 +298,7 @@ class AIOrchestrator:
                 plan=plan,
                 results=execution_results,
                 patches=patches,
-                success=True
+                success=True,
             )
 
             logger.info(f"Task {task.id} completed successfully")
@@ -314,7 +321,7 @@ class AIOrchestrator:
                 results=task.execution_results,
                 patches=[],
                 success=False,
-                error=str(e)
+                error=str(e),
             )
 
         finally:
@@ -326,10 +333,12 @@ class AIOrchestrator:
             tenant_id=task.tenant_id,
             user_id=task.user_id,
             task_type=task.type,
-            estimated_psu_cost=task.context.get("estimated_psu_cost", 1)
+            estimated_psu_cost=task.context.get("estimated_psu_cost", 1),
         )
 
-    async def _execute_plan(self, task: Task, plan: PlanningResult) -> List[Dict[str, Any]]:
+    async def _execute_plan(
+        self, task: Task, plan: PlanningResult
+    ) -> List[Dict[str, Any]]:
         """Execute the plan steps using the tool registry."""
         results = []
 
@@ -347,7 +356,7 @@ class AIOrchestrator:
                     "inputs": step.inputs,
                     "outputs": result,
                     "execution_time_ms": result.get("execution_time_ms", 0),
-                    "success": True
+                    "success": True,
                 }
                 results.append(step_result)
 
@@ -357,7 +366,7 @@ class AIOrchestrator:
                     "tool_name": step.tool_name,
                     "inputs": step.inputs,
                     "error": str(e),
-                    "success": False
+                    "success": False,
                 }
                 results.append(step_result)
 
@@ -367,9 +376,7 @@ class AIOrchestrator:
         return results
 
     async def _generate_patches(
-        self,
-        task: Task,
-        execution_results: List[Dict[str, Any]]
+        self, task: Task, execution_results: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Generate JSON-Patches from execution results."""
         patches = []
@@ -387,7 +394,7 @@ class AIOrchestrator:
                     "tool_name": result["tool_name"],
                     "operations": outputs["patch_operations"],
                     "evidence": outputs.get("evidence", []),
-                    "intent": outputs.get("intent", "Tool-generated change")
+                    "intent": outputs.get("intent", "Tool-generated change"),
                 }
                 patches.append(patch)
 

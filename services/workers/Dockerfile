@@ -22,6 +22,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r shared-requirements.txt && \
     pip install --no-cache-dir -r service-requirements.txt
 
+# Verify critical dependencies are importable
+RUN python -c "import psycopg2; print('psycopg2 imported successfully')" && \
+    python -c "import sqlalchemy; print('sqlalchemy imported successfully')" && \
+    python -c "import celery; print('celery imported successfully')"
+
 # Runtime stage
 FROM python:3.11-slim AS runtime
 

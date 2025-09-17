@@ -2,11 +2,12 @@
 Simple Phase 1 Test - Core AI Infrastructure
 Tests basic functionality of each component individually.
 """
+
 import asyncio
-import sys
-import os
 import json
 import logging
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -36,8 +37,11 @@ async def test_episodic_memory():
         interaction_id = await episodic.store_interaction(
             session_id="test_session",
             interaction_type="test_message",
-            content={"message": "Test content", "timestamp": datetime.utcnow().isoformat()},
-            agent_id="test_agent"
+            content={
+                "message": "Test content",
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+            agent_id="test_agent",
         )
 
         # Retrieve interactions
@@ -71,7 +75,7 @@ async def test_semantic_memory():
             knowledge_type="test_fact",
             title="Test Knowledge",
             content="This is test knowledge content for validation.",
-            tags=["test", "validation"]
+            tags=["test", "validation"],
         )
 
         # Retrieve knowledge
@@ -92,7 +96,7 @@ async def test_cag_store():
     logger.info("Testing CAG Store...")
 
     try:
-        from memory.cag_store import CAGStore, CacheType
+        from memory.cag_store import CacheType, CAGStore
 
         # Create test database
         db_path = Path("test_data/cag_test.db")
@@ -104,7 +108,7 @@ async def test_cag_store():
         success = await cag.set(
             cache_key="test_key",
             content=test_content,
-            cache_type=CacheType.PROMPT_RESPONSE
+            cache_type=CacheType.PROMPT_RESPONSE,
         )
 
         assert success, "Failed to store content"
@@ -126,7 +130,7 @@ async def test_graph_rag():
     logger.info("Testing Graph-RAG...")
 
     try:
-        from memory.graph_rag import ODLSDGraphRAG, GraphQuery
+        from memory.graph_rag import GraphQuery, ODLSDGraphRAG
 
         # Create test database
         db_path = Path("test_data/graph_test.db")
@@ -141,15 +145,13 @@ async def test_graph_rag():
                 "test_panel": {
                     "name": "Test Solar Panel",
                     "type": "solar_panel",
-                    "specifications": {"power": 400}
+                    "specifications": {"power": 400},
                 }
-            }
+            },
         }
 
         count = await graph.ingest_odl_document(
-            document=test_doc,
-            document_id="test_doc",
-            project_id="test_project"
+            document=test_doc, document_id="test_doc", project_id="test_project"
         )
 
         assert count > 0, "No nodes/edges created"
@@ -175,7 +177,7 @@ async def test_task_planner():
         plan = await planner.create_plan(
             task_type="general_query",
             task_description="Test task planning functionality",
-            context={"test_mode": True}
+            context={"test_mode": True},
         )
 
         assert plan.steps, "No plan steps created"
@@ -194,7 +196,7 @@ async def test_policy_router():
     logger.info("Testing Policy Router...")
 
     try:
-        from planner.policy_router import PolicyRouter, PolicyDecision
+        from planner.policy_router import PolicyDecision, PolicyRouter
 
         router = PolicyRouter()
 
@@ -209,7 +211,7 @@ async def test_policy_router():
             estimated_psu_cost=10,
             estimated_duration_ms=5000,
             required_permissions=[],
-            context={"user_role": "admin"}
+            context={"user_role": "admin"},
         )
 
         assert decision == PolicyDecision.APPROVE, f"Policy denied: {reason}"
@@ -227,7 +229,7 @@ async def test_region_router():
     logger.info("Testing Region Router...")
 
     try:
-        from planner.region_router import RegionRouter, ModelCapability
+        from planner.region_router import ModelCapability, RegionRouter
 
         router = RegionRouter()
 
@@ -237,9 +239,7 @@ async def test_region_router():
 
         # Select model
         selection = await router.select_model(
-            capability=ModelCapability.TEXT_GENERATION,
-            region=config.region,
-            context={}
+            capability=ModelCapability.TEXT_GENERATION, region=config.region, context={}
         )
 
         assert selection.selected_model is not None, "No model selected"
@@ -274,15 +274,13 @@ async def test_critic_verifier():
                 success=True,
                 content={"result": "Test successful execution"},
                 execution_time_ms=1000,
-                intent="Test execution"
+                intent="Test execution",
             )
         ]
 
         # Verify results
         verification = await critic.verify_results(
-            plan=MockPlan(),
-            execution_results=results,
-            context={}
+            plan=MockPlan(), execution_results=results, context={}
         )
 
         assert verification.overall_score >= 0, "Invalid verification score"
@@ -354,6 +352,7 @@ async def run_all_tests():
 async def cleanup():
     """Clean up test data."""
     import shutil
+
     test_dir = Path("test_data")
     if test_dir.exists():
         try:
@@ -364,6 +363,7 @@ async def cleanup():
 
 
 if __name__ == "__main__":
+
     async def main():
         success = await run_all_tests()
         await cleanup()
@@ -372,4 +372,3 @@ if __name__ == "__main__":
     # Run the tests
     success = asyncio.run(main())
     sys.exit(0 if success else 1)
-

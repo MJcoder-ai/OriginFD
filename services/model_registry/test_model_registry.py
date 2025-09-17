@@ -1,10 +1,12 @@
-from fastapi.testclient import TestClient
-from services.model_registry.api import router, registry
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from services.model_registry.api import registry, router
 
 app = FastAPI()
 app.include_router(router, prefix="/model-registry")
 client = TestClient(app)
+
 
 def test_list_models():
     response = client.get("/model-registry/models")

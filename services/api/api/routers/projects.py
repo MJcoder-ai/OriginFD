@@ -4,18 +4,25 @@ Project management endpoints.
 
 import logging
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import httpx
+
+
 # Simple auth bypass for testing
 def get_current_user(*args, **kwargs):
     return {"id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc", "email": "admin@originfd.com"}
+
+
 from core.config import get_settings
+
 
 # Temporary mock for testing without auth
 def get_mock_user():
     return {"id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc", "email": "admin@originfd.com"}
+
+
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.project import Project, ProjectDomain, ProjectScale, ProjectStatus
@@ -23,6 +30,7 @@ from models.user import User
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
+
 # Temporarily disabled due to import issues:
 # from services.orchestrator.agents.agent_manager import AgentManager
 
@@ -513,7 +521,7 @@ async def get_project_stats(
 
     return {
         "total_projects": total_projects,
-       "active_projects": active_projects,
+        "active_projects": active_projects,
         "pv_projects": pv_projects,
         "bess_projects": bess_projects,
         "hybrid_projects": hybrid_projects,
@@ -540,8 +548,16 @@ async def get_project_lifecycle(
                 "name": "Design",
                 "status": "completed",
                 "gates": [
-                    {"id": "site_assessment", "name": "Site Assessment", "status": "completed"},
-                    {"id": "bom_approval", "name": "BOM Approval", "status": "completed"},
+                    {
+                        "id": "site_assessment",
+                        "name": "Site Assessment",
+                        "status": "completed",
+                    },
+                    {
+                        "id": "bom_approval",
+                        "name": "BOM Approval",
+                        "status": "completed",
+                    },
                 ],
             },
             {
@@ -549,7 +565,11 @@ async def get_project_lifecycle(
                 "name": "Procurement",
                 "status": "current",
                 "gates": [
-                    {"id": "supplier_selection", "name": "Supplier Selection", "status": "blocked"},
+                    {
+                        "id": "supplier_selection",
+                        "name": "Supplier Selection",
+                        "status": "blocked",
+                    },
                     {
                         "id": "contract_signed",
                         "name": "Contract Signed",

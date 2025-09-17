@@ -2,26 +2,29 @@
 CAG (Cache-Augmented Generation) Store for OriginFD AI Orchestrator.
 Implements intelligent caching for prompts, embeddings, tool outputs, and simulations.
 """
+
 import asyncio
+import hashlib
 import json
 import logging
-import hashlib
 import pickle
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union
-from uuid import uuid4
-from pydantic import BaseModel
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import uuid4
+
 import aioredis
 import aiosqlite
-from pathlib import Path
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
 class CacheType(str, Enum):
     """Types of cached content."""
+
     PROMPT_RESPONSE = "prompt_response"
     EMBEDDING = "embedding"
     TOOL_OUTPUT = "tool_output"
@@ -32,6 +35,7 @@ class CacheType(str, Enum):
 
 class CacheEntry(BaseModel):
     """Individual cache entry."""
+
     cache_key: str
     cache_type: CacheType
     content: Any
@@ -50,6 +54,7 @@ class CacheEntry(BaseModel):
 
 class CacheStats(BaseModel):
     """Cache performance statistics."""
+
     total_entries: int
     total_size_bytes: int
     hit_rate: float
@@ -78,7 +83,7 @@ class CAGStore:
         self,
         redis_url: str = "redis://localhost:6379",
         db_path: Optional[Path] = None,
-        max_memory_mb: int = 512
+        max_memory_mb: int = 512,
     ):
         self.redis_url = redis_url
         self.db_path = db_path or Path("data/cag_store.db")
@@ -96,7 +101,7 @@ class CAGStore:
             CacheType.TOOL_OUTPUT: timedelta(hours=2),
             CacheType.SIMULATION_RESULT: timedelta(hours=12),
             CacheType.KNOWLEDGE_RETRIEVAL: timedelta(hours=4),
-            CacheType.AGENT_PLAN: timedelta(minutes=30)
+            CacheType.AGENT_PLAN: timedelta(minutes=30),
         }
 
         # Performance tracking
@@ -109,7 +114,7 @@ class CAGStore:
             entries_by_type={},
             top_accessed_keys=[],
             eviction_count=0,
-            expired_count=0
+            expired_count=0,
         )
 
         # Background tasks
@@ -127,12 +132,14 @@ class CAGStore:
             self.redis_client = await aioredis.from_url(
                 self.redis_url,
                 decode_responses=False,  # We'll handle encoding ourselves
-                max_connections=20
+                max_connections=20,
             )
             await self.redis_client.ping()
             logger.info("Redis connection established")
         except Exception as e:
-            logger.warning(f"Redis connection failed: {e}. Falling back to SQLite only.")
+            logger.warning(
+                f"Redis connection failed: {e}. Falling back to SQLite only."
+            )
             self.use_redis = False
 
         # Initialize SQLite database
@@ -148,9 +155,7 @@ class CAGStore:
         logger.info("CAGStore initialized successfully")
 
     async def get(
-        self,
-        cache_key: str,
-        cache_type: Optional[CacheType] = None
+        self, cache_key: str, cache_type: Optional[CacheType] = None
     ) -> Optional[Any]:
         """Retrieve content from cache."""
         start_time = time.time()
@@ -191,7 +196,7 @@ class CAGStore:
         tags: List[str] = None,
         tenant_id: Optional[str] = None,
         user_id: Optional[str] = None,
-        metadata: Dict[str, Any] = None
+        metadata: Dict[str, Any] = None,
     ) -> bool:
         """Store content in cache."""
         try:
@@ -200,7 +205,9 @@ class CAGStore:
             size_bytes = len(content_bytes)
 
             # Check memory limits
-            if size_bytes > self.max_memory_bytes * 0.1:  # Don't cache items > 10% of max memory
+            if (
+                size_bytes > self.max_memory_bytes * 0.1
+            ):  # Don't cache items > 10% of max memory
                 logger.warning(f"Content too large to cache: {size_bytes} bytes")
                 return False
 
@@ -219,7 +226,7 @@ class CAGStore:
                 size_bytes=size_bytes,
                 tags=tags or [],
                 tenant_id=tenant_id,
-                user_id=user_id
+                user_id=user_id,
             )
 
             # Store in Redis (hot cache)
@@ -249,7 +256,7 @@ class CAGStore:
         cache_key: Optional[str] = None,
         cache_type: Optional[CacheType] = None,
         tags: Optional[List[str]] = None,
-        tenant_id: Optional[str] = None
+        tenant_id: Optional[str] = None,
     ) -> int:
         """Invalidate cache entries based on criteria."""
         invalidated_count = 0
@@ -320,11 +327,7 @@ class CAGStore:
             logger.error(f"Cache invalidation error: {e}")
             return 0
 
-    async def warm_cache(
-        self,
-        warming_strategy: str,
-        context: Dict[str, Any]
-    ):
+    async def warm_cache(self, warming_strategy: str, context: Dict[str, Any]):
         """Warm cache with commonly accessed content."""
         logger.info(f"Starting cache warming with strategy: {warming_strategy}")
 
@@ -349,10 +352,13 @@ class CAGStore:
 
             # Clean up SQLite
             async with aiosqlite.connect(self.db_path) as db:
-                async with db.execute("""
+                async with db.execute(
+                    """
                     SELECT cache_key, size_bytes FROM cache_entries
                     WHERE expires_at < ?
-                """, (current_time.isoformat(),)) as cursor:
+                """,
+                    (current_time.isoformat(),),
+                ) as cursor:
                     expired_rows = await cursor.fetchall()
 
                 if expired_rows:
@@ -363,9 +369,12 @@ class CAGStore:
                             await self.redis_client.delete(*expired_keys)
 
                     # Remove from SQLite
-                    await db.execute("""
+                    await db.execute(
+                        """
                         DELETE FROM cache_entries WHERE expires_at < ?
-                    """, (current_time.isoformat(),))
+                    """,
+                        (current_time.isoformat(),),
+                    )
                     await db.commit()
 
                     # Update stats
@@ -390,7 +399,8 @@ class CAGStore:
     async def _create_tables(self):
         """Create SQLite database tables."""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
+            await db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS cache_entries (
                     cache_key TEXT PRIMARY KEY,
                     cache_type TEXT NOT NULL,
@@ -407,13 +417,22 @@ class CAGStore:
                     tenant_id TEXT,
                     user_id TEXT
                 )
-            """)
+            """
+            )
 
             # Create indexes
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_cache_type ON cache_entries(cache_type)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_expires_at ON cache_entries(expires_at)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_tenant_id ON cache_entries(tenant_id)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_access_count ON cache_entries(access_count)")
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cache_type ON cache_entries(cache_type)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_expires_at ON cache_entries(expires_at)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_tenant_id ON cache_entries(tenant_id)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_access_count ON cache_entries(access_count)"
+            )
 
             await db.commit()
 
@@ -433,18 +452,14 @@ class CAGStore:
         cache_key: str,
         content: Any,
         cache_type: Optional[CacheType] = None,
-        ttl: Optional[timedelta] = None
+        ttl: Optional[timedelta] = None,
     ):
         """Set content in Redis."""
         try:
             content_bytes = self._serialize_content(content)
             ttl_seconds = int(ttl.total_seconds()) if ttl else 3600  # 1 hour default
 
-            await self.redis_client.setex(
-                cache_key,
-                ttl_seconds,
-                content_bytes
-            )
+            await self.redis_client.setex(cache_key, ttl_seconds, content_bytes)
         except Exception as e:
             logger.error(f"Redis set error: {e}")
 
@@ -452,10 +467,13 @@ class CAGStore:
         """Get content from SQLite."""
         try:
             async with aiosqlite.connect(self.db_path) as db:
-                async with db.execute("""
+                async with db.execute(
+                    """
                     SELECT content, expires_at FROM cache_entries
                     WHERE cache_key = ?
-                """, (cache_key,)) as cursor:
+                """,
+                    (cache_key,),
+                ) as cursor:
                     row = await cursor.fetchone()
 
                     if row:
@@ -468,18 +486,21 @@ class CAGStore:
                                 # Entry expired, remove it
                                 await db.execute(
                                     "DELETE FROM cache_entries WHERE cache_key = ?",
-                                    (cache_key,)
+                                    (cache_key,),
                                 )
                                 await db.commit()
                                 return None
 
                         # Update access info
-                        await db.execute("""
+                        await db.execute(
+                            """
                             UPDATE cache_entries
                             SET access_count = access_count + 1,
                                 last_accessed = ?
                             WHERE cache_key = ?
-                        """, (datetime.utcnow().isoformat(), cache_key))
+                        """,
+                            (datetime.utcnow().isoformat(), cache_key),
+                        )
                         await db.commit()
 
                         return self._deserialize_content(content_blob)
@@ -495,23 +516,26 @@ class CAGStore:
             content_bytes = self._serialize_content(entry.content)
 
             async with aiosqlite.connect(self.db_path) as db:
-                await db.execute("""
+                await db.execute(
+                    """
                     INSERT OR REPLACE INTO cache_entries
                     (cache_key, cache_type, content, metadata, created_at,
                      expires_at, size_bytes, tags, tenant_id, user_id)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    entry.cache_key,
-                    entry.cache_type.value,
-                    content_bytes,
-                    json.dumps(entry.metadata),
-                    entry.created_at.isoformat(),
-                    entry.expires_at.isoformat() if entry.expires_at else None,
-                    entry.size_bytes,
-                    json.dumps(entry.tags),
-                    entry.tenant_id,
-                    entry.user_id
-                ))
+                """,
+                    (
+                        entry.cache_key,
+                        entry.cache_type.value,
+                        content_bytes,
+                        json.dumps(entry.metadata),
+                        entry.created_at.isoformat(),
+                        entry.expires_at.isoformat() if entry.expires_at else None,
+                        entry.size_bytes,
+                        json.dumps(entry.tags),
+                        entry.tenant_id,
+                        entry.user_id,
+                    ),
+                )
                 await db.commit()
         except Exception as e:
             logger.error(f"SQLite set error: {e}")
@@ -535,7 +559,9 @@ class CAGStore:
 
         # Update response time
         current_avg = self.stats.average_response_time_ms
-        self.stats.average_response_time_ms = (current_avg + response_time_ms * 1000) / 2
+        self.stats.average_response_time_ms = (
+            current_avg + response_time_ms * 1000
+        ) / 2
 
     async def _record_miss(self, cache_key: str, response_time_ms: float):
         """Record cache miss statistics."""
@@ -557,13 +583,15 @@ class CAGStore:
 
             async with aiosqlite.connect(self.db_path) as db:
                 # Get LRU entries
-                async with db.execute("""
+                async with db.execute(
+                    """
                     SELECT cache_key, size_bytes FROM cache_entries
                     ORDER BY
                         COALESCE(last_accessed, created_at) ASC,
                         access_count ASC
                     LIMIT 100
-                """) as cursor:
+                """
+                ) as cursor:
                     lru_entries = await cursor.fetchall()
 
                 freed_bytes = 0
@@ -585,7 +613,7 @@ class CAGStore:
                     placeholders = ",".join("?" * len(evicted_keys))
                     await db.execute(
                         f"DELETE FROM cache_entries WHERE cache_key IN ({placeholders})",
-                        evicted_keys
+                        evicted_keys,
                     )
                     await db.commit()
 
@@ -594,7 +622,9 @@ class CAGStore:
                     self.stats.total_size_bytes -= freed_bytes
                     self.stats.eviction_count += len(evicted_keys)
 
-                    logger.info(f"Evicted {len(evicted_keys)} LRU entries, freed {freed_bytes} bytes")
+                    logger.info(
+                        f"Evicted {len(evicted_keys)} LRU entries, freed {freed_bytes} bytes"
+                    )
 
         except Exception as e:
             logger.error(f"LRU eviction error: {e}")
@@ -619,19 +649,23 @@ class CAGStore:
         try:
             async with aiosqlite.connect(self.db_path) as db:
                 # Get total entries and size
-                async with db.execute("""
+                async with db.execute(
+                    """
                     SELECT COUNT(*), COALESCE(SUM(size_bytes), 0) FROM cache_entries
-                """) as cursor:
+                """
+                ) as cursor:
                     row = await cursor.fetchone()
                     if row:
                         self.stats.total_entries = row[0]
                         self.stats.total_size_bytes = row[1]
 
                 # Get entries by type
-                async with db.execute("""
+                async with db.execute(
+                    """
                     SELECT cache_type, COUNT(*) FROM cache_entries
                     GROUP BY cache_type
-                """) as cursor:
+                """
+                ) as cursor:
                     rows = await cursor.fetchall()
                     self.stats.entries_by_type = {
                         CacheType(row[0]): row[1] for row in rows
@@ -645,11 +679,13 @@ class CAGStore:
         try:
             async with aiosqlite.connect(self.db_path) as db:
                 # Get top accessed keys
-                async with db.execute("""
+                async with db.execute(
+                    """
                     SELECT cache_key, access_count FROM cache_entries
                     ORDER BY access_count DESC
                     LIMIT 10
-                """) as cursor:
+                """
+                ) as cursor:
                     rows = await cursor.fetchall()
                     self.stats.top_accessed_keys = [(row[0], row[1]) for row in rows]
 
@@ -680,4 +716,3 @@ class CAGStore:
             except Exception as e:
                 logger.error(f"Stats updater error: {e}")
                 await asyncio.sleep(300)  # Wait 5 minutes on error
-

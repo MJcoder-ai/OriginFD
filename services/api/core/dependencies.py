@@ -1,17 +1,20 @@
 """
 FastAPI dependency functions for authentication and caching
 """
+
 import json
 from functools import lru_cache
 from typing import Annotated, Optional
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+
 import redis
-from .auth import verify_token
-from .database import get_db
-from .config import settings
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from models.user import User
+from sqlalchemy.orm import Session
+
+from .auth import verify_token
+from .config import settings
+from .database import get_db
 
 # HTTP Bearer token scheme
 security = HTTPBearer()
@@ -19,7 +22,7 @@ security = HTTPBearer()
 
 async def get_current_user_from_token(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """
     Dependency to get current user from JWT token
@@ -34,21 +37,19 @@ async def get_current_user_from_token(
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: missing user ID"
+            detail="Invalid token: missing user ID",
         )
 
     # Get user from database
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
 
     # Convert to dict for compatibility
@@ -57,7 +58,7 @@ async def get_current_user_from_token(
         "email": user.email,
         "full_name": user.full_name,
         "is_active": user.is_active,
-        "roles": user.roles
+        "roles": user.roles,
     }
 
 
@@ -75,14 +76,17 @@ def require_roles(*required_roles: str):
     Dependency factory to require specific roles
     Usage: Depends(require_roles("admin", "engineer"))
     """
-    def role_checker(current_user: Annotated[dict, Depends(get_current_active_user)]) -> dict:
+
+    def role_checker(
+        current_user: Annotated[dict, Depends(get_current_active_user)]
+    ) -> dict:
         user_roles = current_user.get("roles", [])
 
         # Check if user has any of the required roles
         if not any(role in user_roles for role in required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required roles: {', '.join(required_roles)}"
+                detail=f"Access denied. Required roles: {', '.join(required_roles)}",
             )
 
         return current_user
@@ -100,6 +104,7 @@ EngineerUser = Annotated[dict, Depends(require_roles("admin", "engineer"))]
 # Redis Caching Dependencies
 # =====================================
 
+
 @lru_cache()
 def get_redis_client() -> redis.Redis:
     """
@@ -112,7 +117,7 @@ def get_redis_client() -> redis.Redis:
             decode_responses=True,
             max_connections=20,
             retry_on_timeout=True,
-            health_check_interval=30
+            health_check_interval=30,
         )
         # Test connection
         redis_client.ping()
@@ -120,6 +125,7 @@ def get_redis_client() -> redis.Redis:
     except Exception as e:
         # Fall back to mock implementation if Redis is unavailable
         from unittest.mock import MagicMock
+
         mock_redis = MagicMock()
         mock_redis.get.return_value = None
         mock_redis.set.return_value = True
@@ -176,7 +182,9 @@ class CacheService:
         """Get cached component data."""
         return self.get_cached_data(f"component:{component_id}")
 
-    def cache_component(self, component_id: int, component_data: dict, ttl: int = 600) -> bool:
+    def cache_component(
+        self, component_id: int, component_data: dict, ttl: int = 600
+    ) -> bool:
         """Cache component data with 10-minute TTL."""
         return self.set_cached_data(f"component:{component_id}", component_data, ttl)
 
@@ -184,7 +192,9 @@ class CacheService:
         """Get cached project data."""
         return self.get_cached_data(f"project:{project_id}")
 
-    def cache_project(self, project_id: str, project_data: dict, ttl: int = 300) -> bool:
+    def cache_project(
+        self, project_id: str, project_data: dict, ttl: int = 300
+    ) -> bool:
         """Cache project data with 5-minute TTL."""
         return self.set_cached_data(f"project:{project_id}", project_data, ttl)
 

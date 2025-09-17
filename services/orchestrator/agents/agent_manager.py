@@ -2,24 +2,27 @@
 AI Agent Management System for OriginFD Platform.
 Handles agent lifecycle, coordination, and performance monitoring.
 """
+
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Any, Set, Tuple
-from pydantic import BaseModel
-import logging
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from .base_agent import BaseAgent, AgentContext, AgentResult, AgentStatus
+from pydantic import BaseModel
+
 from ..memory.episodic import EpisodicMemory
 from ..memory.semantic import SemanticMemory
 from ..tools.registry import ToolRegistry
+from .base_agent import AgentContext, AgentResult, AgentStatus, BaseAgent
 
 logger = logging.getLogger(__name__)
 
 
 class TaskPriority(str, Enum):
     """Task priority levels."""
+
     CRITICAL = "critical"
     HIGH = "high"
     NORMAL = "normal"
@@ -28,6 +31,7 @@ class TaskPriority(str, Enum):
 
 class TaskStatus(str, Enum):
     """Task execution status."""
+
     PENDING = "pending"
     ASSIGNED = "assigned"
     EXECUTING = "executing"
@@ -38,6 +42,7 @@ class TaskStatus(str, Enum):
 
 class AgentTask(BaseModel):
     """Task assigned to an agent."""
+
     task_id: str
     description: str
     priority: TaskPriority
@@ -55,6 +60,7 @@ class AgentTask(BaseModel):
 
 class AgentCapabilityMatch(BaseModel):
     """Agent capability matching result."""
+
     agent_id: str
     agent_name: str
     match_score: float
@@ -81,7 +87,7 @@ class AgentManager:
         self,
         tool_registry: ToolRegistry,
         episodic_memory: EpisodicMemory,
-        semantic_memory: SemanticMemory
+        semantic_memory: SemanticMemory,
     ):
         self.tool_registry = tool_registry
         self.episodic_memory = episodic_memory
@@ -104,7 +110,7 @@ class AgentManager:
             "failed_tasks": 0,
             "average_execution_time_ms": 0,
             "total_cost_psu": 0,
-            "agent_utilization": {}
+            "agent_utilization": {},
         }
 
         # Configuration
@@ -127,7 +133,7 @@ class AgentManager:
             asyncio.create_task(self._task_scheduler()),
             asyncio.create_task(self._performance_monitor()),
             asyncio.create_task(self._cleanup_worker()),
-            asyncio.create_task(self._health_checker())
+            asyncio.create_task(self._health_checker()),
         ]
 
         logger.info("AgentManager started successfully")
@@ -163,7 +169,7 @@ class AgentManager:
             "average_execution_time_ms": 0,
             "total_cost_psu": 0,
             "current_load": 0,
-            "last_activity": datetime.utcnow()
+            "last_activity": datetime.utcnow(),
         }
 
         logger.info(f"Registered agent: {agent.name} ({agent.agent_id})")
@@ -191,7 +197,7 @@ class AgentManager:
         description: str,
         context: Dict[str, Any],
         priority: TaskPriority = TaskPriority.NORMAL,
-        preferred_agent: Optional[str] = None
+        preferred_agent: Optional[str] = None,
     ) -> str:
         """Submit a new task for execution."""
         task = AgentTask(
@@ -200,7 +206,7 @@ class AgentManager:
             priority=priority,
             status=TaskStatus.PENDING,
             context=context,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
         # If preferred agent is specified and available, assign directly
@@ -257,7 +263,9 @@ class AgentManager:
 
         return False
 
-    async def find_best_agent(self, task_description: str, context: Dict[str, Any]) -> Optional[AgentCapabilityMatch]:
+    async def find_best_agent(
+        self, task_description: str, context: Dict[str, Any]
+    ) -> Optional[AgentCapabilityMatch]:
         """Find the best agent for a given task."""
         if not self.agents:
             return None
@@ -266,7 +274,10 @@ class AgentManager:
 
         for agent_id, agent in self.agents.items():
             # Skip agents that are at capacity
-            if self._get_agent_current_load(agent_id) >= self.max_concurrent_tasks_per_agent:
+            if (
+                self._get_agent_current_load(agent_id)
+                >= self.max_concurrent_tasks_per_agent
+            ):
                 continue
 
             # Skip agents that are in error state
@@ -285,7 +296,7 @@ class AgentManager:
                     reasoning=assessment["reasoning"],
                     estimated_success_rate=assessment["estimated_success_rate"],
                     estimated_execution_time_ms=agent.average_execution_time_ms,
-                    estimated_cost_psu=3  # TODO: Estimate based on task complexity
+                    estimated_cost_psu=3,  # TODO: Estimate based on task complexity
                 )
                 capability_matches.append(match)
 
@@ -294,8 +305,7 @@ class AgentManager:
 
         # Sort by match score and success rate
         capability_matches.sort(
-            key=lambda m: (m.match_score * m.estimated_success_rate),
-            reverse=True
+            key=lambda m: (m.match_score * m.estimated_success_rate), reverse=True
         )
 
         return capability_matches[0]
@@ -309,7 +319,7 @@ class AgentManager:
                 "status": agent.status,
                 "current_load": self._get_agent_current_load(agent_id),
                 "performance": self.agent_performance.get(agent_id, {}),
-                "capabilities": self.agent_capabilities.get(agent_id, [])
+                "capabilities": self.agent_capabilities.get(agent_id, []),
             }
 
         return {
@@ -317,15 +327,19 @@ class AgentManager:
             "tasks": {
                 "pending": len(self.pending_tasks),
                 "active": len(self.active_tasks),
-                "completed": len(self.completed_tasks)
+                "completed": len(self.completed_tasks),
             },
             "metrics": self.system_metrics,
             "health": {
                 "total_agents": len(self.agents),
-                "healthy_agents": len([a for a in self.agents.values() if a.status != AgentStatus.ERROR]),
-                "system_load": sum(self._get_agent_current_load(aid) for aid in self.agents.keys()),
-                "uptime": datetime.utcnow()  # TODO: Track actual uptime
-            }
+                "healthy_agents": len(
+                    [a for a in self.agents.values() if a.status != AgentStatus.ERROR]
+                ),
+                "system_load": sum(
+                    self._get_agent_current_load(aid) for aid in self.agents.keys()
+                ),
+                "uptime": datetime.utcnow(),  # TODO: Track actual uptime
+            },
         }
 
     async def optimize_agent_allocation(self):
@@ -335,7 +349,8 @@ class AgentManager:
 
         # Redistribute tasks if needed
         underperforming_agents = [
-            agent_id for agent_id, perf in performance_analysis.items()
+            agent_id
+            for agent_id, perf in performance_analysis.items()
             if perf["success_rate"] < 0.7 and perf["tasks_completed"] > 10
         ]
 
@@ -410,7 +425,7 @@ class AgentManager:
         self.pending_tasks.sort(
             key=lambda t: (
                 {"critical": 0, "high": 1, "normal": 2, "low": 3}[t.priority],
-                t.created_at
+                t.created_at,
             )
         )
 
@@ -419,7 +434,9 @@ class AgentManager:
             if task.status == TaskStatus.PENDING:
                 # Find best agent if not already assigned
                 if not task.assigned_agent:
-                    best_match = await self.find_best_agent(task.description, task.context)
+                    best_match = await self.find_best_agent(
+                        task.description, task.context
+                    )
                     if best_match:
                         task.assigned_agent = best_match.agent_id
                         task.status = TaskStatus.ASSIGNED
@@ -452,7 +469,7 @@ class AgentManager:
             current_state=task.context,
             shared_scratchpad={},
             conversation_history=[],
-            project_context=task.context.get("project_context")
+            project_context=task.context.get("project_context"),
         )
 
         # Start execution
@@ -493,7 +510,9 @@ class AgentManager:
             self.completed_tasks.append(task)
             self.agent_performance[task.assigned_agent]["current_load"] -= 1
             self.agent_performance[task.assigned_agent]["tasks_completed"] += 1
-            self.agent_performance[task.assigned_agent]["last_activity"] = datetime.utcnow()
+            self.agent_performance[task.assigned_agent][
+                "last_activity"
+            ] = datetime.utcnow()
 
     def _get_agent_current_load(self, agent_id: str) -> int:
         """Get current task load for an agent."""
@@ -507,12 +526,17 @@ class AgentManager:
             if perf["tasks_completed"] > 0:
                 # Calculate success rate from recent tasks
                 recent_tasks = [
-                    t for t in self.completed_tasks[-100:]  # Last 100 tasks
+                    t
+                    for t in self.completed_tasks[-100:]  # Last 100 tasks
                     if t.assigned_agent == agent_id and t.completed_at
                 ]
 
-                successful_tasks = len([t for t in recent_tasks if t.status == TaskStatus.COMPLETED])
-                success_rate = successful_tasks / len(recent_tasks) if recent_tasks else 0.0
+                successful_tasks = len(
+                    [t for t in recent_tasks if t.status == TaskStatus.COMPLETED]
+                )
+                success_rate = (
+                    successful_tasks / len(recent_tasks) if recent_tasks else 0.0
+                )
 
                 analysis[agent_id] = {
                     "success_rate": success_rate,
@@ -520,7 +544,7 @@ class AgentManager:
                     "average_execution_time": perf["average_execution_time_ms"],
                     "total_cost": perf["total_cost_psu"],
                     "current_load": perf["current_load"],
-                    "last_activity": perf["last_activity"]
+                    "last_activity": perf["last_activity"],
                 }
 
         return analysis
@@ -532,12 +556,16 @@ class AgentManager:
 
         for task in self.completed_tasks[-1000:]:  # Last 1000 tasks
             if task.result and task.started_at and task.completed_at:
-                execution_time = (task.completed_at - task.started_at).total_seconds() * 1000
+                execution_time = (
+                    task.completed_at - task.started_at
+                ).total_seconds() * 1000
                 total_time += execution_time
                 completed_count += 1
 
         if completed_count > 0:
-            self.system_metrics["average_execution_time_ms"] = int(total_time / completed_count)
+            self.system_metrics["average_execution_time_ms"] = int(
+                total_time / completed_count
+            )
 
         # Update agent utilization
         for agent_id in self.agents:
@@ -550,7 +578,8 @@ class AgentManager:
         cutoff_time = datetime.utcnow() - timedelta(days=7)  # Keep 7 days
 
         self.completed_tasks = [
-            task for task in self.completed_tasks
+            task
+            for task in self.completed_tasks
             if not task.completed_at or task.completed_at > cutoff_time
         ]
 
@@ -570,7 +599,9 @@ class AgentManager:
             if perf["last_activity"]:
                 inactive_time = datetime.utcnow() - perf["last_activity"]
                 if inactive_time > timedelta(hours=1):
-                    logger.warning(f"Agent {agent_id} has been inactive for {inactive_time}")
+                    logger.warning(
+                        f"Agent {agent_id} has been inactive for {inactive_time}"
+                    )
 
             # Check error states
             if agent.status == AgentStatus.ERROR:

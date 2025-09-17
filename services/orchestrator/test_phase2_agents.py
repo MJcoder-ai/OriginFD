@@ -2,10 +2,11 @@
 Phase 2 Test - AI Agent Implementation
 Tests the DesignEngineerAgent and SalesAdvisorAgent functionality.
 """
+
 import asyncio
-import sys
-import os
 import logging
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -13,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -22,8 +23,8 @@ async def test_design_engineer_agent():
     logger.info("Testing DesignEngineerAgent...")
 
     try:
-        from agents.design_engineer_agent import DesignEngineerAgent
         from agents.base_agent import AgentContext
+        from agents.design_engineer_agent import DesignEngineerAgent
         from memory.episodic import EpisodicMemory
         from memory.semantic import SemanticMemory
         from tools.registry import ToolRegistry
@@ -42,9 +43,15 @@ async def test_design_engineer_agent():
         agent = DesignEngineerAgent(tool_registry, episodic, semantic)
 
         # Test capability assessment
-        assessment = await agent.get_capability_assessment("Validate ODL-SD document for solar project")
-        assert assessment["can_handle"], "Agent should be able to handle ODL-SD validation"
-        assert assessment["overall_confidence"] > 0.6, f"Low confidence: {assessment['overall_confidence']}"
+        assessment = await agent.get_capability_assessment(
+            "Validate ODL-SD document for solar project"
+        )
+        assert assessment[
+            "can_handle"
+        ], "Agent should be able to handle ODL-SD validation"
+        assert (
+            assessment["overall_confidence"] > 0.6
+        ), f"Low confidence: {assessment['overall_confidence']}"
 
         # Test plan creation
         context = AgentContext(
@@ -55,18 +62,22 @@ async def test_design_engineer_agent():
             current_state={
                 "task_description": "Validate ODL-SD document and run energy simulation",
                 "odl_document": {"project_name": "Test Solar Project", "domain": "PV"},
-                "design_data": {"system_size": 10000, "location": "California"}
+                "design_data": {"system_size": 10000, "location": "California"},
             },
             shared_scratchpad={},
-            conversation_history=[]
+            conversation_history=[],
         )
 
-        plan = await agent.create_plan("Validate ODL-SD document and run energy simulation", context)
+        plan = await agent.create_plan(
+            "Validate ODL-SD document and run energy simulation", context
+        )
         assert plan.steps, "Plan should have steps"
         assert plan.confidence > 0.5, f"Low plan confidence: {plan.confidence}"
         assert len(plan.steps) >= 2, f"Expected multiple steps, got {len(plan.steps)}"
 
-        logger.info(f"✓ Design plan created with {len(plan.steps)} steps, confidence: {plan.confidence:.2f}")
+        logger.info(
+            f"✓ Design plan created with {len(plan.steps)} steps, confidence: {plan.confidence:.2f}"
+        )
 
         # Test plan execution (simplified)
         result = await agent.execute_plan(plan, context)
@@ -74,14 +85,24 @@ async def test_design_engineer_agent():
         assert result.result, "Execution should return results"
         assert result.quality_score > 0.0, "Quality score should be positive"
 
-        logger.info(f"✓ Design plan executed successfully, quality: {result.quality_score:.2f}")
+        logger.info(
+            f"✓ Design plan executed successfully, quality: {result.quality_score:.2f}"
+        )
 
         # Test different task types
-        optimization_plan = await agent.create_plan("Optimize solar panel layout for maximum efficiency", context)
-        assert "optimize" in optimization_plan.reasoning.lower(), "Plan should mention optimization"
+        optimization_plan = await agent.create_plan(
+            "Optimize solar panel layout for maximum efficiency", context
+        )
+        assert (
+            "optimize" in optimization_plan.reasoning.lower()
+        ), "Plan should mention optimization"
 
-        component_plan = await agent.create_plan("Analyze component compatibility", context)
-        assert len(component_plan.steps) > 0, "Component analysis plan should have steps"
+        component_plan = await agent.create_plan(
+            "Analyze component compatibility", context
+        )
+        assert (
+            len(component_plan.steps) > 0
+        ), "Component analysis plan should have steps"
 
         logger.info("✓ DesignEngineerAgent working correctly")
         return True
@@ -96,8 +117,8 @@ async def test_sales_advisor_agent():
     logger.info("Testing SalesAdvisorAgent...")
 
     try:
-        from agents.sales_advisor_agent import SalesAdvisorAgent
         from agents.base_agent import AgentContext
+        from agents.sales_advisor_agent import SalesAdvisorAgent
         from memory.episodic import EpisodicMemory
         from memory.semantic import SemanticMemory
         from tools.registry import ToolRegistry
@@ -116,9 +137,15 @@ async def test_sales_advisor_agent():
         agent = SalesAdvisorAgent(tool_registry, episodic, semantic)
 
         # Test capability assessment
-        assessment = await agent.get_capability_assessment("Calculate ROI for residential solar project")
-        assert assessment["can_handle"], "Agent should be able to handle ROI calculations"
-        assert assessment["overall_confidence"] > 0.6, f"Low confidence: {assessment['overall_confidence']}"
+        assessment = await agent.get_capability_assessment(
+            "Calculate ROI for residential solar project"
+        )
+        assert assessment[
+            "can_handle"
+        ], "Agent should be able to handle ROI calculations"
+        assert (
+            assessment["overall_confidence"] > 0.6
+        ), f"Low confidence: {assessment['overall_confidence']}"
 
         # Test financial analysis plan
         context = AgentContext(
@@ -132,26 +159,36 @@ async def test_sales_advisor_agent():
                 "annual_savings": 3500,
                 "system_lifetime": 25,
                 "location": "California",
-                "customer_data": {"type": "residential", "usage": "high"}
+                "customer_data": {"type": "residential", "usage": "high"},
             },
             shared_scratchpad={},
-            conversation_history=[]
+            conversation_history=[],
         )
 
-        plan = await agent.create_plan("Calculate ROI and payback period for solar installation", context)
+        plan = await agent.create_plan(
+            "Calculate ROI and payback period for solar installation", context
+        )
         assert plan.steps, "Plan should have steps"
         assert plan.confidence > 0.7, f"Low plan confidence: {plan.confidence}"
-        assert any("financial" in step["description"].lower() for step in plan.steps), "Should include financial analysis"
+        assert any(
+            "financial" in step["description"].lower() for step in plan.steps
+        ), "Should include financial analysis"
 
-        logger.info(f"✓ Sales plan created with {len(plan.steps)} steps, confidence: {plan.confidence:.2f}")
+        logger.info(
+            f"✓ Sales plan created with {len(plan.steps)} steps, confidence: {plan.confidence:.2f}"
+        )
 
         # Test plan execution
         result = await agent.execute_plan(plan, context)
         assert result.success, f"Sales plan execution failed: {result.error}"
         assert result.result, "Execution should return results"
-        assert result.result.get("financial_analysis"), "Should include financial analysis"
+        assert result.result.get(
+            "financial_analysis"
+        ), "Should include financial analysis"
 
-        logger.info(f"✓ Sales plan executed successfully, quality: {result.quality_score:.2f}")
+        logger.info(
+            f"✓ Sales plan executed successfully, quality: {result.quality_score:.2f}"
+        )
 
         # Test proposal generation
         proposal_context = AgentContext(
@@ -163,18 +200,26 @@ async def test_sales_advisor_agent():
                 "task_description": "Generate proposal for commercial solar project",
                 "customer_data": {"type": "commercial", "business": "manufacturing"},
                 "project_specs": {"size": 100000, "type": "rooftop"},
-                "pricing_strategy": "competitive"
+                "pricing_strategy": "competitive",
             },
             shared_scratchpad={},
-            conversation_history=[]
+            conversation_history=[],
         )
 
-        proposal_plan = await agent.create_plan("Generate proposal for commercial solar project", proposal_context)
-        assert any("proposal" in step["description"].lower() for step in proposal_plan.steps), "Should include proposal generation"
+        proposal_plan = await agent.create_plan(
+            "Generate proposal for commercial solar project", proposal_context
+        )
+        assert any(
+            "proposal" in step["description"].lower() for step in proposal_plan.steps
+        ), "Should include proposal generation"
 
         # Test incentive optimization
-        incentive_plan = await agent.create_plan("Find and optimize available incentives", context)
-        assert any("incentive" in step["description"].lower() for step in incentive_plan.steps), "Should include incentive analysis"
+        incentive_plan = await agent.create_plan(
+            "Find and optimize available incentives", context
+        )
+        assert any(
+            "incentive" in step["description"].lower() for step in incentive_plan.steps
+        ), "Should include incentive analysis"
 
         logger.info("✓ SalesAdvisorAgent working correctly")
         return True
@@ -214,13 +259,20 @@ async def test_agent_communication():
             target_agent_id="sales_advisor_agent",
             message="Design validation complete, ready for financial analysis",
             context={
-                "design_results": {"validation_status": "passed", "energy_output": 12500},
-                "project_data": {"cost": 30000, "size": 10000}
-            }
+                "design_results": {
+                    "validation_status": "passed",
+                    "energy_output": 12500,
+                },
+                "project_data": {"cost": 30000, "size": 10000},
+            },
         )
 
-        assert handover_result["acknowledged"], "Agent communication should be acknowledged"
-        assert handover_result["target_agent"] == "sales_advisor_agent", "Should target correct agent"
+        assert handover_result[
+            "acknowledged"
+        ], "Agent communication should be acknowledged"
+        assert (
+            handover_result["target_agent"] == "sales_advisor_agent"
+        ), "Should target correct agent"
 
         logger.info("✓ Agent communication working")
 
@@ -282,9 +334,9 @@ async def test_agent_manager_integration():
             description="Validate design and calculate ROI",
             context={
                 "project_data": {"cost": 25000, "savings": 3500},
-                "design_data": {"system_size": 10000}
+                "design_data": {"system_size": 10000},
             },
-            priority="normal"
+            priority="normal",
         )
 
         assert task_id, "Task submission should return task ID"
@@ -297,11 +349,13 @@ async def test_agent_manager_integration():
         # Test agent selection
         best_agent = await manager.find_best_agent(
             "Optimize solar panel layout for residential project",
-            {"domain": "PV", "project_type": "residential"}
+            {"domain": "PV", "project_type": "residential"},
         )
 
         assert best_agent, "Should find best agent for task"
-        assert best_agent.agent_id == "design_engineer_agent", "Should select design agent for optimization"
+        assert (
+            best_agent.agent_id == "design_engineer_agent"
+        ), "Should select design agent for optimization"
 
         logger.info("✓ AgentManager integration working")
 
@@ -369,7 +423,9 @@ async def run_phase2_tests():
         logger.info("🚀 Ready to proceed to Phase 3: User Experience")
         return True
     elif passed >= total * 0.75:  # 75% pass rate
-        logger.info(f"✅ {passed}/{total} tests passed - Core agent functionality working")
+        logger.info(
+            f"✅ {passed}/{total} tests passed - Core agent functionality working"
+        )
         logger.info("🚀 Ready to proceed to Phase 3 with minor issues to address")
         return True
     else:
@@ -381,6 +437,7 @@ async def run_phase2_tests():
 async def cleanup():
     """Clean up test data."""
     import shutil
+
     test_dir = Path("test_data")
     if test_dir.exists():
         try:
@@ -391,6 +448,7 @@ async def cleanup():
 
 
 if __name__ == "__main__":
+
     async def main():
         success = await run_phase2_tests()
         await cleanup()
@@ -399,4 +457,3 @@ if __name__ == "__main__":
     # Run the tests
     success = asyncio.run(main())
     sys.exit(0 if success else 1)
-

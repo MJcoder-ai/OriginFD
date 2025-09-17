@@ -2,22 +2,25 @@
 Critic/Verifier for OriginFD AI Orchestrator.
 Reviews and validates AI outputs for safety, quality, and compliance.
 """
+
 import asyncio
-import logging
 import json
+import logging
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
-from uuid import uuid4
-from pydantic import BaseModel
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import uuid4
+
+from pydantic import BaseModel
 
 try:
     from ..tools.registry import ToolResult
 except ImportError:
     # For standalone testing
-    import sys
     import os
+    import sys
+
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from tools.registry import ToolResult
 
@@ -26,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationSeverity(str, Enum):
     """Severity levels for validation issues."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -34,6 +38,7 @@ class ValidationSeverity(str, Enum):
 
 class ValidationIssue(BaseModel):
     """Individual validation issue."""
+
     issue_id: str
     severity: ValidationSeverity
     category: str  # "safety", "quality", "compliance", "consistency", "accuracy"
@@ -45,6 +50,7 @@ class ValidationIssue(BaseModel):
 
 class VerificationResult(BaseModel):
     """Result of output verification."""
+
     is_valid: bool
     overall_score: float  # 0.0 to 1.0
     issues: List[ValidationIssue]
@@ -82,7 +88,7 @@ class CriticVerifier:
             "quality": 0.25,
             "compliance": 0.2,
             "accuracy": 0.15,
-            "consistency": 0.1
+            "consistency": 0.1,
         }
 
         # Validation thresholds
@@ -91,7 +97,7 @@ class CriticVerifier:
             "max_critical_issues": 0,
             "max_error_issues": 2,
             "min_safety_score": 0.8,
-            "min_compliance_score": 0.9
+            "min_compliance_score": 0.9,
         }
 
         # Content filters
@@ -104,7 +110,7 @@ class CriticVerifier:
         self,
         plan: Any,  # PlanningResult
         execution_results: List[ToolResult],
-        context: Dict[str, Any]
+        context: Dict[str, Any],
     ) -> VerificationResult:
         """Verify and validate execution results."""
         start_time = datetime.utcnow()
@@ -151,8 +157,11 @@ class CriticVerifier:
 
             # Calculate overall score
             overall_score = self._calculate_overall_score(
-                safety_score, quality_score, compliance_score,
-                accuracy_score, consistency_score
+                safety_score,
+                quality_score,
+                compliance_score,
+                accuracy_score,
+                consistency_score,
             )
 
             # Determine if results are valid
@@ -171,14 +180,14 @@ class CriticVerifier:
                     "quality": quality_score,
                     "compliance": compliance_score,
                     "accuracy": accuracy_score,
-                    "consistency": consistency_score
+                    "consistency": consistency_score,
                 },
                 safety_score=safety_score,
                 compliance_score=compliance_score,
                 accuracy_score=accuracy_score,
                 consistency_score=consistency_score,
                 verification_timestamp=start_time,
-                verification_duration_ms=verification_duration
+                verification_duration_ms=verification_duration,
             )
 
             logger.info(
@@ -195,12 +204,14 @@ class CriticVerifier:
             return VerificationResult(
                 is_valid=False,
                 overall_score=0.0,
-                issues=[ValidationIssue(
-                    issue_id=str(uuid4()),
-                    severity=ValidationSeverity.CRITICAL,
-                    category="system",
-                    description=f"Verification system error: {str(e)}"
-                )],
+                issues=[
+                    ValidationIssue(
+                        issue_id=str(uuid4()),
+                        severity=ValidationSeverity.CRITICAL,
+                        category="system",
+                        description=f"Verification system error: {str(e)}",
+                    )
+                ],
                 quality_metrics={},
                 safety_score=0.0,
                 compliance_score=0.0,
@@ -209,13 +220,11 @@ class CriticVerifier:
                 verification_timestamp=start_time,
                 verification_duration_ms=int(
                     (datetime.utcnow() - start_time).total_seconds() * 1000
-                )
+                ),
             )
 
     async def sanitize_output(
-        self,
-        content: str,
-        context: Dict[str, Any]
+        self, content: str, context: Dict[str, Any]
     ) -> Tuple[str, List[str]]:
         """Sanitize output by removing/masking sensitive content."""
         sanitized_content = content
@@ -224,13 +233,20 @@ class CriticVerifier:
         # Remove PII
         for pattern_name, pattern in self.pii_patterns.items():
             if re.search(pattern, sanitized_content):
-                sanitized_content = re.sub(pattern, f"[REDACTED_{pattern_name.upper()}]", sanitized_content)
+                sanitized_content = re.sub(
+                    pattern, f"[REDACTED_{pattern_name.upper()}]", sanitized_content
+                )
                 applied_sanitizations.append(f"Redacted {pattern_name}")
 
         # Remove harmful content
         for pattern_name, pattern in self.harmful_content_patterns.items():
             if re.search(pattern, sanitized_content, re.IGNORECASE):
-                sanitized_content = re.sub(pattern, "[CONTENT_FILTERED]", sanitized_content, flags=re.IGNORECASE)
+                sanitized_content = re.sub(
+                    pattern,
+                    "[CONTENT_FILTERED]",
+                    sanitized_content,
+                    flags=re.IGNORECASE,
+                )
                 applied_sanitizations.append(f"Filtered {pattern_name}")
 
         return sanitized_content, applied_sanitizations
@@ -238,9 +254,7 @@ class CriticVerifier:
     # Private validation methods
 
     async def _validate_safety(
-        self,
-        content: str,
-        context: Dict[str, Any]
+        self, content: str, context: Dict[str, Any]
     ) -> Tuple[List[ValidationIssue], float]:
         """Validate content for safety issues."""
         issues = []
@@ -250,49 +264,55 @@ class CriticVerifier:
         for rule_name, rule in self.safety_rules.items():
             if rule["type"] == "pattern":
                 if re.search(rule["pattern"], content, re.IGNORECASE):
-                    issues.append(ValidationIssue(
-                        issue_id=str(uuid4()),
-                        severity=ValidationSeverity(rule["severity"]),
-                        category="safety",
-                        description=rule["description"],
-                        suggested_fix=rule.get("suggested_fix"),
-                        metadata={"rule": rule_name}
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            issue_id=str(uuid4()),
+                            severity=ValidationSeverity(rule["severity"]),
+                            category="safety",
+                            description=rule["description"],
+                            suggested_fix=rule.get("suggested_fix"),
+                            metadata={"rule": rule_name},
+                        )
+                    )
                     safety_score -= rule["penalty"]
 
         # Check for PII exposure
         for pattern_name, pattern in self.pii_patterns.items():
             matches = re.findall(pattern, content)
             if matches:
-                issues.append(ValidationIssue(
-                    issue_id=str(uuid4()),
-                    severity=ValidationSeverity.WARNING,
-                    category="safety",
-                    description=f"Potential PII exposure: {pattern_name}",
-                    suggested_fix="Remove or mask personal information",
-                    metadata={"pii_type": pattern_name, "matches_count": len(matches)}
-                ))
+                issues.append(
+                    ValidationIssue(
+                        issue_id=str(uuid4()),
+                        severity=ValidationSeverity.WARNING,
+                        category="safety",
+                        description=f"Potential PII exposure: {pattern_name}",
+                        suggested_fix="Remove or mask personal information",
+                        metadata={
+                            "pii_type": pattern_name,
+                            "matches_count": len(matches),
+                        },
+                    )
+                )
                 safety_score -= 0.1
 
         # Check content length (potential prompt injection)
         if len(content) > 50000:  # Very long responses might indicate issues
-            issues.append(ValidationIssue(
-                issue_id=str(uuid4()),
-                severity=ValidationSeverity.WARNING,
-                category="safety",
-                description="Unusually long response detected",
-                suggested_fix="Review for potential prompt injection",
-                metadata={"content_length": len(content)}
-            ))
+            issues.append(
+                ValidationIssue(
+                    issue_id=str(uuid4()),
+                    severity=ValidationSeverity.WARNING,
+                    category="safety",
+                    description="Unusually long response detected",
+                    suggested_fix="Review for potential prompt injection",
+                    metadata={"content_length": len(content)},
+                )
+            )
             safety_score -= 0.05
 
         return issues, max(0.0, safety_score)
 
     async def _assess_quality(
-        self,
-        content: str,
-        plan: Any,
-        context: Dict[str, Any]
+        self, content: str, plan: Any, context: Dict[str, Any]
     ) -> Tuple[List[ValidationIssue], float]:
         """Assess content quality."""
         issues = []
@@ -300,50 +320,60 @@ class CriticVerifier:
 
         # Check completeness
         if len(content.strip()) < 50:
-            issues.append(ValidationIssue(
-                issue_id=str(uuid4()),
-                severity=ValidationSeverity.WARNING,
-                category="quality",
-                description="Response appears too short or incomplete",
-                suggested_fix="Provide more detailed response",
-                metadata={"content_length": len(content)}
-            ))
+            issues.append(
+                ValidationIssue(
+                    issue_id=str(uuid4()),
+                    severity=ValidationSeverity.WARNING,
+                    category="quality",
+                    description="Response appears too short or incomplete",
+                    suggested_fix="Provide more detailed response",
+                    metadata={"content_length": len(content)},
+                )
+            )
             quality_score -= 0.2
 
         # Check for placeholder text
         placeholders = ["TODO", "TBD", "PLACEHOLDER", "[INSERT", "[REPLACE"]
         for placeholder in placeholders:
             if placeholder in content.upper():
-                issues.append(ValidationIssue(
-                    issue_id=str(uuid4()),
-                    severity=ValidationSeverity.ERROR,
-                    category="quality",
-                    description=f"Placeholder text found: {placeholder}",
-                    suggested_fix="Replace placeholder with actual content",
-                    metadata={"placeholder": placeholder}
-                ))
+                issues.append(
+                    ValidationIssue(
+                        issue_id=str(uuid4()),
+                        severity=ValidationSeverity.ERROR,
+                        category="quality",
+                        description=f"Placeholder text found: {placeholder}",
+                        suggested_fix="Replace placeholder with actual content",
+                        metadata={"placeholder": placeholder},
+                    )
+                )
                 quality_score -= 0.15
 
         # Check coherence (basic)
-        sentences = content.split('.')
+        sentences = content.split(".")
         if len(sentences) > 5:
             # Look for repeated sentences (sign of poor quality)
             sentence_counts = {}
             for sentence in sentences:
                 clean_sentence = sentence.strip().lower()
                 if len(clean_sentence) > 10:
-                    sentence_counts[clean_sentence] = sentence_counts.get(clean_sentence, 0) + 1
+                    sentence_counts[clean_sentence] = (
+                        sentence_counts.get(clean_sentence, 0) + 1
+                    )
 
-            repeated_sentences = [s for s, count in sentence_counts.items() if count > 1]
+            repeated_sentences = [
+                s for s, count in sentence_counts.items() if count > 1
+            ]
             if repeated_sentences:
-                issues.append(ValidationIssue(
-                    issue_id=str(uuid4()),
-                    severity=ValidationSeverity.WARNING,
-                    category="quality",
-                    description="Repeated sentences detected",
-                    suggested_fix="Remove duplicate content",
-                    metadata={"repeated_count": len(repeated_sentences)}
-                ))
+                issues.append(
+                    ValidationIssue(
+                        issue_id=str(uuid4()),
+                        severity=ValidationSeverity.WARNING,
+                        category="quality",
+                        description="Repeated sentences detected",
+                        suggested_fix="Remove duplicate content",
+                        metadata={"repeated_count": len(repeated_sentences)},
+                    )
+                )
                 quality_score -= 0.1
 
         # Check relevance to task
@@ -351,30 +381,34 @@ class CriticVerifier:
         content_lower = content.lower()
 
         # Extract key terms from task description
-        key_terms = re.findall(r'\b\w{4,}\b', task_description)
-        key_terms = [term for term in key_terms if term not in ['this', 'that', 'with', 'from', 'they', 'have']]
+        key_terms = re.findall(r"\b\w{4,}\b", task_description)
+        key_terms = [
+            term
+            for term in key_terms
+            if term not in ["this", "that", "with", "from", "they", "have"]
+        ]
 
         if key_terms:
             relevant_terms = sum(1 for term in key_terms if term in content_lower)
             relevance_ratio = relevant_terms / len(key_terms)
 
             if relevance_ratio < 0.3:
-                issues.append(ValidationIssue(
-                    issue_id=str(uuid4()),
-                    severity=ValidationSeverity.WARNING,
-                    category="quality",
-                    description="Response may not be relevant to the task",
-                    suggested_fix="Ensure response addresses the specific task requirements",
-                    metadata={"relevance_ratio": relevance_ratio}
-                ))
+                issues.append(
+                    ValidationIssue(
+                        issue_id=str(uuid4()),
+                        severity=ValidationSeverity.WARNING,
+                        category="quality",
+                        description="Response may not be relevant to the task",
+                        suggested_fix="Ensure response addresses the specific task requirements",
+                        metadata={"relevance_ratio": relevance_ratio},
+                    )
+                )
                 quality_score -= 0.2
 
         return issues, max(0.0, quality_score)
 
     async def _check_compliance(
-        self,
-        content: str,
-        context: Dict[str, Any]
+        self, content: str, context: Dict[str, Any]
     ) -> Tuple[List[ValidationIssue], float]:
         """Check compliance with regulations and policies."""
         issues = []
@@ -384,26 +418,30 @@ class CriticVerifier:
         for rule_name, rule in self.compliance_rules.items():
             if rule["type"] == "required_disclaimer":
                 if rule["pattern"] not in content:
-                    issues.append(ValidationIssue(
-                        issue_id=str(uuid4()),
-                        severity=ValidationSeverity.WARNING,
-                        category="compliance",
-                        description=rule["description"],
-                        suggested_fix=rule.get("suggested_fix"),
-                        metadata={"rule": rule_name}
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            issue_id=str(uuid4()),
+                            severity=ValidationSeverity.WARNING,
+                            category="compliance",
+                            description=rule["description"],
+                            suggested_fix=rule.get("suggested_fix"),
+                            metadata={"rule": rule_name},
+                        )
+                    )
                     compliance_score -= rule["penalty"]
 
             elif rule["type"] == "prohibited_content":
                 if re.search(rule["pattern"], content, re.IGNORECASE):
-                    issues.append(ValidationIssue(
-                        issue_id=str(uuid4()),
-                        severity=ValidationSeverity.ERROR,
-                        category="compliance",
-                        description=rule["description"],
-                        suggested_fix=rule.get("suggested_fix"),
-                        metadata={"rule": rule_name}
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            issue_id=str(uuid4()),
+                            severity=ValidationSeverity.ERROR,
+                            category="compliance",
+                            description=rule["description"],
+                            suggested_fix=rule.get("suggested_fix"),
+                            metadata={"rule": rule_name},
+                        )
+                    )
                     compliance_score -= rule["penalty"]
 
         # Check data residency requirements
@@ -414,17 +452,14 @@ class CriticVerifier:
         return issues, max(0.0, compliance_score)
 
     async def _verify_accuracy(
-        self,
-        content: str,
-        execution_results: List[ToolResult],
-        context: Dict[str, Any]
+        self, content: str, execution_results: List[ToolResult], context: Dict[str, Any]
     ) -> Tuple[List[ValidationIssue], float]:
         """Verify accuracy of the content."""
         issues = []
         accuracy_score = 1.0
 
         # Check for mathematical inconsistencies
-        numbers = re.findall(r'\b\d+(?:\.\d+)?\b', content)
+        numbers = re.findall(r"\b\d+(?:\.\d+)?\b", content)
         if len(numbers) > 5:
             # Look for obviously wrong calculations
             # This is a simplified check - in practice, would be more sophisticated
@@ -443,9 +478,7 @@ class CriticVerifier:
         return issues, accuracy_score
 
     async def _validate_consistency(
-        self,
-        content: str,
-        execution_results: List[ToolResult]
+        self, content: str, execution_results: List[ToolResult]
     ) -> Tuple[List[ValidationIssue], float]:
         """Validate logical consistency."""
         issues = []
@@ -482,26 +515,28 @@ class CriticVerifier:
         quality_score: float,
         compliance_score: float,
         accuracy_score: float,
-        consistency_score: float
+        consistency_score: float,
     ) -> float:
         """Calculate weighted overall score."""
         return (
-            safety_score * self.scoring_weights["safety"] +
-            quality_score * self.scoring_weights["quality"] +
-            compliance_score * self.scoring_weights["compliance"] +
-            accuracy_score * self.scoring_weights["accuracy"] +
-            consistency_score * self.scoring_weights["consistency"]
+            safety_score * self.scoring_weights["safety"]
+            + quality_score * self.scoring_weights["quality"]
+            + compliance_score * self.scoring_weights["compliance"]
+            + accuracy_score * self.scoring_weights["accuracy"]
+            + consistency_score * self.scoring_weights["consistency"]
         )
 
     def _determine_validity(
-        self,
-        issues: List[ValidationIssue],
-        overall_score: float
+        self, issues: List[ValidationIssue], overall_score: float
     ) -> bool:
         """Determine if results are valid based on issues and score."""
         # Count issues by severity
-        critical_count = sum(1 for issue in issues if issue.severity == ValidationSeverity.CRITICAL)
-        error_count = sum(1 for issue in issues if issue.severity == ValidationSeverity.ERROR)
+        critical_count = sum(
+            1 for issue in issues if issue.severity == ValidationSeverity.CRITICAL
+        )
+        error_count = sum(
+            1 for issue in issues if issue.severity == ValidationSeverity.ERROR
+        )
 
         # Check against thresholds
         if critical_count > self.validation_thresholds["max_critical_issues"]:
@@ -524,7 +559,7 @@ class CriticVerifier:
                 "severity": "critical",
                 "description": "Content contains harmful instructions",
                 "penalty": 0.5,
-                "suggested_fix": "Remove harmful content"
+                "suggested_fix": "Remove harmful content",
             },
             "personal_attacks": {
                 "type": "pattern",
@@ -532,7 +567,7 @@ class CriticVerifier:
                 "severity": "error",
                 "description": "Content contains personal attacks",
                 "penalty": 0.3,
-                "suggested_fix": "Use respectful language"
+                "suggested_fix": "Use respectful language",
             },
             "misinformation_indicators": {
                 "type": "pattern",
@@ -540,8 +575,8 @@ class CriticVerifier:
                 "severity": "warning",
                 "description": "Content may contain overstated claims",
                 "penalty": 0.1,
-                "suggested_fix": "Use more measured language"
-            }
+                "suggested_fix": "Use more measured language",
+            },
         }
 
     def _initialize_quality_rules(self) -> Dict[str, Dict[str, Any]]:
@@ -552,15 +587,15 @@ class CriticVerifier:
                 "min_chars": 50,
                 "severity": "warning",
                 "description": "Response too short",
-                "penalty": 0.2
+                "penalty": 0.2,
             },
             "max_length": {
                 "type": "length",
                 "max_chars": 10000,
                 "severity": "warning",
                 "description": "Response too long",
-                "penalty": 0.1
-            }
+                "penalty": 0.1,
+            },
         }
 
     def _initialize_compliance_rules(self) -> Dict[str, Dict[str, Any]]:
@@ -572,7 +607,7 @@ class CriticVerifier:
                 "severity": "warning",
                 "description": "Missing financial advice disclaimer",
                 "penalty": 0.2,
-                "suggested_fix": "Add appropriate disclaimer"
+                "suggested_fix": "Add appropriate disclaimer",
             },
             "personal_data_usage": {
                 "type": "prohibited_content",
@@ -580,8 +615,8 @@ class CriticVerifier:
                 "severity": "error",
                 "description": "Content suggests storing personal data",
                 "penalty": 0.4,
-                "suggested_fix": "Remove references to storing personal data"
-            }
+                "suggested_fix": "Remove references to storing personal data",
+            },
         }
 
     def _initialize_pii_patterns(self) -> Dict[str, str]:
@@ -590,7 +625,7 @@ class CriticVerifier:
             "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
             "credit_card": r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",
             "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
-            "phone": r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"
+            "phone": r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",
         }
 
     def _initialize_harmful_patterns(self) -> Dict[str, str]:
@@ -598,5 +633,5 @@ class CriticVerifier:
         return {
             "violence": r"(kill|murder|attack|harm|hurt|destroy) (people|person|someone)",
             "illegal_activities": r"(how to (steal|rob|hack|break into))",
-            "hate_speech": r"(all (jews|muslims|christians|blacks|whites) are)"
+            "hate_speech": r"(all (jews|muslims|christians|blacks|whites) are)",
         }

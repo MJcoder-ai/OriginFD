@@ -1,12 +1,15 @@
 """Pydantic models for the model registry."""
-from datetime import datetime
-from typing import Optional, Dict
-from pydantic import BaseModel, Field
+
 import uuid
+from datetime import datetime
+from typing import Dict, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ModelInfo(BaseModel):
     """Representation of a model in the registry."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     provider: str

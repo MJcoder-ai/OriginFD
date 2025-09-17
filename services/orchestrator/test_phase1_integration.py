@@ -2,6 +2,7 @@
 Phase 1 Integration Test - Core AI Infrastructure
 Tests all components working together: Orchestrator, Memory Systems, Graph-RAG
 """
+
 import asyncio
 import json
 import logging
@@ -12,12 +13,13 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from memory.cag_store import CAGStore
+from memory.episodic import EpisodicMemory
+from memory.graph_rag import GraphQuery, ODLSDGraphRAG
+from memory.semantic import SemanticMemory
+
 # Import our components
 from planner.orchestrator import AIOrchestrator, Task, TaskPriority
-from memory.episodic import EpisodicMemory
-from memory.semantic import SemanticMemory
-from memory.cag_store import CAGStore
-from memory.graph_rag import ODLSDGraphRAG, GraphQuery
 from tools.registry import ToolRegistry
 
 
@@ -35,10 +37,13 @@ async def test_memory_systems():
     interaction_id = await episodic.store_interaction(
         session_id=session_id,
         interaction_type="user_message",
-        content={"message": "Test user message", "timestamp": datetime.utcnow().isoformat()},
+        content={
+            "message": "Test user message",
+            "timestamp": datetime.utcnow().isoformat(),
+        },
         agent_id="test_agent",
         user_id="test_user",
-        tenant_id="test_tenant"
+        tenant_id="test_tenant",
     )
 
     # Retrieve interaction history
@@ -59,13 +64,12 @@ async def test_memory_systems():
         content="Always verify component specifications match system requirements before selection.",
         domain="PV",
         tags=["components", "best_practice", "verification"],
-        confidence=0.9
+        confidence=0.9,
     )
 
     # Retrieve knowledge
     knowledge_results = await semantic.retrieve_knowledge(
-        query="component selection verification",
-        limit=5
+        query="component selection verification", limit=5
     )
     assert len(knowledge_results) > 0, "No knowledge retrieved"
     logger.info("✓ Semantic Memory working")
@@ -77,6 +81,7 @@ async def test_memory_systems():
 
     # Store and retrieve cached content
     from memory.cag_store import CacheType
+
     cache_key = "test_prompt_response"
     test_content = {"response": "This is a test AI response", "confidence": 0.85}
 
@@ -84,7 +89,7 @@ async def test_memory_systems():
         cache_key=cache_key,
         content=test_content,
         cache_type=CacheType.PROMPT_RESPONSE,
-        tags=["test", "prompt"]
+        tags=["test", "prompt"],
     )
     assert success, "Failed to cache content"
 
@@ -110,12 +115,12 @@ async def test_memory_systems():
                 "specifications": {
                     "power_rating": 400,
                     "voltage": 24,
-                    "efficiency": 0.21
+                    "efficiency": 0.21,
                 },
                 "manufacturer": "TestCorp",
                 "model": "SP-400W",
                 "quantity": 10,
-                "unit_cost": 200
+                "unit_cost": 200,
             },
             "inverter_001": {
                 "name": "String Inverter",
@@ -124,13 +129,13 @@ async def test_memory_systems():
                 "specifications": {
                     "power_rating": 4000,
                     "efficiency": 0.97,
-                    "input_voltage": 24
+                    "input_voltage": 24,
                 },
                 "manufacturer": "InverterCorp",
                 "model": "SI-4000",
                 "quantity": 1,
-                "unit_cost": 1200
-            }
+                "unit_cost": 1200,
+            },
         },
         "connections": [
             {
@@ -138,15 +143,15 @@ async def test_memory_systems():
                 "to": "inverter_001",
                 "type": "electrical",
                 "cable_type": "DC",
-                "cable_length": 50
+                "cable_length": 50,
             }
-        ]
+        ],
     }
 
     ingested_count = await graph_rag.ingest_odl_document(
         document=test_document,
         document_id="test_doc_001",
-        project_id="test_project_001"
+        project_id="test_project_001",
     )
     assert ingested_count > 0, "No nodes/edges created from document"
     logger.info("✓ Graph-RAG working")
@@ -155,7 +160,7 @@ async def test_memory_systems():
         "episodic": episodic,
         "semantic": semantic,
         "cag_store": cag_store,
-        "graph_rag": graph_rag
+        "graph_rag": graph_rag,
     }
 
 
@@ -191,9 +196,9 @@ async def test_orchestrator_components():
             "component_data": {
                 "name": "Test Solar Panel",
                 "power_rating": 400,
-                "efficiency": 0.21
-            }
-        }
+                "efficiency": 0.21,
+            },
+        },
     )
 
     assert plan.steps, "No plan steps created"
@@ -202,15 +207,13 @@ async def test_orchestrator_components():
 
     # Test Policy Router
     logger.info("Testing Policy Router...")
-    from planner.policy_router import PolicyRouter, PolicyDecision
+    from planner.policy_router import PolicyDecision, PolicyRouter
 
     policy_router = PolicyRouter()
 
     # Allocate test budget
     await policy_router.allocate_psu_budget(
-        tenant_id="test_tenant",
-        total_budget=1000,
-        period_days=30
+        tenant_id="test_tenant", total_budget=1000, period_days=30
     )
 
     # Check policy compliance
@@ -221,7 +224,7 @@ async def test_orchestrator_components():
         estimated_psu_cost=50,
         estimated_duration_ms=30000,
         required_permissions=["design_read"],
-        context={"user_role": "engineer"}
+        context={"user_role": "engineer"},
     )
 
     assert decision == PolicyDecision.APPROVE, f"Policy check failed: {reason}"
@@ -229,7 +232,7 @@ async def test_orchestrator_components():
 
     # Test Region Router
     logger.info("Testing Region Router...")
-    from planner.region_router import RegionRouter, ModelCapability
+    from planner.region_router import ModelCapability, RegionRouter
 
     region_router = RegionRouter()
 
@@ -241,7 +244,7 @@ async def test_orchestrator_components():
     model_selection = await region_router.select_model(
         capability=ModelCapability.TEXT_GENERATION,
         region=region_config.region,
-        context={"estimated_tokens": 1000}
+        context={"estimated_tokens": 1000},
     )
 
     assert model_selection.selected_model, "No model selected"
@@ -258,16 +261,19 @@ async def test_orchestrator_components():
     mock_results = [
         ToolResult(
             success=True,
-            content={"analysis": "Component specifications are valid", "confidence": 0.9},
+            content={
+                "analysis": "Component specifications are valid",
+                "confidence": 0.9,
+            },
             execution_time_ms=1500,
-            intent="Analyzed component specifications"
+            intent="Analyzed component specifications",
         )
     ]
 
     verification = await critic.verify_results(
         plan=plan,
         execution_results=mock_results,
-        context={"user_id": "test_user", "tenant_id": "test_tenant"}
+        context={"user_id": "test_user", "tenant_id": "test_tenant"},
     )
 
     assert verification.overall_score > 0, "Verification score is zero"
@@ -278,7 +284,7 @@ async def test_orchestrator_components():
         "planner": planner,
         "policy_router": policy_router,
         "region_router": region_router,
-        "critic": critic
+        "critic": critic,
     }
 
 
@@ -300,9 +306,9 @@ async def test_full_orchestrator():
             "user_id": "test_user",
             "tenant_id": "test_tenant",
             "domain": "PV",
-            "test_mode": True
+            "test_mode": True,
         },
-        priority=TaskPriority.HIGH
+        priority=TaskPriority.HIGH,
     )
 
     # Process the task
@@ -344,21 +350,29 @@ async def test_graph_rag_queries():
                 "name": "Solar Panel Array 1",
                 "type": "solar_panel",
                 "category": "generation",
-                "specifications": {"power_rating": 500, "voltage": 48, "efficiency": 0.22},
+                "specifications": {
+                    "power_rating": 500,
+                    "voltage": 48,
+                    "efficiency": 0.22,
+                },
                 "manufacturer": "SolarTech",
                 "model": "ST-500W-HE",
                 "quantity": 100,
-                "unit_cost": 250
+                "unit_cost": 250,
             },
             "inverter_central": {
                 "name": "Central Inverter",
                 "type": "inverter",
                 "category": "conversion",
-                "specifications": {"power_rating": 50000, "efficiency": 0.98, "input_voltage": 48},
+                "specifications": {
+                    "power_rating": 50000,
+                    "efficiency": 0.98,
+                    "input_voltage": 48,
+                },
                 "manufacturer": "PowerCorp",
                 "model": "PC-50kW",
                 "quantity": 1,
-                "unit_cost": 15000
+                "unit_cost": 15000,
             },
             "monitoring_sys": {
                 "name": "Monitoring System",
@@ -368,19 +382,19 @@ async def test_graph_rag_queries():
                 "manufacturer": "MonitorPro",
                 "model": "MP-Pro-1",
                 "quantity": 1,
-                "unit_cost": 2000
-            }
+                "unit_cost": 2000,
+            },
         },
         "connections": [
             {"from": "panel_array_1", "to": "inverter_central", "type": "electrical"},
-            {"from": "inverter_central", "to": "monitoring_sys", "type": "data"}
-        ]
+            {"from": "inverter_central", "to": "monitoring_sys", "type": "data"},
+        ],
     }
 
     await graph_rag.ingest_odl_document(
         document=complex_document,
         document_id="commercial_doc_001",
-        project_id="commercial_project_001"
+        project_id="commercial_project_001",
     )
 
     # Test semantic query
@@ -389,7 +403,7 @@ async def test_graph_rag_queries():
         query_text="high efficiency solar panels with monitoring",
         query_type="semantic",
         filters={"node_types": ["component"], "min_similarity": 0.3},
-        limit=5
+        limit=5,
     )
 
     semantic_result = await graph_rag.query_graph(semantic_query)
@@ -405,7 +419,7 @@ async def test_graph_rag_queries():
         query_text="find components of type inverter",
         query_type="structural",
         filters={"component_type": "inverter"},
-        limit=10
+        limit=10,
     )
 
     structural_result = await graph_rag.query_graph(structural_query)
@@ -415,7 +429,9 @@ async def test_graph_rag_queries():
     if semantic_result.nodes:
         node_id = semantic_result.nodes[0].node_id
         impact_analysis = await graph_rag.analyze_change_impact([node_id], max_hops=2)
-        logger.info(f"Change impact analysis found {len(impact_analysis['direct_impacts'])} direct impacts")
+        logger.info(
+            f"Change impact analysis found {len(impact_analysis['direct_impacts'])} direct impacts"
+        )
 
     logger.info("✓ Graph-RAG queries working")
 
@@ -449,7 +465,7 @@ async def run_phase1_tests():
             "orchestrator_components": orchestrator_components,
             "orchestrator": orchestrator,
             "graph_rag": graph_rag,
-            "status": "success"
+            "status": "success",
         }
 
     except Exception as e:
@@ -460,6 +476,7 @@ async def run_phase1_tests():
 async def cleanup_test_data():
     """Clean up test data files."""
     import shutil
+
     test_dir = Path("test_data")
     if test_dir.exists():
         shutil.rmtree(test_dir)
@@ -467,6 +484,7 @@ async def cleanup_test_data():
 
 
 if __name__ == "__main__":
+
     async def main():
         # Run tests
         results = await run_phase1_tests()
@@ -487,10 +505,11 @@ if __name__ == "__main__":
             logger.info("")
             logger.info("🚀 Ready to proceed to Phase 2: Agent Development")
         else:
-            logger.error(f"❌ Phase 1 tests failed: {results.get('error', 'Unknown error')}")
+            logger.error(
+                f"❌ Phase 1 tests failed: {results.get('error', 'Unknown error')}"
+            )
 
         # Cleanup
         await cleanup_test_data()
 
     asyncio.run(main())
-

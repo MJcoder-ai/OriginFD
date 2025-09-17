@@ -2,24 +2,27 @@
 Semantic Memory System for OriginFD AI Orchestrator.
 Stores curated knowledge, best practices, and domain expertise.
 """
+
 import asyncio
+import hashlib
 import json
 import logging
-import hashlib
+import pickle
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Set, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import uuid4
-from pydantic import BaseModel
+
 import aiosqlite
 import numpy as np
-from pathlib import Path
-import pickle
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
 class KnowledgeItem(BaseModel):
     """Individual knowledge item in semantic memory."""
+
     knowledge_id: str
     knowledge_type: str  # "best_practice", "domain_fact", "procedure", "pattern", etc.
     title: str
@@ -38,6 +41,7 @@ class KnowledgeItem(BaseModel):
 
 class KnowledgePattern(BaseModel):
     """Learned pattern from successful executions."""
+
     pattern_id: str
     pattern_type: str  # "success_pattern", "failure_pattern", "optimization"
     description: str
@@ -96,7 +100,9 @@ class SemanticMemory:
         # Start background consolidation
         asyncio.create_task(self._consolidation_worker())
 
-        logger.info(f"SemanticMemory initialized with {len(self.knowledge_items)} items and {len(self.patterns)} patterns")
+        logger.info(
+            f"SemanticMemory initialized with {len(self.knowledge_items)} items and {len(self.patterns)} patterns"
+        )
 
     async def store_knowledge(
         self,
@@ -107,7 +113,7 @@ class SemanticMemory:
         tags: List[str] = None,
         metadata: Dict[str, Any] = None,
         source: Optional[str] = None,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> str:
         """Store a new knowledge item."""
         knowledge_id = str(uuid4())
@@ -127,7 +133,7 @@ class SemanticMemory:
             confidence=confidence,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            embedding=embedding.tolist() if embedding is not None else None
+            embedding=embedding.tolist() if embedding is not None else None,
         )
 
         # Store in memory and database
@@ -147,7 +153,7 @@ class SemanticMemory:
         domains: Optional[List[str]] = None,
         tags: Optional[List[str]] = None,
         min_confidence: Optional[float] = None,
-        limit: int = 10
+        limit: int = 10,
     ) -> List[Tuple[KnowledgeItem, float]]:
         """Retrieve knowledge items with similarity scoring."""
         # Generate query embedding
@@ -176,7 +182,7 @@ class SemanticMemory:
             # Boost score based on confidence and access patterns
             boosted_score = similarity * item.confidence
             if item.access_count > 0:
-                boosted_score *= (1 + np.log(item.access_count) * 0.1)
+                boosted_score *= 1 + np.log(item.access_count) * 0.1
 
             candidates.append((item, boosted_score))
 
@@ -197,7 +203,7 @@ class SemanticMemory:
         conditions: Dict[str, Any],
         actions: List[str],
         execution_ids: List[str],
-        success_rate: float = 1.0
+        success_rate: float = 1.0,
     ) -> str:
         """Learn a new pattern from successful executions."""
         # Check if similar pattern already exists
@@ -207,9 +213,9 @@ class SemanticMemory:
             # Update existing pattern
             existing_pattern.usage_count += 1
             existing_pattern.success_rate = (
-                (existing_pattern.success_rate * (existing_pattern.usage_count - 1) + success_rate)
-                / existing_pattern.usage_count
-            )
+                existing_pattern.success_rate * (existing_pattern.usage_count - 1)
+                + success_rate
+            ) / existing_pattern.usage_count
             existing_pattern.created_from_executions.extend(execution_ids)
             existing_pattern.last_updated = datetime.utcnow()
 
@@ -230,7 +236,7 @@ class SemanticMemory:
                 success_rate=success_rate,
                 usage_count=1,
                 created_from_executions=execution_ids,
-                last_updated=datetime.utcnow()
+                last_updated=datetime.utcnow(),
             )
 
             self.patterns[pattern_id] = pattern
@@ -243,7 +249,7 @@ class SemanticMemory:
         self,
         current_conditions: Dict[str, Any],
         pattern_types: Optional[List[str]] = None,
-        min_success_rate: float = 0.7
+        min_success_rate: float = 0.7,
     ) -> List[Tuple[KnowledgePattern, float]]:
         """Find patterns applicable to current conditions."""
         applicable_patterns = []
@@ -266,17 +272,12 @@ class SemanticMemory:
                 applicable_patterns.append((pattern, match_score))
 
         # Sort by match score and success rate
-        applicable_patterns.sort(
-            key=lambda x: x[1] * x[0].success_rate, reverse=True
-        )
+        applicable_patterns.sort(key=lambda x: x[1] * x[0].success_rate, reverse=True)
 
         return applicable_patterns
 
     async def update_knowledge_confidence(
-        self,
-        knowledge_id: str,
-        feedback: str,
-        success: bool
+        self, knowledge_id: str, feedback: str, success: bool
     ):
         """Update knowledge confidence based on usage feedback."""
         if knowledge_id not in self.knowledge_items:
@@ -296,21 +297,20 @@ class SemanticMemory:
         if "feedback_history" not in item.metadata:
             item.metadata["feedback_history"] = []
 
-        item.metadata["feedback_history"].append({
-            "timestamp": datetime.utcnow().isoformat(),
-            "feedback": feedback,
-            "success": success
-        })
+        item.metadata["feedback_history"].append(
+            {
+                "timestamp": datetime.utcnow().isoformat(),
+                "feedback": feedback,
+                "success": success,
+            }
+        )
 
         await self._update_knowledge_item(item)
 
         logger.debug(f"Updated confidence for {knowledge_id}: {item.confidence}")
 
     async def search_by_tags(
-        self,
-        tags: List[str],
-        match_all: bool = False,
-        limit: int = 20
+        self, tags: List[str], match_all: bool = False, limit: int = 20
     ) -> List[KnowledgeItem]:
         """Search knowledge items by tags."""
         results = []
@@ -324,17 +324,12 @@ class SemanticMemory:
                     results.append(item)
 
         # Sort by confidence and access count
-        results.sort(
-            key=lambda x: (x.confidence, x.access_count), reverse=True
-        )
+        results.sort(key=lambda x: (x.confidence, x.access_count), reverse=True)
 
         return results[:limit]
 
     async def get_domain_knowledge(
-        self,
-        domain: str,
-        knowledge_types: Optional[List[str]] = None,
-        limit: int = 50
+        self, domain: str, knowledge_types: Optional[List[str]] = None, limit: int = 50
     ) -> List[KnowledgeItem]:
         """Get all knowledge for a specific domain."""
         results = []
@@ -345,9 +340,7 @@ class SemanticMemory:
                     results.append(item)
 
         # Sort by confidence and recency
-        results.sort(
-            key=lambda x: (x.confidence, x.updated_at), reverse=True
-        )
+        results.sort(key=lambda x: (x.confidence, x.updated_at), reverse=True)
 
         return results[:limit]
 
@@ -357,8 +350,10 @@ class SemanticMemory:
 
         # Remove low-confidence items
         items_to_remove = [
-            item_id for item_id, item in self.knowledge_items.items()
-            if item.confidence < self.min_confidence_threshold and item.access_count == 0
+            item_id
+            for item_id, item in self.knowledge_items.items()
+            if item.confidence < self.min_confidence_threshold
+            and item.access_count == 0
         ]
 
         for item_id in items_to_remove:
@@ -379,14 +374,15 @@ class SemanticMemory:
                 item_id: item.dict() for item_id, item in self.knowledge_items.items()
             },
             "patterns": {
-                pattern_id: pattern.dict() for pattern_id, pattern in self.patterns.items()
+                pattern_id: pattern.dict()
+                for pattern_id, pattern in self.patterns.items()
             },
             "export_timestamp": datetime.utcnow().isoformat(),
             "total_items": len(self.knowledge_items),
-            "total_patterns": len(self.patterns)
+            "total_patterns": len(self.patterns),
         }
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(export_data, f, indent=2, default=str)
 
         logger.info(f"Knowledge base exported to {file_path}")
@@ -397,7 +393,8 @@ class SemanticMemory:
         """Create database tables."""
         async with aiosqlite.connect(self.db_path) as db:
             # Knowledge items table
-            await db.execute("""
+            await db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS knowledge_items (
                     knowledge_id TEXT PRIMARY KEY,
                     knowledge_type TEXT NOT NULL,
@@ -414,10 +411,12 @@ class SemanticMemory:
                     last_accessed TEXT,
                     embedding BLOB
                 )
-            """)
+            """
+            )
 
             # Patterns table
-            await db.execute("""
+            await db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS knowledge_patterns (
                     pattern_id TEXT PRIMARY KEY,
                     pattern_type TEXT NOT NULL,
@@ -429,13 +428,22 @@ class SemanticMemory:
                     created_from_executions TEXT,
                     last_updated TEXT NOT NULL
                 )
-            """)
+            """
+            )
 
             # Create indexes
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_items(knowledge_type)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_domain ON knowledge_items(domain)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_confidence ON knowledge_items(confidence)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_pattern_type ON knowledge_patterns(pattern_type)")
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_items(knowledge_type)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_domain ON knowledge_items(domain)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_confidence ON knowledge_items(confidence)"
+            )
+            await db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_pattern_type ON knowledge_patterns(pattern_type)"
+            )
 
             await db.commit()
 
@@ -446,31 +454,44 @@ class SemanticMemory:
             if item.embedding:
                 embedding_blob = pickle.dumps(np.array(item.embedding))
 
-            await db.execute("""
+            await db.execute(
+                """
                 INSERT OR REPLACE INTO knowledge_items
                 (knowledge_id, knowledge_type, title, content, domain, tags,
                  metadata, source, confidence, created_at, updated_at,
                  access_count, last_accessed, embedding)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                item.knowledge_id, item.knowledge_type, item.title, item.content,
-                item.domain, json.dumps(item.tags), json.dumps(item.metadata),
-                item.source, item.confidence, item.created_at.isoformat(),
-                item.updated_at.isoformat(), item.access_count,
-                item.last_accessed.isoformat() if item.last_accessed else None,
-                embedding_blob
-            ))
+            """,
+                (
+                    item.knowledge_id,
+                    item.knowledge_type,
+                    item.title,
+                    item.content,
+                    item.domain,
+                    json.dumps(item.tags),
+                    json.dumps(item.metadata),
+                    item.source,
+                    item.confidence,
+                    item.created_at.isoformat(),
+                    item.updated_at.isoformat(),
+                    item.access_count,
+                    item.last_accessed.isoformat() if item.last_accessed else None,
+                    embedding_blob,
+                ),
+            )
             await db.commit()
 
     async def _load_knowledge_items(self):
         """Load knowledge items from database."""
         async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("""
+            async with db.execute(
+                """
                 SELECT knowledge_id, knowledge_type, title, content, domain,
                        tags, metadata, source, confidence, created_at, updated_at,
                        access_count, last_accessed, embedding
                 FROM knowledge_items
-            """) as cursor:
+            """
+            ) as cursor:
                 rows = await cursor.fetchall()
 
                 for row in rows:
@@ -494,8 +515,10 @@ class SemanticMemory:
                         created_at=datetime.fromisoformat(row[9]),
                         updated_at=datetime.fromisoformat(row[10]),
                         access_count=row[11],
-                        last_accessed=datetime.fromisoformat(row[12]) if row[12] else None,
-                        embedding=embedding_list
+                        last_accessed=(
+                            datetime.fromisoformat(row[12]) if row[12] else None
+                        ),
+                        embedding=embedding_list,
                     )
 
                     self.knowledge_items[item.knowledge_id] = item
@@ -503,28 +526,37 @@ class SemanticMemory:
     async def _store_pattern(self, pattern: KnowledgePattern):
         """Store pattern in database."""
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
+            await db.execute(
+                """
                 INSERT OR REPLACE INTO knowledge_patterns
                 (pattern_id, pattern_type, description, conditions, actions,
                  success_rate, usage_count, created_from_executions, last_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                pattern.pattern_id, pattern.pattern_type, pattern.description,
-                json.dumps(pattern.conditions), json.dumps(pattern.actions),
-                pattern.success_rate, pattern.usage_count,
-                json.dumps(pattern.created_from_executions),
-                pattern.last_updated.isoformat()
-            ))
+            """,
+                (
+                    pattern.pattern_id,
+                    pattern.pattern_type,
+                    pattern.description,
+                    json.dumps(pattern.conditions),
+                    json.dumps(pattern.actions),
+                    pattern.success_rate,
+                    pattern.usage_count,
+                    json.dumps(pattern.created_from_executions),
+                    pattern.last_updated.isoformat(),
+                ),
+            )
             await db.commit()
 
     async def _load_patterns(self):
         """Load patterns from database."""
         async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute("""
+            async with db.execute(
+                """
                 SELECT pattern_id, pattern_type, description, conditions, actions,
                        success_rate, usage_count, created_from_executions, last_updated
                 FROM knowledge_patterns
-            """) as cursor:
+            """
+            ) as cursor:
                 rows = await cursor.fetchall()
 
                 for row in rows:
@@ -537,7 +569,7 @@ class SemanticMemory:
                         success_rate=row[5],
                         usage_count=row[6],
                         created_from_executions=json.loads(row[7]),
-                        last_updated=datetime.fromisoformat(row[8])
+                        last_updated=datetime.fromisoformat(row[8]),
                     )
 
                     self.patterns[pattern.pattern_id] = pattern
@@ -575,9 +607,7 @@ class SemanticMemory:
         await self._store_pattern(pattern)
 
     async def _find_similar_pattern(
-        self,
-        conditions: Dict[str, Any],
-        actions: List[str]
+        self, conditions: Dict[str, Any], actions: List[str]
     ) -> Optional[KnowledgePattern]:
         """Find existing pattern similar to the given conditions and actions."""
         for pattern in self.patterns.values():
@@ -594,9 +624,7 @@ class SemanticMemory:
         return None
 
     def _calculate_condition_match(
-        self,
-        pattern_conditions: Dict[str, Any],
-        current_conditions: Dict[str, Any]
+        self, pattern_conditions: Dict[str, Any], current_conditions: Dict[str, Any]
     ) -> float:
         """Calculate how well pattern conditions match current conditions."""
         if not pattern_conditions:
@@ -609,7 +637,9 @@ class SemanticMemory:
             if key in current_conditions:
                 if current_conditions[key] == value:
                     matches += 1
-                elif isinstance(value, (int, float)) and isinstance(current_conditions[key], (int, float)):
+                elif isinstance(value, (int, float)) and isinstance(
+                    current_conditions[key], (int, float)
+                ):
                     # Numerical similarity
                     diff = abs(value - current_conditions[key])
                     max_val = max(abs(value), abs(current_conditions[key]), 1)
@@ -618,7 +648,9 @@ class SemanticMemory:
 
         return matches / total
 
-    def _calculate_action_similarity(self, actions1: List[str], actions2: List[str]) -> float:
+    def _calculate_action_similarity(
+        self, actions1: List[str], actions2: List[str]
+    ) -> float:
         """Calculate similarity between two action lists."""
         if not actions1 or not actions2:
             return 0.0
@@ -638,8 +670,7 @@ class SemanticMemory:
 
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "DELETE FROM knowledge_items WHERE knowledge_id = ?",
-                (knowledge_id,)
+                "DELETE FROM knowledge_items WHERE knowledge_id = ?", (knowledge_id,)
             )
             await db.commit()
 
@@ -653,7 +684,8 @@ class SemanticMemory:
         cutoff_date = datetime.utcnow() - timedelta(days=30)
 
         patterns_to_remove = [
-            pattern_id for pattern_id, pattern in self.patterns.items()
+            pattern_id
+            for pattern_id, pattern in self.patterns.items()
             if pattern.usage_count < 3 and pattern.last_updated < cutoff_date
         ]
 
@@ -662,8 +694,7 @@ class SemanticMemory:
 
             async with aiosqlite.connect(self.db_path) as db:
                 await db.execute(
-                    "DELETE FROM knowledge_patterns WHERE pattern_id = ?",
-                    (pattern_id,)
+                    "DELETE FROM knowledge_patterns WHERE pattern_id = ?", (pattern_id,)
                 )
                 await db.commit()
 
@@ -678,4 +709,3 @@ class SemanticMemory:
             except Exception as e:
                 logger.error(f"Consolidation worker error: {e}")
                 await asyncio.sleep(3600)  # Wait 1 hour on error
-

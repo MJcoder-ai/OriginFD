@@ -2,12 +2,15 @@
 Simple component API router for ODL-SD integration.
 Provides basic component management functionality.
 """
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File
-from pydantic import BaseModel, Field
+
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel, Field
 
 router = APIRouter()
+
 
 # Simple data models for component management
 class ComponentResponse(BaseModel):
@@ -28,6 +31,7 @@ class ComponentResponse(BaseModel):
     updated_at: str
     created_by: Optional[str] = None
 
+
 class ComponentCreateRequest(BaseModel):
     brand: str
     part_number: str
@@ -38,6 +42,7 @@ class ComponentCreateRequest(BaseModel):
     scale: Optional[str] = None
     classification: Optional[dict] = None
 
+
 class ComponentListResponse(BaseModel):
     components: List[ComponentResponse]
     total: int
@@ -47,7 +52,9 @@ class ComponentListResponse(BaseModel):
 
 class DatasheetParseResponse(BaseModel):
     """Response model for parsed datasheet attributes."""
+
     attributes: Dict[str, Any]
+
 
 # Mock data for testing
 MOCK_COMPONENTS = [
@@ -62,7 +69,7 @@ MOCK_COMPONENTS = [
         domain="PV",
         scale="RESIDENTIAL",
         created_at=datetime.now().isoformat(),
-        updated_at=datetime.now().isoformat()
+        updated_at=datetime.now().isoformat(),
     ),
     ComponentResponse(
         id="2",
@@ -75,7 +82,7 @@ MOCK_COMPONENTS = [
         domain="BESS",
         scale="RESIDENTIAL",
         created_at=datetime.now().isoformat(),
-        updated_at=datetime.now().isoformat()
+        updated_at=datetime.now().isoformat(),
     ),
     ComponentResponse(
         id="3",
@@ -88,9 +95,10 @@ MOCK_COMPONENTS = [
         domain="PV",
         scale="RESIDENTIAL",
         created_at=datetime.now().isoformat(),
-        updated_at=datetime.now().isoformat()
-    )
+        updated_at=datetime.now().isoformat(),
+    ),
 ]
+
 
 @router.get("/", response_model=ComponentListResponse)
 async def list_components(
@@ -101,7 +109,7 @@ async def list_components(
     domain: Optional[str] = Query(None),
     brand: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
-    active_only: bool = Query(True)
+    active_only: bool = Query(True),
 ):
     """List components with filtering and pagination"""
 
@@ -118,12 +126,15 @@ async def list_components(
         filtered_components = [c for c in filtered_components if c.domain == domain]
 
     if brand:
-        filtered_components = [c for c in filtered_components if brand.lower() in c.brand.lower()]
+        filtered_components = [
+            c for c in filtered_components if brand.lower() in c.brand.lower()
+        ]
 
     if search:
         search_lower = search.lower()
         filtered_components = [
-            c for c in filtered_components
+            c
+            for c in filtered_components
             if search_lower in c.brand.lower() or search_lower in c.part_number.lower()
         ]
 
@@ -139,8 +150,9 @@ async def list_components(
         components=paginated_components,
         total=len(filtered_components),
         page=page,
-        page_size=page_size
+        page_size=page_size,
     )
+
 
 @router.get("/{component_id}", response_model=ComponentResponse)
 async def get_component(component_id: str):
@@ -149,6 +161,7 @@ async def get_component(component_id: str):
     if not component:
         raise HTTPException(status_code=404, detail="Component not found")
     return component
+
 
 @router.post("/", response_model=ComponentResponse)
 async def create_component(request: ComponentCreateRequest):
@@ -167,11 +180,12 @@ async def create_component(request: ComponentCreateRequest):
         classification=request.classification,
         created_at=datetime.now().isoformat(),
         updated_at=datetime.now().isoformat(),
-        created_by="system"
+        created_by="system",
     )
 
     MOCK_COMPONENTS.append(new_component)
     return new_component
+
 
 @router.get("/stats/summary")
 async def get_component_stats():
@@ -181,16 +195,21 @@ async def get_component_stats():
         "active_components": len([c for c in MOCK_COMPONENTS if c.is_active]),
         "draft_components": 0,
         "categories": {
-            "generation": len([c for c in MOCK_COMPONENTS if c.category == "generation"]),
+            "generation": len(
+                [c for c in MOCK_COMPONENTS if c.category == "generation"]
+            ),
             "storage": len([c for c in MOCK_COMPONENTS if c.category == "storage"]),
-            "conversion": len([c for c in MOCK_COMPONENTS if c.category == "conversion"])
+            "conversion": len(
+                [c for c in MOCK_COMPONENTS if c.category == "conversion"]
+            ),
         },
         "domains": {
             "PV": len([c for c in MOCK_COMPONENTS if c.domain == "PV"]),
             "BESS": len([c for c in MOCK_COMPONENTS if c.domain == "BESS"]),
-            "HYBRID": len([c for c in MOCK_COMPONENTS if c.domain == "HYBRID"])
-        }
+            "HYBRID": len([c for c in MOCK_COMPONENTS if c.domain == "HYBRID"]),
+        },
     }
+
 
 @router.get("/search/suggestions")
 async def get_search_suggestions(q: str = Query(...)):
@@ -206,10 +225,7 @@ async def get_search_suggestions(q: str = Query(...)):
         if q_lower in component.part_number.lower():
             part_numbers.add(component.part_number)
 
-    return {
-        "brands": list(brands)[:10],
-        "part_numbers": list(part_numbers)[:10]
-    }
+    return {"brands": list(brands)[:10], "part_numbers": list(part_numbers)[:10]}
 
 
 @router.post("/parse-datasheet", response_model=DatasheetParseResponse)
@@ -218,8 +234,9 @@ async def parse_datasheet(file: UploadFile = File(...)):
     content = await file.read()
     text = ""
     try:
-        from pypdf import PdfReader
         import io
+
+        from pypdf import PdfReader
 
         reader = PdfReader(io.BytesIO(content))
         for page in reader.pages:

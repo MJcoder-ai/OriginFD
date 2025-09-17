@@ -1,17 +1,30 @@
 """
 ODL-SD Document Generator
 """
+
 import hashlib
 import json
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from .schemas import (
-    OdlSdDocument, MetaData, Timestamps, Versioning, UnitSystem,
-    PortfolioHierarchy, Requirements, FunctionalRequirements,
-    TechnicalRequirements, RegulatoryRequirements, DataManagement,
-    ComponentInstance, Connection, AuditEntry, Domain, Scale
+    AuditEntry,
+    ComponentInstance,
+    Connection,
+    DataManagement,
+    Domain,
+    FunctionalRequirements,
+    MetaData,
+    OdlSdDocument,
+    PortfolioHierarchy,
+    RegulatoryRequirements,
+    Requirements,
+    Scale,
+    TechnicalRequirements,
+    Timestamps,
+    UnitSystem,
+    Versioning,
 )
 
 
@@ -31,7 +44,7 @@ class DocumentGenerator:
         scale: str,
         description: Optional[str] = None,
         location: Optional[str] = None,
-        capacity_kw: Optional[float] = None
+        capacity_kw: Optional[float] = None,
     ) -> OdlSdDocument:
         """Create a base ODL-SD document from project parameters"""
 
@@ -43,14 +56,11 @@ class DocumentGenerator:
             domain=Domain(domain),
             scale=Scale(scale),
             units=UnitSystem(),
-            timestamps=Timestamps(
-                created_at=current_time,
-                updated_at=current_time
-            ),
+            timestamps=Timestamps(created_at=current_time, updated_at=current_time),
             versioning=Versioning(
                 document_version="4.1.0",
-                content_hash="sha256:" + "0" * 64  # Will be calculated later
-            )
+                content_hash="sha256:" + "0" * 64,  # Will be calculated later
+            ),
         )
 
         # Create hierarchy
@@ -59,7 +69,7 @@ class DocumentGenerator:
                 "id": f"portfolio-{str(uuid4())[:8]}",
                 "name": project_name,
                 "description": description or f"{domain} {scale} project",
-                "location": location or "TBD"
+                "location": location or "TBD",
             }
         }
 
@@ -92,7 +102,7 @@ class DocumentGenerator:
         requirements = Requirements(
             functional=functional_req,
             technical=technical_req,
-            regulatory=regulatory_req
+            regulatory=regulatory_req,
         )
 
         # Create document
@@ -105,7 +115,7 @@ class DocumentGenerator:
             connections=[],
             analysis=[],
             audit=[],
-            data_management=DataManagement()
+            data_management=DataManagement(),
         )
 
         # Calculate and set content hash
@@ -128,13 +138,9 @@ class DocumentGenerator:
                 "module_type": "c-Si",
                 "tracking": "fixed",
                 "tilt_angle": 25,
-                "azimuth": 180
+                "azimuth": 180,
             },
-            metadata={
-                "manufacturer": "TBD",
-                "model": "TBD",
-                "efficiency": 0.20
-            }
+            metadata={"manufacturer": "TBD", "model": "TBD", "efficiency": 0.20},
         )
         document.instances.append(pv_array)
 
@@ -145,12 +151,9 @@ class DocumentGenerator:
             parameters={
                 "capacity_kw": capacity_kw * 0.95,  # DC/AC ratio
                 "efficiency": 0.98,
-                "type": "string"
+                "type": "string",
             },
-            metadata={
-                "manufacturer": "TBD",
-                "model": "TBD"
-            }
+            metadata={"manufacturer": "TBD", "model": "TBD"},
         )
         document.instances.append(inverter)
 
@@ -162,15 +165,17 @@ class DocumentGenerator:
             connection_type="dc_electrical",
             parameters={
                 "voltage_range": "600-1500V",
-                "current_max": capacity_kw / 800 * 1000  # Approximate DC current
-            }
+                "current_max": capacity_kw / 800 * 1000,  # Approximate DC current
+            },
         )
         document.connections.append(pv_inverter_connection)
 
         return document
 
     @staticmethod
-    def add_bess_components(document: OdlSdDocument, capacity_kw: float, duration_hours: float = 4.0) -> OdlSdDocument:
+    def add_bess_components(
+        document: OdlSdDocument, capacity_kw: float, duration_hours: float = 4.0
+    ) -> OdlSdDocument:
         """Add battery energy storage system components"""
 
         energy_kwh = capacity_kw * duration_hours
@@ -184,13 +189,9 @@ class DocumentGenerator:
                 "power_kw": capacity_kw,
                 "chemistry": "lithium_ion",
                 "voltage_nominal": 400,
-                "efficiency_roundtrip": 0.90
+                "efficiency_roundtrip": 0.90,
             },
-            metadata={
-                "manufacturer": "TBD",
-                "model": "TBD",
-                "cycle_life": 6000
-            }
+            metadata={"manufacturer": "TBD", "model": "TBD", "cycle_life": 6000},
         )
         document.instances.append(battery)
 
@@ -201,12 +202,9 @@ class DocumentGenerator:
             parameters={
                 "capacity_kw": capacity_kw,
                 "efficiency": 0.95,
-                "bidirectional": True
+                "bidirectional": True,
             },
-            metadata={
-                "manufacturer": "TBD",
-                "model": "TBD"
-            }
+            metadata={"manufacturer": "TBD", "model": "TBD"},
         )
         document.instances.append(pcs)
 
@@ -218,29 +216,36 @@ class DocumentGenerator:
             connection_type="dc_electrical",
             parameters={
                 "voltage_range": "300-500V",
-                "current_max": capacity_kw / 400 * 1000  # Approximate DC current
-            }
+                "current_max": capacity_kw / 400 * 1000,  # Approximate DC current
+            },
         )
         document.connections.append(batt_pcs_connection)
 
         return document
 
     @staticmethod
-    def add_audit_entry(document: OdlSdDocument, action: str, user_id: str, changes: Optional[Dict] = None) -> OdlSdDocument:
+    def add_audit_entry(
+        document: OdlSdDocument,
+        action: str,
+        user_id: str,
+        changes: Optional[Dict] = None,
+    ) -> OdlSdDocument:
         """Add audit entry to document"""
 
         audit_entry = AuditEntry(
             timestamp=datetime.utcnow().isoformat() + "Z",
             action=action,
             user_id=user_id,
-            changes=changes or {}
+            changes=changes or {},
         )
         document.audit.append(audit_entry)
 
         # Update document timestamp and hash
         document.meta.timestamps.updated_at = datetime.utcnow().isoformat() + "Z"
         content_dict = document.to_dict()
-        document.meta.versioning.content_hash = DocumentGenerator.generate_content_hash(content_dict)
+        document.meta.versioning.content_hash = DocumentGenerator.generate_content_hash(
+            content_dict
+        )
 
         return document
 
@@ -252,7 +257,7 @@ class DocumentGenerator:
         description: Optional[str] = None,
         location: Optional[str] = None,
         capacity_kw: Optional[float] = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
     ) -> OdlSdDocument:
         """Create a complete ODL-SD document for a project"""
 
@@ -263,7 +268,7 @@ class DocumentGenerator:
             scale=scale,
             description=description,
             location=location,
-            capacity_kw=capacity_kw
+            capacity_kw=capacity_kw,
         )
 
         # Add domain-specific components
@@ -277,15 +282,14 @@ class DocumentGenerator:
                 pv_capacity = capacity_kw * 0.7  # 70% PV
                 bess_capacity = capacity_kw * 0.3  # 30% BESS
                 document = DocumentGenerator.add_pv_components(document, pv_capacity)
-                document = DocumentGenerator.add_bess_components(document, bess_capacity, 2.0)  # 2-hour duration
+                document = DocumentGenerator.add_bess_components(
+                    document, bess_capacity, 2.0
+                )  # 2-hour duration
 
         # Add initial audit entry
         if user_id:
             document = DocumentGenerator.add_audit_entry(
-                document,
-                "document_created",
-                user_id,
-                {"initial_creation": True}
+                document, "document_created", user_id, {"initial_creation": True}
             )
 
         return document

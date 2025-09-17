@@ -1,21 +1,23 @@
 """
 Health check endpoints for monitoring and load balancer health checks.
 """
+
+import os
+import time
+from typing import Any, Dict
+
+import psutil
+from core.config import get_settings
+from core.database import check_database_connection
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any
-import time
-import psutil
-import os
-
-from core.database import check_database_connection
-from core.config import get_settings
 
 router = APIRouter()
 
 
 class HealthResponse(BaseModel):
     """Health check response model."""
+
     status: str
     timestamp: float
     version: str
@@ -25,6 +27,7 @@ class HealthResponse(BaseModel):
 
 class DetailedHealthResponse(BaseModel):
     """Detailed health check response model."""
+
     status: str
     timestamp: float
     version: str
@@ -51,7 +54,7 @@ async def health_check():
         timestamp=time.time(),
         version=settings.VERSION,
         environment=settings.ENVIRONMENT,
-        uptime_seconds=time.time() - start_time
+        uptime_seconds=time.time() - start_time,
     )
 
 
@@ -66,10 +69,7 @@ async def readiness_check():
     # Check database connection
     db_healthy = await check_database_connection()
     if not db_healthy:
-        raise HTTPException(
-            status_code=503,
-            detail="Database connection failed"
-        )
+        raise HTTPException(status_code=503, detail="Database connection failed")
 
     # TODO: Add Redis connection check
     # TODO: Add other service dependency checks
@@ -79,7 +79,7 @@ async def readiness_check():
         timestamp=time.time(),
         version=settings.VERSION,
         environment=settings.ENVIRONMENT,
-        uptime_seconds=time.time() - start_time
+        uptime_seconds=time.time() - start_time,
     )
 
 
@@ -97,25 +97,33 @@ async def detailed_health_check():
     services = {
         "database": {
             "status": "healthy" if db_healthy else "unhealthy",
-            "url": settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else "configured"
+            "url": (
+                settings.DATABASE_URL.split("@")[-1]
+                if "@" in settings.DATABASE_URL
+                else "configured"
+            ),
         },
         "redis": {
             "status": "unknown",  # TODO: Add Redis health check
-            "url": settings.REDIS_URL.split("@")[-1] if "@" in settings.REDIS_URL else "configured"
-        }
+            "url": (
+                settings.REDIS_URL.split("@")[-1]
+                if "@" in settings.REDIS_URL
+                else "configured"
+            ),
+        },
     }
 
     # Get system metrics
     try:
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         system = {
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory_percent": memory.percent,
             "memory_available_gb": round(memory.available / (1024**3), 2),
             "disk_percent": disk.percent,
             "disk_free_gb": round(disk.free / (1024**3), 2),
-            "load_average": os.getloadavg() if hasattr(os, 'getloadavg') else None
+            "load_average": os.getloadavg() if hasattr(os, "getloadavg") else None,
         }
     except Exception as e:
         system = {"error": f"Could not get system metrics: {str(e)}"}
@@ -132,5 +140,5 @@ async def detailed_health_check():
         environment=settings.ENVIRONMENT,
         uptime_seconds=time.time() - start_time,
         services=services,
-        system=system
+        system=system,
     )

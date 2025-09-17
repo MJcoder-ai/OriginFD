@@ -3,23 +3,23 @@ Production-grade Role-Based Access Control (RBAC) system.
 Implements comprehensive authorization checks for all resources.
 """
 
-from enum import Enum
-from typing import List, Optional, Dict, Any, Union
-from uuid import UUID
 import logging
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
-from fastapi import HTTPException, status, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-
-from core.database import get_db
 from api.routers.auth import get_current_user
+from core.database import get_db
+from fastapi import Depends, HTTPException, status
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 # =====================================
 # Permission System Enums
 # =====================================
+
 
 class Permission(str, Enum):
     """Granular permissions for resources and actions."""
@@ -63,6 +63,7 @@ class Permission(str, Enum):
     ANALYTICS_READ = "analytics:read"
     ANALYTICS_EXPORT = "analytics:export"
 
+
 class Role(str, Enum):
     """User roles with hierarchical permissions."""
 
@@ -73,6 +74,7 @@ class Role(str, Enum):
     VIEWER = "viewer"
     GUEST = "guest"
 
+
 class ResourceType(str, Enum):
     """Types of resources that can be protected."""
 
@@ -81,6 +83,7 @@ class ResourceType(str, Enum):
     DOCUMENT = "document"
     USER = "user"
     SYSTEM = "system"
+
 
 # =====================================
 # Role-Permission Mapping
@@ -122,7 +125,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         Permission.ANALYTICS_READ,
         Permission.ANALYTICS_EXPORT,
     ],
-
     Role.ADMIN: [
         # Limited system access
         Permission.SYSTEM_MONITOR,
@@ -154,7 +156,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         Permission.ANALYTICS_READ,
         Permission.ANALYTICS_EXPORT,
     ],
-
     Role.ENGINEER: [
         # Basic user access
         Permission.USER_READ,
@@ -177,7 +178,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         # Analytics read access
         Permission.ANALYTICS_READ,
     ],
-
     Role.REVIEWER: [
         # Basic user access
         Permission.USER_READ,
@@ -194,7 +194,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         # Analytics read access
         Permission.ANALYTICS_READ,
     ],
-
     Role.VIEWER: [
         # Basic user access
         Permission.USER_READ,
@@ -207,7 +206,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         # Read-only analytics access
         Permission.ANALYTICS_READ,
     ],
-
     Role.GUEST: [
         # Very limited read access
         Permission.PROJECT_READ,
@@ -220,18 +218,21 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
 # Authorization Classes
 # =====================================
 
+
 class AuthorizationError(HTTPException):
     """Custom authorization error with detailed messaging."""
 
-    def __init__(self, message: str = "Access denied", resource: str = None, action: str = None):
+    def __init__(
+        self, message: str = "Access denied", resource: str = None, action: str = None
+    ):
         detail = message
         if resource and action:
-            detail = f"Access denied: insufficient permissions for {action} on {resource}"
+            detail = (
+                f"Access denied: insufficient permissions for {action} on {resource}"
+            )
 
-        super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail
-        )
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
 
 class AuthorizationContext:
     """Context for authorization decisions."""
@@ -242,13 +243,14 @@ class AuthorizationContext:
         resource_type: ResourceType,
         resource_id: Optional[Union[str, UUID]] = None,
         action: Optional[Permission] = None,
-        resource_data: Optional[Dict[str, Any]] = None
+        resource_data: Optional[Dict[str, Any]] = None,
     ):
         self.user = user
         self.resource_type = resource_type
         self.resource_id = resource_id
         self.action = action
         self.resource_data = resource_data
+
 
 class PermissionChecker:
     """Centralized permission checking logic."""
@@ -262,11 +264,15 @@ class PermissionChecker:
         role_permissions = ROLE_PERMISSIONS.get(user_role, [])
         return permission in role_permissions
 
-    def user_has_any_permission(self, user: Dict[str, Any], permissions: List[Permission]) -> bool:
+    def user_has_any_permission(
+        self, user: Dict[str, Any], permissions: List[Permission]
+    ) -> bool:
         """Check if user has any of the specified permissions."""
         return any(self.user_has_permission(user, perm) for perm in permissions)
 
-    def user_has_all_permissions(self, user: Dict[str, Any], permissions: List[Permission]) -> bool:
+    def user_has_all_permissions(
+        self, user: Dict[str, Any], permissions: List[Permission]
+    ) -> bool:
         """Check if user has all of the specified permissions."""
         return all(self.user_has_permission(user, perm) for perm in permissions)
 
@@ -275,7 +281,7 @@ class PermissionChecker:
         user: Dict[str, Any],
         resource_type: ResourceType,
         resource_id: Union[str, UUID],
-        require_ownership: bool = True
+        require_ownership: bool = True,
     ) -> Optional[Any]:
         """Check if user owns or has access to a resource."""
 
@@ -284,7 +290,7 @@ class PermissionChecker:
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid resource ID format"
+                detail="Invalid resource ID format",
             )
 
         user_id = UUID(user["id"])
@@ -292,11 +298,9 @@ class PermissionChecker:
 
         if resource_type == ResourceType.PROJECT:
             from models.project import Project
+
             query = self.db.query(Project).filter(
-                and_(
-                    Project.id == resource_id_uuid,
-                    Project.tenant_id == tenant_id
-                )
+                and_(Project.id == resource_id_uuid, Project.tenant_id == tenant_id)
             )
 
             if require_ownership:
@@ -306,11 +310,9 @@ class PermissionChecker:
 
         elif resource_type == ResourceType.COMPONENT:
             from models.component import Component
+
             query = self.db.query(Component).filter(
-                and_(
-                    Component.id == resource_id_uuid,
-                    Component.tenant_id == tenant_id
-                )
+                and_(Component.id == resource_id_uuid, Component.tenant_id == tenant_id)
             )
 
             if require_ownership:
@@ -320,11 +322,9 @@ class PermissionChecker:
 
         elif resource_type == ResourceType.DOCUMENT:
             from models.document import Document
+
             query = self.db.query(Document).filter(
-                and_(
-                    Document.id == resource_id_uuid,
-                    Document.tenant_id == tenant_id
-                )
+                and_(Document.id == resource_id_uuid, Document.tenant_id == tenant_id)
             )
 
             if require_ownership:
@@ -335,13 +335,13 @@ class PermissionChecker:
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported resource type: {resource_type}"
+                detail=f"Unsupported resource type: {resource_type}",
             )
 
         if not resource:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"{resource_type.value.title()} not found"
+                detail=f"{resource_type.value.title()} not found",
             )
 
         return resource
@@ -350,16 +350,22 @@ class PermissionChecker:
         """Main authorization check with comprehensive logic."""
 
         # Check basic permission
-        if context.action and not self.user_has_permission(context.user, context.action):
+        if context.action and not self.user_has_permission(
+            context.user, context.action
+        ):
             # Special case: allow users to read their own resources
-            if context.action in [Permission.PROJECT_READ, Permission.COMPONENT_READ, Permission.DOCUMENT_READ]:
+            if context.action in [
+                Permission.PROJECT_READ,
+                Permission.COMPONENT_READ,
+                Permission.DOCUMENT_READ,
+            ]:
                 if context.resource_id:
                     try:
                         resource = self.check_resource_ownership(
                             context.user,
                             context.resource_type,
                             context.resource_id,
-                            require_ownership=True
+                            require_ownership=True,
                         )
                         return resource
                     except HTTPException:
@@ -368,192 +374,201 @@ class PermissionChecker:
             raise AuthorizationError(
                 f"Insufficient permissions for {context.action}",
                 context.resource_type.value,
-                context.action.value
+                context.action.value,
             )
 
         # Check resource-specific access
         if context.resource_id:
             # Determine if ownership is required based on user role and action
             user_role = Role(context.user.get("role", Role.GUEST))
-            require_ownership = (
-                user_role not in [Role.SUPER_ADMIN, Role.ADMIN] and
-                context.action not in [Permission.COMPONENT_APPROVE, Permission.PROJECT_READ]
-            )
+            require_ownership = user_role not in [
+                Role.SUPER_ADMIN,
+                Role.ADMIN,
+            ] and context.action not in [
+                Permission.COMPONENT_APPROVE,
+                Permission.PROJECT_READ,
+            ]
 
             resource = self.check_resource_ownership(
                 context.user,
                 context.resource_type,
                 context.resource_id,
-                require_ownership=require_ownership
+                require_ownership=require_ownership,
             )
             return resource
 
         return True
 
+
 # =====================================
 # FastAPI Dependencies
 # =====================================
 
+
 def get_permission_checker(db: Session = Depends(get_db)) -> PermissionChecker:
     """Get permission checker instance."""
     return PermissionChecker(db)
+
 
 def require_permission(permission: Permission):
     """Dependency factory for requiring specific permissions."""
 
     def check_permission(
         user: Dict[str, Any] = Depends(get_current_user),
-        checker: PermissionChecker = Depends(get_permission_checker)
+        checker: PermissionChecker = Depends(get_permission_checker),
     ):
         if not checker.user_has_permission(user, permission):
             raise AuthorizationError(
-                f"Required permission: {permission}",
-                action=permission.value
+                f"Required permission: {permission}", action=permission.value
             )
         return user
 
     return check_permission
+
 
 def require_any_permission(permissions: List[Permission]):
     """Dependency factory for requiring any of the specified permissions."""
 
     def check_permissions(
         user: Dict[str, Any] = Depends(get_current_user),
-        checker: PermissionChecker = Depends(get_permission_checker)
+        checker: PermissionChecker = Depends(get_permission_checker),
     ):
         if not checker.user_has_any_permission(user, permissions):
             perm_names = [p.value for p in permissions]
             raise AuthorizationError(
-                f"Required any of: {', '.join(perm_names)}",
-                action="multiple"
+                f"Required any of: {', '.join(perm_names)}", action="multiple"
             )
         return user
 
     return check_permissions
 
+
 def require_resource_access(
-    resource_type: ResourceType,
-    permission: Permission,
-    require_ownership: bool = True
+    resource_type: ResourceType, permission: Permission, require_ownership: bool = True
 ):
     """Dependency factory for resource-specific access control."""
 
     def check_access(
         resource_id: UUID,
         user: Dict[str, Any] = Depends(get_current_user),
-        checker: PermissionChecker = Depends(get_permission_checker)
+        checker: PermissionChecker = Depends(get_permission_checker),
     ):
         context = AuthorizationContext(
             user=user,
             resource_type=resource_type,
             resource_id=resource_id,
-            action=permission
+            action=permission,
         )
 
         return checker.authorize(context)
 
     return check_access
 
+
 # =====================================
 # Convenience Dependencies
 # =====================================
+
 
 # Project access dependencies
 def get_project_for_user(
     project_id: UUID,
     user: Dict[str, Any] = Depends(get_current_user),
-    checker: PermissionChecker = Depends(get_permission_checker)
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """Get project with read access verification."""
     context = AuthorizationContext(
         user=user,
         resource_type=ResourceType.PROJECT,
         resource_id=project_id,
-        action=Permission.PROJECT_READ
+        action=Permission.PROJECT_READ,
     )
     return checker.authorize(context)
+
 
 def get_project_for_update(
     project_id: UUID,
     user: Dict[str, Any] = Depends(get_current_user),
-    checker: PermissionChecker = Depends(get_permission_checker)
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """Get project with update access verification."""
     context = AuthorizationContext(
         user=user,
         resource_type=ResourceType.PROJECT,
         resource_id=project_id,
-        action=Permission.PROJECT_UPDATE
+        action=Permission.PROJECT_UPDATE,
     )
     return checker.authorize(context)
+
 
 # Component access dependencies
 def get_component_for_user(
     component_id: UUID,
     user: Dict[str, Any] = Depends(get_current_user),
-    checker: PermissionChecker = Depends(get_permission_checker)
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """Get component with read access verification."""
     context = AuthorizationContext(
         user=user,
         resource_type=ResourceType.COMPONENT,
         resource_id=component_id,
-        action=Permission.COMPONENT_READ
+        action=Permission.COMPONENT_READ,
     )
     return checker.authorize(context)
+
 
 def get_component_for_update(
     component_id: UUID,
     user: Dict[str, Any] = Depends(get_current_user),
-    checker: PermissionChecker = Depends(get_permission_checker)
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """Get component with update access verification."""
     context = AuthorizationContext(
         user=user,
         resource_type=ResourceType.COMPONENT,
         resource_id=component_id,
-        action=Permission.COMPONENT_UPDATE
+        action=Permission.COMPONENT_UPDATE,
     )
     return checker.authorize(context)
+
 
 # Document access dependencies
 def get_document_for_user(
     document_id: UUID,
     user: Dict[str, Any] = Depends(get_current_user),
-    checker: PermissionChecker = Depends(get_permission_checker)
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """Get document with read access verification."""
     context = AuthorizationContext(
         user=user,
         resource_type=ResourceType.DOCUMENT,
         resource_id=document_id,
-        action=Permission.DOCUMENT_READ
+        action=Permission.DOCUMENT_READ,
     )
     return checker.authorize(context)
+
 
 # =====================================
 # Utility Functions
 # =====================================
+
 
 def get_user_permissions(user: Dict[str, Any]) -> List[Permission]:
     """Get all permissions for a user based on their role."""
     user_role = Role(user.get("role", Role.GUEST))
     return ROLE_PERMISSIONS.get(user_role, [])
 
+
 def can_user_access_resource(
-    user: Dict[str, Any],
-    resource_type: ResourceType,
-    action: Permission,
-    db: Session
+    user: Dict[str, Any], resource_type: ResourceType, action: Permission, db: Session
 ) -> bool:
     """Check if user can perform action on resource type."""
     checker = PermissionChecker(db)
     return checker.user_has_permission(user, action)
 
+
 def filter_resources_for_user(
-    user: Dict[str, Any],
-    resource_type: ResourceType,
-    db: Session
+    user: Dict[str, Any], resource_type: ResourceType, db: Session
 ):
     """Get query filter for resources accessible to user."""
     user_id = UUID(user["id"])

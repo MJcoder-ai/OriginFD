@@ -1,13 +1,15 @@
 """
 Database models for ODL-SD documents.
 """
+
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Boolean, Text, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
 
-from .base import Base, TimestampMixin, UUIDMixin, TenantMixin
+from .base import Base, TenantMixin, TimestampMixin, UUIDMixin
 
 
 class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -15,18 +17,19 @@ class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
     Main document table for ODL-SD documents.
     Stores metadata and current version content.
     """
+
     __tablename__ = "documents"
     __table_args__ = (
         Index("ix_documents_tenant_project", "tenant_id", "project_name"),
         Index("ix_documents_domain_scale", "domain", "scale"),
-        {"postgresql_partition_by": "RANGE (created_at)"}  # Monthly partitions
+        {"postgresql_partition_by": "RANGE (created_at)"},  # Monthly partitions
     )
 
     # Document metadata
     project_name = Column(String(255), nullable=False)
     portfolio_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     domain = Column(String(50), nullable=False)  # PV, BESS, HYBRID, etc.
-    scale = Column(String(50), nullable=False)   # RESIDENTIAL, COMMERCIAL, etc.
+    scale = Column(String(50), nullable=False)  # RESIDENTIAL, COMMERCIAL, etc.
 
     # Current version info
     current_version = Column(Integer, nullable=False, default=1)
@@ -52,6 +55,7 @@ class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
     Version history for documents.
     Stores snapshots of document changes.
     """
+
     __tablename__ = "document_versions"
     __table_args__ = (
         Index("ix_doc_versions_document_version", "document_id", "version_number"),
@@ -67,7 +71,7 @@ class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
 
     # Patch information
     patch_operations = Column(JSONB, nullable=True)  # JSON-Patch operations
-    evidence_uris = Column(JSONB, nullable=True)     # Evidence for changes
+    evidence_uris = Column(JSONB, nullable=True)  # Evidence for changes
 
     # Actor information
     created_by = Column(UUID(as_uuid=True), nullable=False)
@@ -88,6 +92,7 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
     Access control for documents.
     Manages who can read/write specific documents.
     """
+
     __tablename__ = "document_access"
     __table_args__ = (
         Index("ix_doc_access_document_user", "document_id", "user_id"),
@@ -96,10 +101,12 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
 
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), nullable=True)  # Specific user
-    role = Column(String(100), nullable=True)            # Or role-based
+    role = Column(String(100), nullable=True)  # Or role-based
 
     # Permission flags
-    permissions = Column(JSONB, nullable=False)  # {"read": true, "write": false, "approve": false}
+    permissions = Column(
+        JSONB, nullable=False
+    )  # {"read": true, "write": false, "approve": false}
 
     # Access constraints
     expires_at = Column("expires_at", nullable=True)
@@ -129,5 +136,5 @@ RLS_POLICIES = [
     """
     CREATE POLICY document_access_tenant_policy ON document_access
     USING (tenant_id = current_setting('app.current_tenant', true)::uuid);
-    """
+    """,
 ]

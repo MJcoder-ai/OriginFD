@@ -2,36 +2,42 @@
 Tool Registry for managing and executing typed tools.
 All tools have versioned schemas with input/output validation.
 """
+
 import asyncio
-import json
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Type
-from abc import ABC, abstractmethod
-from pydantic import BaseModel, ValidationError, create_model
 import importlib
 import inspect
+import json
+import logging
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Type
+
+from pydantic import BaseModel, ValidationError, create_model
 
 logger = logging.getLogger(__name__)
 
 
 class ToolError(Exception):
     """Base exception for tool-related errors."""
+
     pass
 
 
 class ToolValidationError(ToolError):
     """Tool input/output validation error."""
+
     pass
 
 
 class ToolExecutionError(ToolError):
     """Tool execution error."""
+
     pass
 
 
 class ToolMetadata(BaseModel):
     """Metadata for a registered tool."""
+
     name: str
     version: str
     description: str
@@ -47,6 +53,7 @@ class ToolMetadata(BaseModel):
 
 class ToolResult(BaseModel):
     """Standardized tool execution result."""
+
     success: bool
     content: Optional[Any] = None  # For backward compatibility
     execution_time_ms: int
@@ -75,8 +82,7 @@ class BaseTool(ABC):
         try:
             # Create Pydantic model from schema for validation
             input_model = create_model_from_schema(
-                f"{self.metadata.name}Input",
-                self.metadata.inputs_schema
+                f"{self.metadata.name}Input", self.metadata.inputs_schema
             )
             validated = input_model.parse_obj(inputs)
             return validated.dict()
@@ -87,8 +93,7 @@ class BaseTool(ABC):
         """Validate outputs against schema."""
         try:
             output_model = create_model_from_schema(
-                f"{self.metadata.name}Output",
-                self.metadata.outputs_schema
+                f"{self.metadata.name}Output", self.metadata.outputs_schema
             )
             validated = output_model.parse_obj(outputs)
             return validated.dict()
@@ -184,10 +189,10 @@ class ToolRegistry:
     async def _load_builtin_tools(self):
         """Load built-in tools from Python modules."""
         from .component_tools import (
-            ParseDatasheetTool,
-            ComponentDeduplicationTool,
             ComponentClassificationTool,
-            ComponentRecommendationTool
+            ComponentDeduplicationTool,
+            ComponentRecommendationTool,
+            ParseDatasheetTool,
         )
 
         builtin_tools = [
@@ -229,10 +234,14 @@ class ToolRegistry:
             module = importlib.import_module(module_name)
             func = getattr(module, function_name)
         except Exception as e:
-            raise ToolError(f"Failed to load implementation {module_name}.{function_name}: {e}")
+            raise ToolError(
+                f"Failed to load implementation {module_name}.{function_name}: {e}"
+            )
 
         if not callable(func):
-            raise ToolError(f"Implementation {module_name}.{function_name} is not callable")
+            raise ToolError(
+                f"Implementation {module_name}.{function_name} is not callable"
+            )
 
         class JsonDefinedTool(BaseTool):
             def __init__(self, metadata: ToolMetadata, func):
@@ -252,14 +261,26 @@ class ToolRegistry:
                         raw_outputs = await self._func(**validated_inputs)
                     else:
                         loop = asyncio.get_event_loop()
-                        raw_outputs = await loop.run_in_executor(None, lambda: self._func(**validated_inputs))
+                        raw_outputs = await loop.run_in_executor(
+                            None, lambda: self._func(**validated_inputs)
+                        )
 
                     validated_outputs = self.validate_outputs(raw_outputs)
-                    execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
-                    return ToolResult(success=True, execution_time_ms=execution_time, outputs=validated_outputs)
+                    execution_time = int(
+                        (asyncio.get_event_loop().time() - start_time) * 1000
+                    )
+                    return ToolResult(
+                        success=True,
+                        execution_time_ms=execution_time,
+                        outputs=validated_outputs,
+                    )
                 except Exception as e:  # pragma: no cover - defensive
-                    execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
-                    return ToolResult(success=False, execution_time_ms=execution_time, errors=[str(e)])
+                    execution_time = int(
+                        (asyncio.get_event_loop().time() - start_time) * 1000
+                    )
+                    return ToolResult(
+                        success=False, execution_time_ms=execution_time, errors=[str(e)]
+                    )
 
         return JsonDefinedTool(metadata, func)
 
@@ -274,7 +295,6 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
     if "properties" in schema:
         for field_name, field_schema in schema["properties"].items():
             field_type: Any = str  # Default type
-
 
             if field_schema.get("type") == "integer":
                 field_type = int
@@ -293,13 +313,13 @@ def create_model_from_schema(name: str, schema: Dict[str, Any]) -> Type[BaseMode
             if not is_required:
                 field_type = Optional[field_type]
 
-
             fields[field_name] = (field_type, default)
 
     return create_model(name, **fields)
 
 
 # Built-in Tools
+
 
 class ValidateOdlTool(BaseTool):
     """Tool for validating ODL-SD documents."""
@@ -314,27 +334,34 @@ class ValidateOdlTool(BaseTool):
             inputs_schema={
                 "type": "object",
                 "properties": {
-                    "document": {"type": "object", "description": "ODL-SD document to validate"},
-                    "strict": {"type": "boolean", "default": True, "description": "Enable strict validation"}
+                    "document": {
+                        "type": "object",
+                        "description": "ODL-SD document to validate",
+                    },
+                    "strict": {
+                        "type": "boolean",
+                        "default": True,
+                        "description": "Enable strict validation",
+                    },
                 },
                 "required": ["document"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
                 "properties": {
                     "is_valid": {"type": "boolean"},
                     "errors": {"type": "array", "items": {"type": "string"}},
-                    "warnings": {"type": "array", "items": {"type": "string"}}
+                    "warnings": {"type": "array", "items": {"type": "string"}},
                 },
                 "required": ["is_valid", "errors"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="none",
             rbac_scope=["document_read"],
             execution_time_estimate_ms=100,
             psu_cost_estimate=0,
-            tags=["validation", "schema"]
+            tags=["validation", "schema"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -355,7 +382,7 @@ class ValidateOdlTool(BaseTool):
             outputs = {
                 "is_valid": result.is_valid,
                 "errors": result.errors,
-                "warnings": result.warnings
+                "warnings": result.warnings,
             }
 
             validated_outputs = self.validate_outputs(outputs)
@@ -365,15 +392,13 @@ class ValidateOdlTool(BaseTool):
                 success=True,
                 execution_time_ms=execution_time,
                 outputs=validated_outputs,
-                intent="Validated ODL-SD document structure and content"
+                intent="Validated ODL-SD document structure and content",
             )
 
         except Exception as e:
             execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
             return ToolResult(
-                success=False,
-                execution_time_ms=execution_time,
-                errors=[str(e)]
+                success=False, execution_time_ms=execution_time, errors=[str(e)]
             )
 
 
@@ -391,11 +416,15 @@ class SimulateEnergyTool(BaseTool):
                 "type": "object",
                 "properties": {
                     "document_id": {"type": "string"},
-                    "simulation_period_years": {"type": "integer", "minimum": 1, "maximum": 30},
-                    "weather_data_source": {"type": "string", "default": "pvlib"}
+                    "simulation_period_years": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 30,
+                    },
+                    "weather_data_source": {"type": "string", "default": "pvlib"},
                 },
                 "required": ["document_id", "simulation_period_years"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
@@ -403,16 +432,19 @@ class SimulateEnergyTool(BaseTool):
                     "annual_generation_kwh": {"type": "number"},
                     "capacity_factor": {"type": "number"},
                     "performance_ratio": {"type": "number"},
-                    "monthly_generation": {"type": "array", "items": {"type": "number"}}
+                    "monthly_generation": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                    },
                 },
                 "required": ["annual_generation_kwh", "capacity_factor"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="read",
             rbac_scope=["simulation_run"],
             execution_time_estimate_ms=5000,
             psu_cost_estimate=2,
-            tags=["simulation", "energy", "pv"]
+            tags=["simulation", "energy", "pv"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -429,8 +461,20 @@ class SimulateEnergyTool(BaseTool):
                 "annual_generation_kwh": 1500000.0,
                 "capacity_factor": 0.24,
                 "performance_ratio": 0.85,
-                "monthly_generation": [95000, 110000, 135000, 145000, 150000, 145000,
-                                     140000, 135000, 125000, 115000, 100000, 90000]
+                "monthly_generation": [
+                    95000,
+                    110000,
+                    135000,
+                    145000,
+                    150000,
+                    145000,
+                    140000,
+                    135000,
+                    125000,
+                    115000,
+                    100000,
+                    90000,
+                ],
             }
 
             validated_outputs = self.validate_outputs(outputs)
@@ -440,15 +484,13 @@ class SimulateEnergyTool(BaseTool):
                 success=True,
                 execution_time_ms=execution_time,
                 outputs=validated_outputs,
-                intent="Simulated energy generation for solar PV system"
+                intent="Simulated energy generation for solar PV system",
             )
 
         except Exception as e:
             execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
             return ToolResult(
-                success=False,
-                execution_time_ms=execution_time,
-                errors=[str(e)]
+                success=False, execution_time_ms=execution_time, errors=[str(e)]
             )
 
 
@@ -468,10 +510,18 @@ class SimulateFinanceTool(BaseTool):
                     "document_id": {"type": "string"},
                     "discount_rate": {"type": "number", "minimum": 0, "maximum": 0.3},
                     "electricity_price_per_kwh": {"type": "number", "minimum": 0},
-                    "analysis_period_years": {"type": "integer", "minimum": 1, "maximum": 50}
+                    "analysis_period_years": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 50,
+                    },
                 },
-                "required": ["document_id", "discount_rate", "electricity_price_per_kwh"],
-                "additionalProperties": False
+                "required": [
+                    "document_id",
+                    "discount_rate",
+                    "electricity_price_per_kwh",
+                ],
+                "additionalProperties": False,
             },
             outputs_schema={
                 "type": "object",
@@ -479,16 +529,16 @@ class SimulateFinanceTool(BaseTool):
                     "irr_percent": {"type": "number"},
                     "npv_usd": {"type": "number"},
                     "lcoe_per_kwh": {"type": "number"},
-                    "payback_period_years": {"type": "number"}
+                    "payback_period_years": {"type": "number"},
                 },
                 "required": ["irr_percent", "npv_usd", "lcoe_per_kwh"],
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             side_effects="read",
             rbac_scope=["financial_analysis"],
             execution_time_estimate_ms=2000,
             psu_cost_estimate=3,
-            tags=["finance", "analysis", "irr", "npv"]
+            tags=["finance", "analysis", "irr", "npv"],
         )
 
     async def execute(self, inputs: Dict[str, Any]) -> ToolResult:
@@ -505,7 +555,7 @@ class SimulateFinanceTool(BaseTool):
                 "irr_percent": 12.5,
                 "npv_usd": 2850000.0,
                 "lcoe_per_kwh": 0.042,
-                "payback_period_years": 7.2
+                "payback_period_years": 7.2,
             }
 
             validated_outputs = self.validate_outputs(outputs)
@@ -515,13 +565,11 @@ class SimulateFinanceTool(BaseTool):
                 success=True,
                 execution_time_ms=execution_time,
                 outputs=validated_outputs,
-                intent="Calculated financial metrics for energy project"
+                intent="Calculated financial metrics for energy project",
             )
 
         except Exception as e:
             execution_time = int((asyncio.get_event_loop().time() - start_time) * 1000)
             return ToolResult(
-                success=False,
-                execution_time_ms=execution_time,
-                errors=[str(e)]
+                success=False, execution_time_ms=execution_time, errors=[str(e)]
             )

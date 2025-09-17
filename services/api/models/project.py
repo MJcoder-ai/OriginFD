@@ -1,25 +1,19 @@
 """Project model and schemas."""
+
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum as SqlEnum,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-)
-from sqlalchemy.dialects.postgresql import UUID
-import json
-from sqlalchemy.orm import relationship
 from pydantic import BaseModel
+from sqlalchemy import Boolean, Column, DateTime
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from .base import Base
 

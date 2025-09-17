@@ -2,18 +2,26 @@
 Supplier management API endpoints.
 Handles supplier onboarding, management, and component sourcing.
 """
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, Field, EmailStr
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
-import uuid
-import logging
 
-from core.database import SessionDep
+import logging
+import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from core.auth import get_current_user
-from models.component import Supplier, SupplierStatusEnum, RFQ, RFQStatusEnum, PurchaseOrder, POStatusEnum
+from core.database import SessionDep
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from models.component import (
+    RFQ,
+    POStatusEnum,
+    PurchaseOrder,
+    RFQStatusEnum,
+    Supplier,
+    SupplierStatusEnum,
+)
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -21,17 +29,26 @@ router = APIRouter()
 
 # Request/Response Models
 
+
 class SupplierCreateRequest(BaseModel):
     """Request model for creating suppliers."""
+
     name: str = Field(..., min_length=1, max_length=120)
-    gln: Optional[str] = Field(None, pattern=r"^\d{13}$", description="GS1 Global Location Number")
+    gln: Optional[str] = Field(
+        None, pattern=r"^\d{13}$", description="GS1 Global Location Number"
+    )
     contact: Dict[str, Any] = Field(..., description="Contact information")
-    capabilities: Optional[Dict[str, Any]] = Field(None, description="Supplier capabilities")
-    certifications: Optional[Dict[str, Any]] = Field(None, description="Quality certifications")
+    capabilities: Optional[Dict[str, Any]] = Field(
+        None, description="Supplier capabilities"
+    )
+    certifications: Optional[Dict[str, Any]] = Field(
+        None, description="Quality certifications"
+    )
 
 
 class SupplierUpdateRequest(BaseModel):
     """Request model for updating suppliers."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=120)
     gln: Optional[str] = Field(None, pattern=r"^\d{13}$")
     contact: Optional[Dict[str, Any]] = None
@@ -42,6 +59,7 @@ class SupplierUpdateRequest(BaseModel):
 
 class SupplierResponse(BaseModel):
     """Response model for supplier data."""
+
     id: str
     supplier_id: str
     name: str
@@ -62,6 +80,7 @@ class SupplierResponse(BaseModel):
 
 class SupplierListResponse(BaseModel):
     """Response model for supplier listings."""
+
     suppliers: List[SupplierResponse]
     total: int
     page: int
@@ -70,13 +89,17 @@ class SupplierListResponse(BaseModel):
 
 class RFQCreateRequest(BaseModel):
     """Request model for creating RFQs."""
+
     lines: List[Dict[str, Any]] = Field(..., description="RFQ line items")
     deadline: Optional[datetime] = Field(None, description="Response deadline")
-    evaluation: Optional[Dict[str, Any]] = Field(None, description="Evaluation criteria")
+    evaluation: Optional[Dict[str, Any]] = Field(
+        None, description="Evaluation criteria"
+    )
 
 
 class RFQResponse(BaseModel):
     """Response model for RFQ data."""
+
     id: str
     rfq_id: str
     status: str
@@ -97,11 +120,12 @@ class RFQResponse(BaseModel):
 
 # Supplier CRUD Operations
 
+
 @router.post("/", response_model=SupplierResponse, status_code=status.HTTP_201_CREATED)
 async def create_supplier(
     request: SupplierCreateRequest,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Create a new supplier.
@@ -111,24 +135,28 @@ async def create_supplier(
         supplier_id = f"SUP-{uuid.uuid4().hex[:8].upper()}"
 
         # Check for duplicate names
-        existing = db.query(Supplier).filter(
-            and_(
-                Supplier.tenant_id == current_user["tenant_id"],
-                Supplier.name == request.name
+        existing = (
+            db.query(Supplier)
+            .filter(
+                and_(
+                    Supplier.tenant_id == current_user["tenant_id"],
+                    Supplier.name == request.name,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Supplier with this name already exists"
+                detail="Supplier with this name already exists",
             )
 
         # Validate contact information
-        if not request.contact.get('email') and not request.contact.get('phone'):
+        if not request.contact.get("email") and not request.contact.get("phone"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Supplier must have at least email or phone contact"
+                detail="Supplier must have at least email or phone contact",
             )
 
         # Create supplier
@@ -141,14 +169,16 @@ async def create_supplier(
             status=SupplierStatusEnum.DRAFT,
             capabilities=request.capabilities or {},
             certifications=request.certifications or {},
-            created_by=uuid.UUID(current_user["id"])
+            created_by=uuid.UUID(current_user["id"]),
         )
 
         db.add(supplier)
         db.commit()
         db.refresh(supplier)
 
-        logger.info(f"Created supplier {supplier.supplier_id} by user {current_user['id']}")
+        logger.info(
+            f"Created supplier {supplier.supplier_id} by user {current_user['id']}"
+        )
 
         return SupplierResponse(
             id=str(supplier.id),
@@ -163,7 +193,7 @@ async def create_supplier(
             approved_by=str(supplier.approved_by) if supplier.approved_by else None,
             created_at=supplier.created_at,
             updated_at=supplier.updated_at,
-            created_by=str(supplier.created_by) if supplier.created_by else None
+            created_by=str(supplier.created_by) if supplier.created_by else None,
         )
 
     except Exception as e:
@@ -171,7 +201,7 @@ async def create_supplier(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create supplier: {str(e)}"
+            detail=f"Failed to create supplier: {str(e)}",
         )
 
 
@@ -183,7 +213,7 @@ async def list_suppliers(
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[SupplierStatusEnum] = None,
     search: Optional[str] = None,
-    capabilities: Optional[str] = None
+    capabilities: Optional[str] = None,
 ):
     """
     List suppliers with filtering and pagination.
@@ -199,44 +229,48 @@ async def list_suppliers(
         query = query.filter(
             or_(
                 Supplier.name.ilike(search_term),
-                Supplier.supplier_id.ilike(search_term)
+                Supplier.supplier_id.ilike(search_term),
             )
         )
 
     if capabilities:
         # Search in capabilities JSON
-        query = query.filter(Supplier.capabilities.op('?')(capabilities))
+        query = query.filter(Supplier.capabilities.op("?")(capabilities))
 
     # Get total count
     total = query.count()
 
     # Apply pagination and ordering
-    suppliers = query.order_by(Supplier.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    suppliers = (
+        query.order_by(Supplier.updated_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     # Convert to response models
     supplier_responses = []
     for supplier in suppliers:
-        supplier_responses.append(SupplierResponse(
-            id=str(supplier.id),
-            supplier_id=supplier.supplier_id,
-            name=supplier.name,
-            gln=supplier.gln,
-            contact=supplier.contact,
-            status=supplier.status,
-            capabilities=supplier.capabilities,
-            certifications=supplier.certifications,
-            approved_at=supplier.approved_at,
-            approved_by=str(supplier.approved_by) if supplier.approved_by else None,
-            created_at=supplier.created_at,
-            updated_at=supplier.updated_at,
-            created_by=str(supplier.created_by) if supplier.created_by else None
-        ))
+        supplier_responses.append(
+            SupplierResponse(
+                id=str(supplier.id),
+                supplier_id=supplier.supplier_id,
+                name=supplier.name,
+                gln=supplier.gln,
+                contact=supplier.contact,
+                status=supplier.status,
+                capabilities=supplier.capabilities,
+                certifications=supplier.certifications,
+                approved_at=supplier.approved_at,
+                approved_by=str(supplier.approved_by) if supplier.approved_by else None,
+                created_at=supplier.created_at,
+                updated_at=supplier.updated_at,
+                created_by=str(supplier.created_by) if supplier.created_by else None,
+            )
+        )
 
     return SupplierListResponse(
-        suppliers=supplier_responses,
-        total=total,
-        page=page,
-        page_size=page_size
+        suppliers=supplier_responses, total=total, page=page, page_size=page_size
     )
 
 
@@ -244,7 +278,7 @@ async def list_suppliers(
 async def get_supplier(
     supplier_id: str,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get a specific supplier by ID.
@@ -253,21 +287,23 @@ async def get_supplier(
         supplier_uuid = uuid.UUID(supplier_id)
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid supplier ID format"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid supplier ID format"
         )
 
-    supplier = db.query(Supplier).filter(
-        and_(
-            Supplier.id == supplier_uuid,
-            Supplier.tenant_id == current_user["tenant_id"]
+    supplier = (
+        db.query(Supplier)
+        .filter(
+            and_(
+                Supplier.id == supplier_uuid,
+                Supplier.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not supplier:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found"
         )
 
     return SupplierResponse(
@@ -283,7 +319,7 @@ async def get_supplier(
         approved_by=str(supplier.approved_by) if supplier.approved_by else None,
         created_at=supplier.created_at,
         updated_at=supplier.updated_at,
-        created_by=str(supplier.created_by) if supplier.created_by else None
+        created_by=str(supplier.created_by) if supplier.created_by else None,
     )
 
 
@@ -292,7 +328,7 @@ async def update_supplier(
     supplier_id: str,
     request: SupplierUpdateRequest,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Update a supplier.
@@ -301,27 +337,29 @@ async def update_supplier(
         supplier_uuid = uuid.UUID(supplier_id)
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid supplier ID format"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid supplier ID format"
         )
 
-    supplier = db.query(Supplier).filter(
-        and_(
-            Supplier.id == supplier_uuid,
-            Supplier.tenant_id == current_user["tenant_id"]
+    supplier = (
+        db.query(Supplier)
+        .filter(
+            and_(
+                Supplier.id == supplier_uuid,
+                Supplier.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not supplier:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found"
         )
 
     # Update fields
     update_data = request.dict(exclude_unset=True)
     for field, value in update_data.items():
-        if field == 'status' and value == SupplierStatusEnum.APPROVED:
+        if field == "status" and value == SupplierStatusEnum.APPROVED:
             # Set approval timestamp and user
             supplier.approved_at = datetime.utcnow()
             supplier.approved_by = uuid.UUID(current_user["id"])
@@ -348,7 +386,7 @@ async def update_supplier(
         approved_by=str(supplier.approved_by) if supplier.approved_by else None,
         created_at=supplier.created_at,
         updated_at=supplier.updated_at,
-        created_by=str(supplier.created_by) if supplier.created_by else None
+        created_by=str(supplier.created_by) if supplier.created_by else None,
     )
 
 
@@ -356,7 +394,7 @@ async def update_supplier(
 async def delete_supplier(
     supplier_id: str,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Deactivate a supplier (soft delete).
@@ -365,21 +403,23 @@ async def delete_supplier(
         supplier_uuid = uuid.UUID(supplier_id)
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid supplier ID format"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid supplier ID format"
         )
 
-    supplier = db.query(Supplier).filter(
-        and_(
-            Supplier.id == supplier_uuid,
-            Supplier.tenant_id == current_user["tenant_id"]
+    supplier = (
+        db.query(Supplier)
+        .filter(
+            and_(
+                Supplier.id == supplier_uuid,
+                Supplier.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not supplier:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found"
         )
 
     # Deactivate instead of hard delete
@@ -388,18 +428,21 @@ async def delete_supplier(
 
     db.commit()
 
-    logger.info(f"Deactivated supplier {supplier.supplier_id} by user {current_user['id']}")
+    logger.info(
+        f"Deactivated supplier {supplier.supplier_id} by user {current_user['id']}"
+    )
 
     return {"message": "Supplier deactivated successfully"}
 
 
 # RFQ Management
 
+
 @router.post("/rfqs", response_model=RFQResponse, status_code=status.HTTP_201_CREATED)
 async def create_rfq(
     request: RFQCreateRequest,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Create a new Request for Quotation.
@@ -418,7 +461,7 @@ async def create_rfq(
             lines=request.lines,
             bids=[],
             evaluation=request.evaluation or {},
-            created_by=uuid.UUID(current_user["id"])
+            created_by=uuid.UUID(current_user["id"]),
         )
 
         db.add(rfq)
@@ -440,7 +483,7 @@ async def create_rfq(
             evaluation=rfq.evaluation,
             created_by=str(rfq.created_by),
             created_at=rfq.created_at,
-            updated_at=rfq.updated_at
+            updated_at=rfq.updated_at,
         )
 
     except Exception as e:
@@ -448,7 +491,7 @@ async def create_rfq(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create RFQ: {str(e)}"
+            detail=f"Failed to create RFQ: {str(e)}",
         )
 
 
@@ -458,7 +501,7 @@ async def list_rfqs(
     current_user: dict = Depends(get_current_user),
     status: Optional[RFQStatusEnum] = None,
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100)
+    page_size: int = Query(20, ge=1, le=100),
 ):
     """
     List RFQs with filtering and pagination.
@@ -468,7 +511,12 @@ async def list_rfqs(
     if status:
         query = query.filter(RFQ.status == status)
 
-    rfqs = query.order_by(RFQ.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    rfqs = (
+        query.order_by(RFQ.updated_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     return [
         RFQResponse(
@@ -484,7 +532,7 @@ async def list_rfqs(
             evaluation=rfq.evaluation,
             created_by=str(rfq.created_by),
             created_at=rfq.created_at,
-            updated_at=rfq.updated_at
+            updated_at=rfq.updated_at,
         )
         for rfq in rfqs
     ]
@@ -494,7 +542,7 @@ async def list_rfqs(
 async def approve_supplier(
     supplier_id: str,
     db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Approve a supplier for sourcing.
@@ -503,27 +551,29 @@ async def approve_supplier(
         supplier_uuid = uuid.UUID(supplier_id)
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid supplier ID format"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid supplier ID format"
         )
 
-    supplier = db.query(Supplier).filter(
-        and_(
-            Supplier.id == supplier_uuid,
-            Supplier.tenant_id == current_user["tenant_id"]
+    supplier = (
+        db.query(Supplier)
+        .filter(
+            and_(
+                Supplier.id == supplier_uuid,
+                Supplier.tenant_id == current_user["tenant_id"],
+            )
         )
-    ).first()
+        .first()
+    )
 
     if not supplier:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found"
         )
 
     if supplier.status == SupplierStatusEnum.APPROVED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Supplier is already approved"
+            detail="Supplier is already approved",
         )
 
     # Approve supplier
@@ -534,15 +584,16 @@ async def approve_supplier(
 
     db.commit()
 
-    logger.info(f"Approved supplier {supplier.supplier_id} by user {current_user['id']}")
+    logger.info(
+        f"Approved supplier {supplier.supplier_id} by user {current_user['id']}"
+    )
 
     return {"message": "Supplier approved successfully"}
 
 
 @router.get("/stats/summary")
 async def get_supplier_stats(
-    db: Session = Depends(SessionDep),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(SessionDep), current_user: dict = Depends(get_current_user)
 ):
     """
     Get supplier statistics for dashboard.
@@ -553,32 +604,50 @@ async def get_supplier_stats(
     total_suppliers = db.query(Supplier).filter(Supplier.tenant_id == tenant_id).count()
 
     # Approved suppliers
-    approved_suppliers = db.query(Supplier).filter(
-        and_(
-            Supplier.tenant_id == tenant_id,
-            Supplier.status == SupplierStatusEnum.APPROVED
+    approved_suppliers = (
+        db.query(Supplier)
+        .filter(
+            and_(
+                Supplier.tenant_id == tenant_id,
+                Supplier.status == SupplierStatusEnum.APPROVED,
+            )
         )
-    ).count()
+        .count()
+    )
 
     # Draft suppliers
-    draft_suppliers = db.query(Supplier).filter(
-        and_(
-            Supplier.tenant_id == tenant_id,
-            Supplier.status == SupplierStatusEnum.DRAFT
+    draft_suppliers = (
+        db.query(Supplier)
+        .filter(
+            and_(
+                Supplier.tenant_id == tenant_id,
+                Supplier.status == SupplierStatusEnum.DRAFT,
+            )
         )
-    ).count()
+        .count()
+    )
 
     # Active RFQs
-    active_rfqs = db.query(RFQ).filter(
-        and_(
-            RFQ.tenant_id == tenant_id,
-            RFQ.status.in_([RFQStatusEnum.ISSUED, RFQStatusEnum.BIDDING, RFQStatusEnum.EVALUATING])
+    active_rfqs = (
+        db.query(RFQ)
+        .filter(
+            and_(
+                RFQ.tenant_id == tenant_id,
+                RFQ.status.in_(
+                    [
+                        RFQStatusEnum.ISSUED,
+                        RFQStatusEnum.BIDDING,
+                        RFQStatusEnum.EVALUATING,
+                    ]
+                ),
+            )
         )
-    ).count()
+        .count()
+    )
 
     return {
         "total_suppliers": total_suppliers,
         "approved_suppliers": approved_suppliers,
         "draft_suppliers": draft_suppliers,
-        "active_rfqs": active_rfqs
+        "active_rfqs": active_rfqs,
     }

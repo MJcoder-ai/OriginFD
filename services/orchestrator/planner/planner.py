@@ -2,13 +2,15 @@
 Task Planner for OriginFD AI Orchestrator.
 Creates execution plans with grounding and tool selection.
 """
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
-from uuid import uuid4
-from pydantic import BaseModel
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import uuid4
+
+from pydantic import BaseModel
 
 try:
     from model_registry import ModelInfo
@@ -16,23 +18,25 @@ except ImportError:  # pragma: no cover - makes module work without registry
     ModelInfo = None  # type: ignore
 
 try:
-    from ..memory.semantic import SemanticMemory
     from ..memory.episodic import EpisodicMemory
-    from ..tools.registry import ToolRegistry, ToolMetadata
+    from ..memory.semantic import SemanticMemory
+    from ..tools.registry import ToolMetadata, ToolRegistry
 except ImportError:
     # For standalone testing
-    import sys
     import os
+    import sys
+
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from memory.semantic import SemanticMemory
     from memory.episodic import EpisodicMemory
-    from tools.registry import ToolRegistry, ToolMetadata
+    from memory.semantic import SemanticMemory
+    from tools.registry import ToolMetadata, ToolRegistry
 
 logger = logging.getLogger(__name__)
 
 
 class PlanStepType(str, Enum):
     """Types of plan steps."""
+
     GROUNDING = "grounding"
     TOOL_EXECUTION = "tool_execution"
     VALIDATION = "validation"
@@ -42,6 +46,7 @@ class PlanStepType(str, Enum):
 
 class PlanStep(BaseModel):
     """Individual step in an execution plan."""
+
     step_id: str
     step_type: PlanStepType
     description: str
@@ -58,6 +63,7 @@ class PlanStep(BaseModel):
 
 class PlanningResult(BaseModel):
     """Result of the planning process."""
+
     plan_id: str
     task_type: str
     task_description: str
@@ -88,7 +94,7 @@ class TaskPlanner:
         self,
         semantic_memory: Optional[SemanticMemory] = None,
         episodic_memory: Optional[EpisodicMemory] = None,
-        tool_registry: Optional[ToolRegistry] = None
+        tool_registry: Optional[ToolRegistry] = None,
     ):
         self.semantic_memory = semantic_memory
         self.episodic_memory = episodic_memory
@@ -106,7 +112,7 @@ class TaskPlanner:
             "project_optimization": self._plan_project_optimization,
             "procurement_assistance": self._plan_procurement_assistance,
             "simulation_request": self._plan_simulation_request,
-            "general_query": self._plan_general_query
+            "general_query": self._plan_general_query,
         }
 
         logger.info("TaskPlanner initialized")
@@ -140,7 +146,9 @@ class TaskPlanner:
             optimized_steps = await self._optimize_plan(steps, context)
 
             # Step 5: Calculate estimates and confidence
-            total_duration, total_cost, confidence = await self._calculate_plan_metrics(optimized_steps)
+            total_duration, total_cost, confidence = await self._calculate_plan_metrics(
+                optimized_steps
+            )
 
             # Step 6: Generate reasoning
             reasoning = await self._generate_plan_reasoning(
@@ -148,10 +156,12 @@ class TaskPlanner:
             )
 
             metadata = {
-                    "region_config": region_config,
-                    "context_summary": self._summarize_context(context),
-                    "planning_time_ms": int((datetime.utcnow() - start_time).total_seconds() * 1000),
-                }
+                "region_config": region_config,
+                "context_summary": self._summarize_context(context),
+                "planning_time_ms": int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                ),
+            }
             if model_info is not None:
                 metadata["model"] = model_info.dict()
             if fallback_models:
@@ -180,12 +190,14 @@ class TaskPlanner:
                         "plan_id": plan_id,
                         "task_type": task_type,
                         "steps_count": len(optimized_steps),
-                        "confidence": confidence
+                        "confidence": confidence,
                     },
-                    agent_id="task_planner"
+                    agent_id="task_planner",
                 )
 
-            logger.info(f"Plan created: {plan_id} with {len(optimized_steps)} steps (confidence: {confidence:.2f})")
+            logger.info(
+                f"Plan created: {plan_id} with {len(optimized_steps)} steps (confidence: {confidence:.2f})"
+            )
             return plan
 
         except Exception as e:
@@ -198,7 +210,7 @@ class TaskPlanner:
                 description="Fallback: Provide basic response",
                 estimated_duration_ms=500,
                 estimated_cost_psu=1,
-                confidence=0.3
+                confidence=0.3,
             )
 
             return PlanningResult(
@@ -210,53 +222,57 @@ class TaskPlanner:
                 total_estimated_cost_psu=1,
                 confidence=0.3,
                 reasoning=f"Planning failed: {str(e)}. Using fallback strategy.",
-                created_at=start_time
+                created_at=start_time,
             )
 
     async def _gather_grounding(
-        self,
-        task_description: str,
-        context: Dict[str, Any]
+        self, task_description: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Gather grounding information from semantic memory and context."""
         grounding_info = {
             "relevant_knowledge": [],
             "applicable_patterns": [],
             "sources": [],
-            "context_analysis": {}
+            "context_analysis": {},
         }
 
         if self.semantic_memory:
             # Retrieve relevant knowledge
             knowledge_items = await self.semantic_memory.retrieve_knowledge(
-                query=task_description,
-                limit=5
+                query=task_description, limit=5
             )
 
             for item, score in knowledge_items:
-                grounding_info["relevant_knowledge"].append({
-                    "knowledge_id": item.knowledge_id,
-                    "title": item.title,
-                    "content": item.content[:200] + "..." if len(item.content) > 200 else item.content,
-                    "relevance_score": score,
-                    "confidence": item.confidence
-                })
+                grounding_info["relevant_knowledge"].append(
+                    {
+                        "knowledge_id": item.knowledge_id,
+                        "title": item.title,
+                        "content": (
+                            item.content[:200] + "..."
+                            if len(item.content) > 200
+                            else item.content
+                        ),
+                        "relevance_score": score,
+                        "confidence": item.confidence,
+                    }
+                )
                 grounding_info["sources"].append(f"knowledge:{item.knowledge_id}")
 
             # Find applicable patterns
             patterns = await self.semantic_memory.find_applicable_patterns(
-                current_conditions=context,
-                min_success_rate=0.7
+                current_conditions=context, min_success_rate=0.7
             )
 
             for pattern, match_score in patterns:
-                grounding_info["applicable_patterns"].append({
-                    "pattern_id": pattern.pattern_id,
-                    "description": pattern.description,
-                    "actions": pattern.actions,
-                    "success_rate": pattern.success_rate,
-                    "match_score": match_score
-                })
+                grounding_info["applicable_patterns"].append(
+                    {
+                        "pattern_id": pattern.pattern_id,
+                        "description": pattern.description,
+                        "actions": pattern.actions,
+                        "success_rate": pattern.success_rate,
+                        "match_score": match_score,
+                    }
+                )
                 grounding_info["sources"].append(f"pattern:{pattern.pattern_id}")
 
         # Analyze context for domain-specific information
@@ -264,7 +280,9 @@ class TaskPlanner:
             "domain": context.get("domain", "general"),
             "project_type": context.get("project_type"),
             "user_role": context.get("user_role"),
-            "complexity_indicators": self._analyze_complexity(task_description, context)
+            "complexity_indicators": self._analyze_complexity(
+                task_description, context
+            ),
         }
 
         return grounding_info
@@ -275,22 +293,24 @@ class TaskPlanner:
         self,
         task_description: str,
         context: Dict[str, Any],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> List[PlanStep]:
         """Plan for component analysis tasks."""
         steps = []
 
         # Step 1: Parse component data if needed
         if "datasheet" in task_description.lower() or "pdf" in context:
-            steps.append(PlanStep(
-                step_id=str(uuid4()),
-                step_type=PlanStepType.TOOL_EXECUTION,
-                description="Parse component datasheet",
-                tool_name="ParseDatasheetTool",
-                inputs={"document_url": context.get("document_url")},
-                estimated_duration_ms=3000,
-                estimated_cost_psu=5
-            ))
+            steps.append(
+                PlanStep(
+                    step_id=str(uuid4()),
+                    step_type=PlanStepType.TOOL_EXECUTION,
+                    description="Parse component datasheet",
+                    tool_name="ParseDatasheetTool",
+                    inputs={"document_url": context.get("document_url")},
+                    estimated_duration_ms=3000,
+                    estimated_cost_psu=5,
+                )
+            )
 
         # Step 2: Classify component
         classify_step = PlanStep(
@@ -300,7 +320,7 @@ class TaskPlanner:
             tool_name="ComponentClassificationTool",
             inputs={"component_data": "from_previous_step"},
             estimated_duration_ms=2000,
-            estimated_cost_psu=3
+            estimated_cost_psu=3,
         )
         if steps:
             classify_step.dependencies = [steps[-1].step_id]
@@ -315,7 +335,7 @@ class TaskPlanner:
             inputs={"component_specs": "from_previous_step"},
             dependencies=[classify_step.step_id],
             estimated_duration_ms=2500,
-            estimated_cost_psu=4
+            estimated_cost_psu=4,
         )
         steps.append(dedupe_step)
 
@@ -328,7 +348,7 @@ class TaskPlanner:
             inputs={"analysis_results": "from_previous_steps"},
             dependencies=[classify_step.step_id, dedupe_step.step_id],
             estimated_duration_ms=1500,
-            estimated_cost_psu=2
+            estimated_cost_psu=2,
         )
         steps.append(recommend_step)
 
@@ -339,7 +359,7 @@ class TaskPlanner:
             description="Synthesize component analysis results",
             dependencies=[step.step_id for step in steps],
             estimated_duration_ms=1000,
-            estimated_cost_psu=1
+            estimated_cost_psu=1,
         )
         steps.append(synthesis_step)
 
@@ -349,7 +369,7 @@ class TaskPlanner:
         self,
         task_description: str,
         context: Dict[str, Any],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> List[PlanStep]:
         """Plan for design validation tasks."""
         steps = []
@@ -362,7 +382,7 @@ class TaskPlanner:
             tool_name="ValidateOdlTool",
             inputs={"document": context.get("odl_document")},
             estimated_duration_ms=2000,
-            estimated_cost_psu=3
+            estimated_cost_psu=3,
         )
         steps.append(validate_step)
 
@@ -375,7 +395,7 @@ class TaskPlanner:
             inputs={"design_data": "from_validation"},
             dependencies=[validate_step.step_id],
             estimated_duration_ms=5000,
-            estimated_cost_psu=8
+            estimated_cost_psu=8,
         )
         steps.append(simulation_step)
 
@@ -385,11 +405,14 @@ class TaskPlanner:
             step_type=PlanStepType.TOOL_EXECUTION,
             description="Calculate financial metrics",
             tool_name="SimulateFinanceTool",
-            inputs={"energy_results": "from_simulation", "cost_data": context.get("cost_data")},
+            inputs={
+                "energy_results": "from_simulation",
+                "cost_data": context.get("cost_data"),
+            },
             dependencies=[simulation_step.step_id],
             estimated_duration_ms=3000,
             estimated_cost_psu=5,
-            parallel_group="analysis"
+            parallel_group="analysis",
         )
         steps.append(finance_step)
 
@@ -401,7 +424,7 @@ class TaskPlanner:
             dependencies=[validate_step.step_id],
             estimated_duration_ms=2500,
             estimated_cost_psu=4,
-            parallel_group="analysis"
+            parallel_group="analysis",
         )
         steps.append(compliance_step)
 
@@ -412,7 +435,7 @@ class TaskPlanner:
             description="Generate optimization recommendations",
             dependencies=[finance_step.step_id, compliance_step.step_id],
             estimated_duration_ms=2000,
-            estimated_cost_psu=3
+            estimated_cost_psu=3,
         )
         steps.append(optimize_step)
 
@@ -422,7 +445,7 @@ class TaskPlanner:
         self,
         task_description: str,
         context: Dict[str, Any],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> List[PlanStep]:
         """Plan for project optimization tasks."""
         steps = []
@@ -437,37 +460,40 @@ class TaskPlanner:
                     tool_name=self._map_action_to_tool(action),
                     estimated_duration_ms=2000,
                     estimated_cost_psu=3,
-                    confidence=pattern_info["success_rate"] * pattern_info["match_score"]
+                    confidence=pattern_info["success_rate"]
+                    * pattern_info["match_score"],
                 )
                 steps.append(step)
 
         # If no patterns found, use default optimization approach
         if not steps:
-            steps.extend([
-                PlanStep(
-                    step_id=str(uuid4()),
-                    step_type=PlanStepType.TOOL_EXECUTION,
-                    description="Analyze current project configuration",
-                    estimated_duration_ms=2000,
-                    estimated_cost_psu=3
-                ),
-                PlanStep(
-                    step_id=str(uuid4()),
-                    step_type=PlanStepType.TOOL_EXECUTION,
-                    description="Identify optimization opportunities",
-                    dependencies=[steps[0].step_id] if steps else [],
-                    estimated_duration_ms=3000,
-                    estimated_cost_psu=5
-                ),
-                PlanStep(
-                    step_id=str(uuid4()),
-                    step_type=PlanStepType.SYNTHESIS,
-                    description="Generate optimization plan",
-                    dependencies=[steps[1].step_id] if len(steps) > 1 else [],
-                    estimated_duration_ms=1500,
-                    estimated_cost_psu=2
-                )
-            ])
+            steps.extend(
+                [
+                    PlanStep(
+                        step_id=str(uuid4()),
+                        step_type=PlanStepType.TOOL_EXECUTION,
+                        description="Analyze current project configuration",
+                        estimated_duration_ms=2000,
+                        estimated_cost_psu=3,
+                    ),
+                    PlanStep(
+                        step_id=str(uuid4()),
+                        step_type=PlanStepType.TOOL_EXECUTION,
+                        description="Identify optimization opportunities",
+                        dependencies=[steps[0].step_id] if steps else [],
+                        estimated_duration_ms=3000,
+                        estimated_cost_psu=5,
+                    ),
+                    PlanStep(
+                        step_id=str(uuid4()),
+                        step_type=PlanStepType.SYNTHESIS,
+                        description="Generate optimization plan",
+                        dependencies=[steps[1].step_id] if len(steps) > 1 else [],
+                        estimated_duration_ms=1500,
+                        estimated_cost_psu=2,
+                    ),
+                ]
+            )
 
         return steps
 
@@ -475,7 +501,7 @@ class TaskPlanner:
         self,
         task_description: str,
         context: Dict[str, Any],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> List[PlanStep]:
         """Plan for procurement assistance tasks."""
         steps = []
@@ -485,9 +511,12 @@ class TaskPlanner:
             step_id=str(uuid4()),
             step_type=PlanStepType.TOOL_EXECUTION,
             description="Analyze procurement requirements",
-            inputs={"bom_data": context.get("bom"), "requirements": context.get("requirements")},
+            inputs={
+                "bom_data": context.get("bom"),
+                "requirements": context.get("requirements"),
+            },
             estimated_duration_ms=2000,
-            estimated_cost_psu=3
+            estimated_cost_psu=3,
         )
         steps.append(analyze_step)
 
@@ -500,7 +529,7 @@ class TaskPlanner:
             inputs={"requirements": "from_analysis"},
             dependencies=[analyze_step.step_id],
             estimated_duration_ms=3000,
-            estimated_cost_psu=4
+            estimated_cost_psu=4,
         )
         steps.append(rfq_step)
 
@@ -514,7 +543,7 @@ class TaskPlanner:
             dependencies=[analyze_step.step_id],
             estimated_duration_ms=2500,
             estimated_cost_psu=4,
-            parallel_group="sourcing"
+            parallel_group="sourcing",
         )
         steps.append(supplier_step)
 
@@ -527,7 +556,7 @@ class TaskPlanner:
             dependencies=[analyze_step.step_id],
             estimated_duration_ms=2000,
             estimated_cost_psu=3,
-            parallel_group="sourcing"
+            parallel_group="sourcing",
         )
         steps.append(price_step)
 
@@ -538,7 +567,7 @@ class TaskPlanner:
             description="Generate procurement recommendations",
             dependencies=[rfq_step.step_id, supplier_step.step_id, price_step.step_id],
             estimated_duration_ms=1500,
-            estimated_cost_psu=2
+            estimated_cost_psu=2,
         )
         steps.append(recommend_step)
 
@@ -548,7 +577,7 @@ class TaskPlanner:
         self,
         task_description: str,
         context: Dict[str, Any],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> List[PlanStep]:
         """Plan for simulation requests."""
         steps = []
@@ -557,25 +586,29 @@ class TaskPlanner:
         sim_type = self._determine_simulation_type(task_description, context)
 
         if sim_type == "energy":
-            steps.append(PlanStep(
-                step_id=str(uuid4()),
-                step_type=PlanStepType.TOOL_EXECUTION,
-                description="Run energy performance simulation",
-                tool_name="SimulateEnergyTool",
-                inputs={"design_data": context.get("design_data")},
-                estimated_duration_ms=5000,
-                estimated_cost_psu=8
-            ))
+            steps.append(
+                PlanStep(
+                    step_id=str(uuid4()),
+                    step_type=PlanStepType.TOOL_EXECUTION,
+                    description="Run energy performance simulation",
+                    tool_name="SimulateEnergyTool",
+                    inputs={"design_data": context.get("design_data")},
+                    estimated_duration_ms=5000,
+                    estimated_cost_psu=8,
+                )
+            )
         elif sim_type == "financial":
-            steps.append(PlanStep(
-                step_id=str(uuid4()),
-                step_type=PlanStepType.TOOL_EXECUTION,
-                description="Run financial analysis simulation",
-                tool_name="SimulateFinanceTool",
-                inputs={"financial_data": context.get("financial_data")},
-                estimated_duration_ms=3000,
-                estimated_cost_psu=5
-            ))
+            steps.append(
+                PlanStep(
+                    step_id=str(uuid4()),
+                    step_type=PlanStepType.TOOL_EXECUTION,
+                    description="Run financial analysis simulation",
+                    tool_name="SimulateFinanceTool",
+                    inputs={"financial_data": context.get("financial_data")},
+                    estimated_duration_ms=3000,
+                    estimated_cost_psu=5,
+                )
+            )
         else:
             # Multi-type simulation
             energy_step = PlanStep(
@@ -585,7 +618,7 @@ class TaskPlanner:
                 tool_name="SimulateEnergyTool",
                 estimated_duration_ms=5000,
                 estimated_cost_psu=8,
-                parallel_group="simulation"
+                parallel_group="simulation",
             )
 
             finance_step = PlanStep(
@@ -595,7 +628,7 @@ class TaskPlanner:
                 tool_name="SimulateFinanceTool",
                 estimated_duration_ms=3000,
                 estimated_cost_psu=5,
-                parallel_group="simulation"
+                parallel_group="simulation",
             )
 
             synthesis_step = PlanStep(
@@ -604,7 +637,7 @@ class TaskPlanner:
                 description="Combine simulation results",
                 dependencies=[energy_step.step_id, finance_step.step_id],
                 estimated_duration_ms=1000,
-                estimated_cost_psu=2
+                estimated_cost_psu=2,
             )
 
             steps.extend([energy_step, finance_step, synthesis_step])
@@ -615,7 +648,7 @@ class TaskPlanner:
         self,
         task_description: str,
         context: Dict[str, Any],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> List[PlanStep]:
         """Plan for general queries."""
         steps = []
@@ -627,7 +660,7 @@ class TaskPlanner:
             description="Gather relevant knowledge for query",
             inputs={"query": task_description, "context": context},
             estimated_duration_ms=1500,
-            estimated_cost_psu=2
+            estimated_cost_psu=2,
         )
         steps.append(grounding_step)
 
@@ -638,7 +671,7 @@ class TaskPlanner:
             description="Generate grounded response",
             dependencies=[grounding_step.step_id],
             estimated_duration_ms=2000,
-            estimated_cost_psu=3
+            estimated_cost_psu=3,
         )
         steps.append(response_step)
 
@@ -647,9 +680,7 @@ class TaskPlanner:
     # Helper methods
 
     async def _optimize_plan(
-        self,
-        steps: List[PlanStep],
-        context: Dict[str, Any]
+        self, steps: List[PlanStep], context: Dict[str, Any]
     ) -> List[PlanStep]:
         """Optimize plan for parallel execution and cost efficiency."""
         # Group steps by parallel_group
@@ -673,8 +704,7 @@ class TaskPlanner:
         return steps
 
     async def _calculate_plan_metrics(
-        self,
-        steps: List[PlanStep]
+        self, steps: List[PlanStep]
     ) -> Tuple[int, int, float]:
         """Calculate total duration, cost, and confidence for plan."""
         # Calculate parallel execution groups
@@ -703,9 +733,12 @@ class TaskPlanner:
         # Calculate overall confidence (weighted average)
         if steps:
             total_weight = sum(step.estimated_cost_psu for step in steps)
-            weighted_confidence = sum(
-                step.confidence * step.estimated_cost_psu for step in steps
-            ) / total_weight if total_weight > 0 else 0.5
+            weighted_confidence = (
+                sum(step.confidence * step.estimated_cost_psu for step in steps)
+                / total_weight
+                if total_weight > 0
+                else 0.5
+            )
         else:
             weighted_confidence = 0.5
 
@@ -716,26 +749,30 @@ class TaskPlanner:
         task_type: str,
         task_description: str,
         steps: List[PlanStep],
-        grounding_info: Dict[str, Any]
+        grounding_info: Dict[str, Any],
     ) -> str:
         """Generate human-readable reasoning for the plan."""
-        reasoning_parts = [
-            f"Created a {len(steps)}-step plan for {task_type} task."
-        ]
+        reasoning_parts = [f"Created a {len(steps)}-step plan for {task_type} task."]
 
         # Mention grounding sources
         if grounding_info.get("relevant_knowledge"):
             knowledge_count = len(grounding_info["relevant_knowledge"])
-            reasoning_parts.append(f"Grounded with {knowledge_count} relevant knowledge items.")
+            reasoning_parts.append(
+                f"Grounded with {knowledge_count} relevant knowledge items."
+            )
 
         if grounding_info.get("applicable_patterns"):
             pattern_count = len(grounding_info["applicable_patterns"])
-            reasoning_parts.append(f"Applied {pattern_count} learned patterns from past successes.")
+            reasoning_parts.append(
+                f"Applied {pattern_count} learned patterns from past successes."
+            )
 
         # Mention parallel execution
         parallel_steps = [s for s in steps if s.parallel_group]
         if parallel_steps:
-            reasoning_parts.append(f"Optimized for parallel execution of {len(parallel_steps)} steps.")
+            reasoning_parts.append(
+                f"Optimized for parallel execution of {len(parallel_steps)} steps."
+            )
 
         # Mention tool usage
         tool_steps = [s for s in steps if s.tool_name]
@@ -746,20 +783,25 @@ class TaskPlanner:
         return " ".join(reasoning_parts)
 
     def _analyze_complexity(
-        self,
-        task_description: str,
-        context: Dict[str, Any]
+        self, task_description: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Analyze task complexity indicators."""
         complexity = {
             "text_length": len(task_description),
             "has_attachments": bool(context.get("attachments")),
-            "multi_step": any(word in task_description.lower()
-                             for word in ["then", "after", "next", "also", "additionally"]),
-            "technical_terms": sum(1 for word in task_description.lower().split()
-                                 if word in ["simulation", "optimization", "analysis", "validation"]),
-            "urgency_indicators": any(word in task_description.lower()
-                                   for word in ["urgent", "asap", "quickly", "immediately"])
+            "multi_step": any(
+                word in task_description.lower()
+                for word in ["then", "after", "next", "also", "additionally"]
+            ),
+            "technical_terms": sum(
+                1
+                for word in task_description.lower().split()
+                if word in ["simulation", "optimization", "analysis", "validation"]
+            ),
+            "urgency_indicators": any(
+                word in task_description.lower()
+                for word in ["urgent", "asap", "quickly", "immediately"]
+            ),
         }
 
         # Calculate overall complexity score
@@ -776,21 +818,31 @@ class TaskPlanner:
             score += 1
 
         complexity["overall_score"] = min(score, 5)  # Cap at 5
-        complexity["level"] = ["simple", "moderate", "complex", "very_complex", "expert"][min(score, 4)]
+        complexity["level"] = [
+            "simple",
+            "moderate",
+            "complex",
+            "very_complex",
+            "expert",
+        ][min(score, 4)]
 
         return complexity
 
     def _determine_simulation_type(
-        self,
-        task_description: str,
-        context: Dict[str, Any]
+        self, task_description: str, context: Dict[str, Any]
     ) -> str:
         """Determine the type of simulation needed."""
         desc_lower = task_description.lower()
 
-        if any(word in desc_lower for word in ["energy", "performance", "output", "generation"]):
+        if any(
+            word in desc_lower
+            for word in ["energy", "performance", "output", "generation"]
+        ):
             return "energy"
-        elif any(word in desc_lower for word in ["cost", "roi", "financial", "npv", "payback"]):
+        elif any(
+            word in desc_lower
+            for word in ["cost", "roi", "financial", "npv", "payback"]
+        ):
             return "financial"
         else:
             return "comprehensive"
@@ -829,5 +881,5 @@ class TaskPlanner:
             "has_project_data": "project" in context or "odl_document" in context,
             "has_attachments": "attachments" in context or "document_url" in context,
             "domain": context.get("domain", "unknown"),
-            "complexity_level": context.get("complexity_level", "unknown")
+            "complexity_level": context.get("complexity_level", "unknown"),
         }

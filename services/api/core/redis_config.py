@@ -2,12 +2,14 @@
 Redis configuration for caching and rate limiting.
 """
 
-import os
-import redis
-from typing import Optional
 import logging
+import os
+from typing import Optional
+
+import redis
 
 logger = logging.getLogger(__name__)
+
 
 class RedisConfig:
     """Redis configuration manager."""
@@ -33,7 +35,7 @@ class RedisConfig:
                 retry_on_timeout=True,
                 socket_connect_timeout=5,
                 socket_timeout=5,
-                decode_responses=True
+                decode_responses=True,
             )
         return self._cache_pool
 
@@ -47,7 +49,7 @@ class RedisConfig:
                 retry_on_timeout=True,
                 socket_connect_timeout=5,
                 socket_timeout=5,
-                decode_responses=True
+                decode_responses=True,
             )
         return self._rate_limit_pool
 
@@ -61,7 +63,7 @@ class RedisConfig:
                 retry_on_timeout=True,
                 socket_connect_timeout=5,
                 socket_timeout=5,
-                decode_responses=True
+                decode_responses=True,
             )
         return self._session_pool
 
@@ -82,7 +84,7 @@ class RedisConfig:
         health_status = {
             "cache": {"healthy": False, "error": None},
             "rate_limit": {"healthy": False, "error": None},
-            "session": {"healthy": False, "error": None}
+            "session": {"healthy": False, "error": None},
         }
 
         # Test cache database
@@ -125,6 +127,7 @@ class RedisConfig:
         self._cache_pool = None
         self._rate_limit_pool = None
         self._session_pool = None
+
 
 # Global Redis configuration instance
 redis_config = RedisConfig()

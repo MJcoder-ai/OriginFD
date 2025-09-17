@@ -3,26 +3,27 @@ Performance optimization utilities for OriginFD API.
 Implements caching, rate limiting, compression, and monitoring.
 """
 
-import time
 import hashlib
 import json
-from typing import Any, Callable, Optional, Dict, Union
-from functools import wraps
+import logging
+import time
 from contextlib import asynccontextmanager
+from functools import wraps
+from typing import Any, Callable, Dict, Optional, Union
 
 import redis
-from fastapi import Request, Response, HTTPException, status
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-import logging
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 # =====================================
 # Response Caching System
 # =====================================
+
 
 class ResponseCache:
     """Redis-based response cache for API endpoints."""
@@ -39,7 +40,7 @@ class ResponseCache:
             str(sorted(request.query_params.items())),
         ]
 
-        if include_user and hasattr(request.state, 'user'):
+        if include_user and hasattr(request.state, "user"):
             key_parts.append(f"user:{request.state.user.get('id', 'anonymous')}")
 
         key_string = "|".join(key_parts)
@@ -72,13 +73,15 @@ class ResponseCache:
         except Exception as e:
             logger.warning(f"Cache delete error: {e}")
 
+
 # Global cache instance
 response_cache = ResponseCache()
+
 
 def cached_response(
     ttl: int = 300,
     include_user: bool = True,
-    cache_condition: Callable[[Request], bool] = None
+    cache_condition: Callable[[Request], bool] = None,
 ):
     """
     Decorator for caching API responses.
@@ -88,6 +91,7 @@ def cached_response(
         include_user: Include user ID in cache key
         cache_condition: Function to determine if request should be cached
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
@@ -109,20 +113,20 @@ def cached_response(
                 return JSONResponse(
                     content=cached_response["content"],
                     status_code=cached_response["status_code"],
-                    headers={"X-Cache": "HIT"}
+                    headers={"X-Cache": "HIT"},
                 )
 
             # Execute function
             response = await func(request, *args, **kwargs)
 
             # Cache successful responses
-            if hasattr(response, 'status_code') and 200 <= response.status_code < 300:
-                if hasattr(response, 'body'):
+            if hasattr(response, "status_code") and 200 <= response.status_code < 300:
+                if hasattr(response, "body"):
                     try:
                         content = json.loads(response.body)
                         cache_data = {
                             "content": content,
-                            "status_code": response.status_code
+                            "status_code": response.status_code,
                         }
                         await response_cache.set(cache_key, cache_data, ttl)
                         logger.debug(f"Cache set: {cache_key}")
@@ -130,16 +134,20 @@ def cached_response(
                         logger.warning(f"Failed to cache response: {e}")
 
             # Add cache header
-            if hasattr(response, 'headers'):
+            if hasattr(response, "headers"):
                 response.headers["X-Cache"] = "MISS"
 
             return response
+
         return wrapper
+
     return decorator
+
 
 # =====================================
 # Rate Limiting System
 # =====================================
+
 
 class RateLimiter:
     """Redis-based rate limiter for API endpoints."""
@@ -148,10 +156,7 @@ class RateLimiter:
         self.redis_client = redis.from_url(redis_url, decode_responses=True)
 
     async def is_allowed(
-        self,
-        identifier: str,
-        limit: int,
-        window: int
+        self, identifier: str, limit: int, window: int
     ) -> tuple[bool, Dict[str, int]]:
         """
         Check if request is allowed under rate limit.
@@ -196,13 +201,15 @@ class RateLimiter:
             # Fail open - allow request if rate limiter is down
             return True, {"remaining": limit, "reset_time": current_time + window}
 
+
 # Global rate limiter instance
 rate_limiter = RateLimiter()
+
 
 def rate_limit(
     requests_per_minute: int = 60,
     per_user: bool = True,
-    key_func: Callable[[Request], str] = None
+    key_func: Callable[[Request], str] = None,
 ):
     """
     Decorator for rate limiting API endpoints.
@@ -212,13 +219,14 @@ def rate_limit(
         per_user: Apply limit per user (True) or per IP (False)
         key_func: Custom function to generate rate limit key
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
             # Generate rate limit key
             if key_func:
                 identifier = key_func(request)
-            elif per_user and hasattr(request.state, 'user'):
+            elif per_user and hasattr(request.state, "user"):
                 identifier = f"user:{request.state.user.get('id', 'anonymous')}"
             else:
                 identifier = f"ip:{request.client.host}"
@@ -233,29 +241,33 @@ def rate_limit(
                     "X-RateLimit-Limit": str(requests_per_minute),
                     "X-RateLimit-Remaining": str(info["remaining"]),
                     "X-RateLimit-Reset": str(info["reset_time"]),
-                    "Retry-After": str(info["reset_time"] - int(time.time()))
+                    "Retry-After": str(info["reset_time"] - int(time.time())),
                 }
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Rate limit exceeded",
-                    headers=headers
+                    headers=headers,
                 )
 
             # Execute function and add rate limit headers
             response = await func(request, *args, **kwargs)
 
-            if hasattr(response, 'headers'):
+            if hasattr(response, "headers"):
                 response.headers["X-RateLimit-Limit"] = str(requests_per_minute)
                 response.headers["X-RateLimit-Remaining"] = str(info["remaining"])
                 response.headers["X-RateLimit-Reset"] = str(info["reset_time"])
 
             return response
+
         return wrapper
+
     return decorator
+
 
 # =====================================
 # Database Performance Monitoring
 # =====================================
+
 
 class DatabaseMonitor:
     """Monitor database query performance."""
@@ -278,22 +290,31 @@ class DatabaseMonitor:
         stats["total_time"] += duration
         stats["avg_time"] = stats["total_time"] / stats["count"]
 
+
 # Global database monitor
 db_monitor = DatabaseMonitor()
 
+
 # SQLAlchemy event listener for query monitoring
 @event.listens_for(Engine, "before_cursor_execute")
-def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def receive_before_cursor_execute(
+    conn, cursor, statement, parameters, context, executemany
+):
     context._query_start_time = time.time()
 
+
 @event.listens_for(Engine, "after_cursor_execute")
-def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def receive_after_cursor_execute(
+    conn, cursor, statement, parameters, context, executemany
+):
     total_time = time.time() - context._query_start_time
     db_monitor.log_query(statement, total_time)
+
 
 # =====================================
 # Response Compression Middleware
 # =====================================
+
 
 async def compression_middleware(request: Request, call_next):
     """Middleware to compress responses when appropriate."""
@@ -305,12 +326,15 @@ async def compression_middleware(request: Request, call_next):
         return response
 
     # Only compress JSON responses larger than 1KB
-    if (hasattr(response, 'media_type') and
-        response.media_type == "application/json" and
-        hasattr(response, 'body') and
-        len(response.body) > 1024):
+    if (
+        hasattr(response, "media_type")
+        and response.media_type == "application/json"
+        and hasattr(response, "body")
+        and len(response.body) > 1024
+    ):
 
         import gzip
+
         compressed_body = gzip.compress(response.body)
 
         # Only use compression if it saves significant space
@@ -321,9 +345,11 @@ async def compression_middleware(request: Request, call_next):
 
     return response
 
+
 # =====================================
 # Performance Monitoring Utilities
 # =====================================
+
 
 @asynccontextmanager
 async def monitor_performance(operation_name: str):
@@ -339,22 +365,28 @@ async def monitor_performance(operation_name: str):
         if duration > 2.0:
             logger.warning(f"Slow operation: {operation_name} took {duration:.3f}s")
 
+
 def performance_metrics(func: Callable) -> Callable:
     """Decorator to monitor function performance."""
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         async with monitor_performance(func.__name__):
             return await func(*args, **kwargs)
+
     return wrapper
+
 
 # =====================================
 # Cache Invalidation Utilities
 # =====================================
 
+
 async def invalidate_cache_pattern(pattern: str):
     """Invalidate cache entries matching a pattern."""
     await response_cache.delete(pattern)
     logger.info(f"Invalidated cache pattern: {pattern}")
+
 
 # Cache invalidation for common operations
 async def invalidate_component_cache(component_id: str = None):
@@ -364,9 +396,11 @@ async def invalidate_component_cache(component_id: str = None):
     await response_cache.delete("components")
     await response_cache.delete("stats")
 
+
 # =====================================
 # Health Check Enhancements
 # =====================================
+
 
 class HealthMonitor:
     """Enhanced health monitoring with performance metrics."""
@@ -408,17 +442,27 @@ class HealthMonitor:
             "error_rate": self.error_count / max(self.request_count, 1),
             "database": {
                 "healthy": db_healthy,
-                "response_time_ms": db_response_time * 1000 if db_response_time else None
+                "response_time_ms": (
+                    db_response_time * 1000 if db_response_time else None
+                ),
             },
             "cache": {
                 "healthy": redis_healthy,
-                "response_time_ms": redis_response_time * 1000 if redis_response_time else None
+                "response_time_ms": (
+                    redis_response_time * 1000 if redis_response_time else None
+                ),
             },
             "performance": {
-                "slow_queries": len([q for q, stats in db_monitor.query_stats.items()
-                                   if stats["avg_time"] > db_monitor.slow_query_threshold])
-            }
+                "slow_queries": len(
+                    [
+                        q
+                        for q, stats in db_monitor.query_stats.items()
+                        if stats["avg_time"] > db_monitor.slow_query_threshold
+                    ]
+                )
+            },
         }
+
 
 # Global health monitor
 health_monitor = HealthMonitor()

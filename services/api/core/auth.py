@@ -1,12 +1,14 @@
 """
 JWT Authentication utilities for OriginFD API
 """
+
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 # Password hashing with bcrypt
@@ -78,8 +80,7 @@ def verify_token(token: str, token_type: str = "access") -> Dict[str, Any]:
         # Check token type
         if payload.get("type") != token_type:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
 
         # Check expiration
@@ -87,13 +88,12 @@ def verify_token(token: str, token_type: str = "access") -> Dict[str, Any]:
         if exp is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token missing expiration"
+                detail="Token missing expiration",
             )
 
         if datetime.utcnow() > datetime.fromtimestamp(exp):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expired"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
             )
 
         return payload
@@ -101,7 +101,7 @@ def verify_token(token: str, token_type: str = "access") -> Dict[str, Any]:
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
+            detail="Could not validate credentials",
         )
 
 
@@ -129,7 +129,7 @@ def authenticate_user(email: str, password: str) -> Optional[dict]:
                 "full_name": "Development Admin",
                 "hashed_password": get_password_hash("admin"),
                 "is_active": True,
-                "roles": ["admin", "engineer"]
+                "roles": ["admin", "engineer"],
             }
         }
         user = dev_users.get(email)
@@ -139,7 +139,7 @@ def authenticate_user(email: str, password: str) -> Optional[dict]:
     # Production: Query real user database here
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Real database authentication not implemented"
+        detail="Real database authentication not implemented",
     )
 
 
@@ -148,7 +148,7 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
     # TODO: Replace with real database query
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Real database user lookup not implemented"
+        detail="Real database user lookup not implemented",
     )
 
 
@@ -157,11 +157,13 @@ def get_user_by_email(email: str) -> Optional[dict]:
     # TODO: Replace with real database query
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Real database user lookup not implemented"
+        detail="Real database user lookup not implemented",
     )
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> Dict[str, Any]:
     """Get current user from JWT token"""
     token = credentials.credentials
     payload = verify_token(token, "access")

@@ -1,17 +1,20 @@
 """
 Tenant model for multi-tenant architecture.
 """
+
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Text
+
+from sqlalchemy import Boolean, Column, DateTime, String, Text
 from sqlalchemy.orm import relationship
 
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, TimestampMixin, UUIDMixin
 
 
 class Tenant(Base, UUIDMixin, TimestampMixin):
     """
     Tenant model for multi-tenant row-level security.
     """
+
     __tablename__ = "tenants"
 
     # Tenant Identity

@@ -1,10 +1,11 @@
 """SQLAlchemy models for OriginFD API."""
+
 from .base import Base
-from .user import User
-from .project import Project
 from .component import Component
-from .supplier import Supplier
 from .inventory_record import InventoryRecord
+from .project import Project
+from .supplier import Supplier
+from .user import User
 
 __all__ = [
     "Base",
