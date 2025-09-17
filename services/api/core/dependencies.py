@@ -63,7 +63,7 @@ async def get_current_user_from_token(
 
 
 async def get_current_active_user(
-    current_user: Annotated[dict, Depends(get_current_user_from_token)]
+    current_user: Annotated[dict, Depends(get_current_user_from_token)],
 ) -> dict:
     """
     Dependency to get current active user
@@ -78,7 +78,7 @@ def require_roles(*required_roles: str):
     """
 
     def role_checker(
-        current_user: Annotated[dict, Depends(get_current_active_user)]
+        current_user: Annotated[dict, Depends(get_current_active_user)],
     ) -> dict:
         user_roles = current_user.get("roles", [])
 
