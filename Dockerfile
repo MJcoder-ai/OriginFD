@@ -63,5 +63,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/health/ || exit 1
 
-# Use CMD with shell to support dynamic PORT for Cloud Run
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Use CMD to run Python file directly to ensure PORT configuration is executed
+CMD ["python", "main.py"]
