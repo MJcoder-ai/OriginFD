@@ -175,6 +175,10 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}/review`)
   }
 
+  async getPlannerTrace(runId: string): Promise<any> {
+    return this.request(`planner/${runId}`)
+  }
+
   async listModels(): Promise<ModelInfo[]> {
     return this.request('model-registry/models')
   }

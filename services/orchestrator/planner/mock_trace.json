@@ -1,0 +1,31 @@
+{
+  "run_id": "demo-run-001",
+  "steps": [
+    {
+      "id": "step-1",
+      "tool": "ParseDatasheetTool",
+      "params": {
+        "datasheet_url": "https://example.com/datasheet.pdf"
+      },
+      "cached": false,
+      "psu_cost": 2,
+      "latency_ms": 1234,
+      "evidence": ["https://example.com/evidence1"],
+      "patch": [
+        {"op": "add", "path": "/components/-", "value": {"id": "cmp-1"}}
+      ]
+    },
+    {
+      "id": "step-2",
+      "tool": "ComponentClassificationTool",
+      "params": {
+        "component_id": "cmp-1"
+      },
+      "cached": true,
+      "psu_cost": 1,
+      "latency_ms": 456,
+      "evidence": ["https://example.com/evidence2"],
+      "patch": []
+    }
+  ]
+}
