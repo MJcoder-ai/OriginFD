@@ -4,3 +4,7 @@
 # API-specific dependencies
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
+
+# JWT and production server dependencies
+PyJWT==2.8.0
+gunicorn==22.0.0

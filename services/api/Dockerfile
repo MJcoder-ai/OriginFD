@@ -45,7 +45,7 @@ RUN useradd -m -u 1000 appuser
 
 # Copy the API service code
 COPY services/api/ ./
-RUN chown -R appuser:appuser /app
+RUN chmod +x start.sh && chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
@@ -58,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health/ || exit 1
 
 # Start the FastAPI application with production-grade gunicorn
-CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} main:app"]
+CMD ["./start.sh"]

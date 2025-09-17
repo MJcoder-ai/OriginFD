@@ -4,3 +4,6 @@
 # Orchestrator-specific dependencies
 passlib[bcrypt]==1.7.4
 networkx==3.2.1
+
+# Production server dependency
+gunicorn==22.0.0

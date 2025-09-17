@@ -41,7 +41,7 @@ RUN useradd -m -u 1000 appuser
 
 # Copy the orchestrator service code
 COPY services/orchestrator/ ./
-RUN chown -R appuser:appuser /app
+RUN chmod +x start.sh && chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8001}/health/ || exit 1
 
 # Start the orchestrator application with production-grade gunicorn
-CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8001} main:app"]
+CMD ["./start.sh"]
