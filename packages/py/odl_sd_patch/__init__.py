@@ -15,7 +15,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "apply_patch",
-    "create_patch", 
+    "create_patch",
     "inverse_patch",
     "validate_patch",
     "PatchValidationError",

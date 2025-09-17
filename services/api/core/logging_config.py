@@ -1,6 +1,7 @@
 """
 Centralized logging configuration for OriginFD API.
 """
+
 import logging
 import logging.config
 import sys
@@ -31,8 +32,8 @@ def setup_logging():
             },
             "json": {
                 "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
-                "format": "%(asctime)s %(name)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s"
-            }
+                "format": "%(asctime)s %(name)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s",
+            },
         },
         "handlers": {
             "console": {

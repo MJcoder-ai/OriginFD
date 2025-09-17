@@ -5,21 +5,25 @@
 ---
 
 ## 0) Executive Summary
+
 **Business outcomes (targets):**
+
 - **↓ Cost & Latency:** CAG hit rate ≥ 70%; p95 latency ≤ 2 s for grounded answers; avg query cost < $0.01.
 - **↑ Throughput & Accuracy:** grounded‑answer rate ≥ 95%; hallucination < 5% (tool‑verified); proposal cycle time −50%.
 - **↑ Revenue:** 30% of AI‑assisted designs convert to orders; +15% upsell/attach (BESS, service packs); CAC payback ≤ 3 months via AI lead gen.
 - **↑ Adoption & Trust:** AI NPS ≥ 8/10; 99% uptime for simulations; transparent Planner Trace UI.
 
 **Key risks & mitigations:**
-- *Hallucination / unsafe actions* → Ground‑before‑Generate, deterministic tools, Critic/Verifier gate, RBAC phase gates, JSON‑Patch dry‑run.
-- *Cache staleness* → DriftDetector + web validation; TTLs + event‑invalidations; versioned tools & cache keys.
-- *Privacy/compliance* → Region routing, role‑scoped content, media privacy filters, PII scrubber in memory writes.
-- *Runaway costs* → Policy router per plan (PSU budgets), model swaps (quality/cost curves), CAG‑first.
+
+- _Hallucination / unsafe actions_ → Ground‑before‑Generate, deterministic tools, Critic/Verifier gate, RBAC phase gates, JSON‑Patch dry‑run.
+- _Cache staleness_ → DriftDetector + web validation; TTLs + event‑invalidations; versioned tools & cache keys.
+- _Privacy/compliance_ → Region routing, role‑scoped content, media privacy filters, PII scrubber in memory writes.
+- _Runaway costs_ → Policy router per plan (PSU budgets), model swaps (quality/cost curves), CAG‑first.
 
 ---
 
 ## 1) Core Principles (contract‑first)
+
 1. **ODL‑SD Single Source of Truth.** One JSON per project (versioned). All AI I/O validated against schemas; **mutations via JSON‑Patch** only.
 2. **Guarded Autonomy.** Agents plan→act within RBAC; approver gates; critical merges require signatures and audit reasons.
 3. **Ground‑Before‑Generate (multimodal).** Evidence from ODL‑SD **Graph‑RAG**, hybrid text retrieval, and visual tools (datasheets/photos/videos) precedes generation.
@@ -32,9 +36,11 @@
 ---
 
 ## 2) Reference Architecture (layers)
+
 **L0 Channels.** Chat/Voice/UI; Webhooks & APIs; WhatsApp/Email/Sheets/Docs/VoIP connectors.
 
 **L1 Orchestrator.** Planner/Router → Tool Caller → Critic/Verifier → **Policy Router** (plan limits, PSU) → **Scheduler** (cron & event jobs) → **Reflection loop** (online low‑risk + offline batch).
+
 - **ModelSelector.** Routes by task (reasoning vs extraction vs vision) and region (data residency/cost).
 - **RegionRouter.** US/EU/APAC splitting for models and storage.
 - **Handover protocol.** Shared scratchpad + plan cards between agents (Design → Sales → Sourcing → Ops).
@@ -54,7 +60,9 @@
 ---
 
 ## 3) JSON‑Patch Mutation Contract (safe‑write rules)
+
 **Atomicity & scale.**
+
 - Max **100 ops per patch**; batch larger ops. Server applies as **single transaction**; rollback on failure.
 - Patches carry `intent`, `tool_version`, `dry_run`, and `evidence[]` (URIs to datasheets, photos, test reports).
 
@@ -67,6 +75,7 @@
 ---
 
 ## 4) Tool Registry (core + growth)
+
 **Design & Compliance.** `schema_validate`, `auto_layout`, `auto_route`, `wire_check`, `short_circuit`, `protection_coordination`, `code_check` (NEC/IEC/IEEE), `sld_generate`, `doc_pack`.
 
 **Finance.** `baseline_finance`, `sensitivity`, `monte_carlo`, `tariff_model`, `incentive_fetch`, `price_index`, `fx_hedge`.
@@ -86,6 +95,7 @@
 ---
 
 ## 5) Agents (minimal, revenue‑aligned)
+
 - **DesignEngineerAgent** — validates/mutates ODL‑SD; proposes patches; suggests cost/IRR improvements.
 - **SalesAdvisorAgent** — quotes/ROI, incentives, proposals; coordinates with upsell recommender.
 - **SourcingGrowthAgent** — BOM→RFQ/bids/alternates; shipping & EPCIS; inventory.
@@ -99,6 +109,7 @@
 ---
 
 ## 6) Security, RBAC & Governance (enterprise)
+
 - Roles & scopes across phases: design/procurement/build/commission/operate/maintain/decommission.
 - Data classification: public/internal/restricted/confidential; least‑privilege; MFA for sensitive roles.
 - SIEM webhooks; append‑only audit; session recording with consent; media governance & redaction.
@@ -106,6 +117,7 @@
 ---
 
 ## 7) Observability, Evals & SLAs
+
 - **Traces:** per tool call (timing, cost, cache hit/miss, redaction hash, validators).
 - **Evals:** grounded‑answer checks, wiring limits satisfied, finance deltas vs baseline, hallucination counters.
 - **AI SLAs:** latency, uptime, time‑to‑first‑plan, PSU budgets; regional latency targets; error budgets per tool.
@@ -114,7 +126,8 @@
 ---
 
 ## 8) Planner Trace UI (what users see)
-- **Plan cards:** decomposition with *why*; each step shows (tool, inputs, outputs, scope, cost estimate).
+
+- **Plan cards:** decomposition with _why_; each step shows (tool, inputs, outputs, scope, cost estimate).
 - **Critic panel:** blockers & fixes, severity triage.
 - **Executor timeline:** tool status ticks; cache hits; rollbacks.
 - **Explain & Audit:** JSON‑Patch diff view; evidence links; deterministic “Reproduce” button.
@@ -122,6 +135,7 @@
 ---
 
 ## 9) Channels & Connectors
+
 Inbound: Chat (web), WhatsApp, Email, Google Forms/Sheets, CSV, VoIP IVR.
 Outbound: Emails/WhatsApp, Sheets sync, CRM updates, webhooks to ERP/PSCAD/IFC.
 Maps & Canvas: roof segmentation, geo‑anchors, **auto‑layout** & **auto‑route** with DRC.
@@ -129,12 +143,14 @@ Maps & Canvas: roof segmentation, geo‑anchors, **auto‑layout** & **auto‑ro
 ---
 
 ## 10) Monetisation AI — hybrid separation with tight integration
+
 - Monetisation subsystem runs **MarketingCRMAgent** + **RevenueOptimizerAgent**; owns payments/escrow; isolated scopes (PCI/PII).
 - Operational AI publishes anonymised events (lead quality, conversion, PSU usage) enabling revenue optimisation without cross‑contamination.
 
 ---
 
 ## 11) Implementation Roadmap (100 days)
+
 **Phase 0 (Weeks 1–2): Foundations & risk checks.**
 Schemas, Patch pipeline, RBAC, audit, SIEM, Tool Registry (7 core), privacy/residency audit, golden samples.
 
@@ -153,131 +169,143 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
 ---
 
 ## 12) Lifecycle Playbooks — 10 Examples at Each Stage (A→J)
+
 > Format: **Trigger → AI Plan (agent/tools) → ODL‑SD Patch/Output → KPI/Outcome**
 
 ### A) Intake & Concept (ideation, scoping)
-1) Size 5 kW PV for CA, 70% bill offset → Planner→DesignEngineer (tariff_model, baseline_finance) → add `requirements` + draft `instances` → draft in 90 s.
-2) Upload utility bill PDF → parse_datasheet_pdf (tables) → `finance.inputs.tariff` update → baseline error < 2%.
-3) Homeowner sketches roof → map_roof_segmenter → `physical.surfaces[]` + constraints → viable area + tilt.
-4) Ask: Grid‑tie + backup? → SalesAdvisor (scenario_compare) → propose hybrid + gateway → +12% IRR.
-5) Limit budget to $20k → Planner optimises panels/inverter → BOM/finance patch → meets budget.
-6) Minimise embodied carbon → esg_optimizer → low‑CO₂ modules → ESG badge on proposal.
-7) Off‑grid 2 days autonomy → storage_sizer → BESS/racking spec → autonomy proven.
-8) Multi‑unit complex → portfolio template → clones per unit with overrides.
-9) Import HelioScope layout → external_models mapping → merged `instances`/`connections`.
-10) Fire lanes for permitting → code_check → keep‑outs in `physical.zones` → compliant layout.
+
+1. Size 5 kW PV for CA, 70% bill offset → Planner→DesignEngineer (tariff_model, baseline_finance) → add `requirements` + draft `instances` → draft in 90 s.
+2. Upload utility bill PDF → parse_datasheet_pdf (tables) → `finance.inputs.tariff` update → baseline error < 2%.
+3. Homeowner sketches roof → map_roof_segmenter → `physical.surfaces[]` + constraints → viable area + tilt.
+4. Ask: Grid‑tie + backup? → SalesAdvisor (scenario_compare) → propose hybrid + gateway → +12% IRR.
+5. Limit budget to $20k → Planner optimises panels/inverter → BOM/finance patch → meets budget.
+6. Minimise embodied carbon → esg_optimizer → low‑CO₂ modules → ESG badge on proposal.
+7. Off‑grid 2 days autonomy → storage_sizer → BESS/racking spec → autonomy proven.
+8. Multi‑unit complex → portfolio template → clones per unit with overrides.
+9. Import HelioScope layout → external_models mapping → merged `instances`/`connections`.
+10. Fire lanes for permitting → code_check → keep‑outs in `physical.zones` → compliant layout.
 
 ### B) System Design & Layout (electrical/mechanical)
-1) Auto‑stringing → auto_route + wire_check → `connections[]` DC strings, Vdrop ≤ 2%.
-2) Single‑Line Diagram synth → sld_generate → attach SVG to docs.
-3) Rapid‑shutdown → code_check → insert MLPE devices.
-4) Conduit fill → wire_check → add pull boxes & lengths.
-5) Fault current & breaker sizing → short_circuit / protection_coordination → protective device updates.
-6) Tracker row spacing → shading/backtracking sim → `structures`/`physical` updates.
-7) Thermal hotspot prediction → thermal model → derate zone; re‑route strings.
-8) Voltage ride‑through settings → grid_code profile → `instances[].settings`.
-9) Nameplate OCR → serial attach to instances.
-10) Pro user manual edits → AI re‑balances strings while preserving constraints.
+
+1. Auto‑stringing → auto_route + wire_check → `connections[]` DC strings, Vdrop ≤ 2%.
+2. Single‑Line Diagram synth → sld_generate → attach SVG to docs.
+3. Rapid‑shutdown → code_check → insert MLPE devices.
+4. Conduit fill → wire_check → add pull boxes & lengths.
+5. Fault current & breaker sizing → short_circuit / protection_coordination → protective device updates.
+6. Tracker row spacing → shading/backtracking sim → `structures`/`physical` updates.
+7. Thermal hotspot prediction → thermal model → derate zone; re‑route strings.
+8. Voltage ride‑through settings → grid_code profile → `instances[].settings`.
+9. Nameplate OCR → serial attach to instances.
+10. Pro user manual edits → AI re‑balances strings while preserving constraints.
 
 ### C) Compliance & Codes
-1) IEEE 1547 / Rule 21 checks → code_check → `compliance.evidence` + settings table.
-2) NEC 690 derate → temp factors → conductor sizes patched.
-3) UL 9540A clearances → layout warnings → keep‑out zones.
-4) Grounding/Bonding calc → earth target → BOM & trench routes.
-5) Fire setback visual → heat map overlays on Canvas.
-6) Permit package → doc_pack → stamped drawings & schedules.
-7) Utility interconnection forms → merge from ODL‑SD → prefilled submission.
-8) DPP readiness → traceability fields + QR links.
-9) Accessibility labels/alt‑text → generated & bound.
-10) Governance gate → publish_design → signed baseline hash.
+
+1. IEEE 1547 / Rule 21 checks → code_check → `compliance.evidence` + settings table.
+2. NEC 690 derate → temp factors → conductor sizes patched.
+3. UL 9540A clearances → layout warnings → keep‑out zones.
+4. Grounding/Bonding calc → earth target → BOM & trench routes.
+5. Fire setback visual → heat map overlays on Canvas.
+6. Permit package → doc_pack → stamped drawings & schedules.
+7. Utility interconnection forms → merge from ODL‑SD → prefilled submission.
+8. DPP readiness → traceability fields + QR links.
+9. Accessibility labels/alt‑text → generated & bound.
+10. Governance gate → publish_design → signed baseline hash.
 
 ### D) Procurement & Suppliers
-1) BOM→RFQ with alternates → rfq_issue.
-2) Bid scoring (price/lead/ESG) → bid_score → award_po; escrow milestones.
-3) Stock‑out → alternates via port‑compat graph → swap inverter; finance re‑run.
-4) Duties/VAT calc → price_index + tax tool → update `finance.capex`.
-5) Supplier onboarding → compliance docs hashed; roles granted.
-6) PO generation (UBL) → award_po → signed order; waybill expected.
-7) Digital labels (SSCC/QR) → waybill_label.
-8) Multi‑currency hedge → fx_hedge → escrow rules set.
-9) Returns RMA on line items → rma_process.
-10) Marketplace template sale → revenue share + payout schedule.
+
+1. BOM→RFQ with alternates → rfq_issue.
+2. Bid scoring (price/lead/ESG) → bid_score → award_po; escrow milestones.
+3. Stock‑out → alternates via port‑compat graph → swap inverter; finance re‑run.
+4. Duties/VAT calc → price_index + tax tool → update `finance.capex`.
+5. Supplier onboarding → compliance docs hashed; roles granted.
+6. PO generation (UBL) → award_po → signed order; waybill expected.
+7. Digital labels (SSCC/QR) → waybill_label.
+8. Multi‑currency hedge → fx_hedge → escrow rules set.
+9. Returns RMA on line items → rma_process.
+10. Marketplace template sale → revenue share + payout schedule.
 
 ### E) Construction & Logistics
-1) Pick/pack list → inventory reservations by serial/lot.
-2) EPCIS events → last‑known location dashboard.
-3) Delivery deviation photo → image_qc; supplier notified.
-4) Crew route plan → crew_schedule; SMS/WhatsApp dispatch.
-5) Site access QR + safety briefing → workorder_generate with checklists.
-6) Conduit trench profile → automatic BOM per run.
-7) Rail torque evidence → photo OCR; attach to commissioning.
-8) String pull test capture → values stored per string.
-9) Dynamic stow in high winds → tracker control plan.
-10) Daily progress summary → photos + counts → PM report.
+
+1. Pick/pack list → inventory reservations by serial/lot.
+2. EPCIS events → last‑known location dashboard.
+3. Delivery deviation photo → image_qc; supplier notified.
+4. Crew route plan → crew_schedule; SMS/WhatsApp dispatch.
+5. Site access QR + safety briefing → workorder_generate with checklists.
+6. Conduit trench profile → automatic BOM per run.
+7. Rail torque evidence → photo OCR; attach to commissioning.
+8. String pull test capture → values stored per string.
+9. Dynamic stow in high winds → tracker control plan.
+10. Daily progress summary → photos + counts → PM report.
 
 ### F) Commissioning & Testing
-1) IV curves (C&I/utility) → ingest & compare.
-2) Insulation & polarity checks → thresholds verified; blockers.
-3) PCS grid support tests → scripted; results logged.
-4) Relay secondary injection → plan; evidence attached.
-5) Protection coordination matrix → verified thresholds; doc export.
-6) Performance test (ASTM E2848) → 7‑day run; uncertainty calc.
-7) Firmware version snapshot → `instances[].firmware` lock.
-8) Punchlist from photos → tasks; severity & due.
-9) Sign‑off → governance signatures; escrow release.
-10) Handover portal → read‑only baseline, warranty ledger.
+
+1. IV curves (C&I/utility) → ingest & compare.
+2. Insulation & polarity checks → thresholds verified; blockers.
+3. PCS grid support tests → scripted; results logged.
+4. Relay secondary injection → plan; evidence attached.
+5. Protection coordination matrix → verified thresholds; doc export.
+6. Performance test (ASTM E2848) → 7‑day run; uncertainty calc.
+7. Firmware version snapshot → `instances[].firmware` lock.
+8. Punchlist from photos → tasks; severity & due.
+9. Sign‑off → governance signatures; escrow release.
+10. Handover portal → read‑only baseline, warranty ledger.
 
 ### G) Operations & Monitoring
-1) Anomaly on string currents → root‑cause; work order.
-2) Soiling index → cleaning schedule optimisation.
-3) PR & availability KPIs → monthly exec report.
-4) Alarm flood triage → dedupe & rank.
-5) Curtailment analytics → finance impact; PPA compliance.
-6) Degradation regression → warranty watchlist.
-7) Weather forecast → stow policies & BESS arbitrage schedule.
-8) Spare parts prediction → reorder plan; spares RFQs.
-9) Cyber posture (SCADA) → patch window booking; rollback.
-10) ESG dashboards → avoided CO₂e & biodiversity metrics.
+
+1. Anomaly on string currents → root‑cause; work order.
+2. Soiling index → cleaning schedule optimisation.
+3. PR & availability KPIs → monthly exec report.
+4. Alarm flood triage → dedupe & rank.
+5. Curtailment analytics → finance impact; PPA compliance.
+6. Degradation regression → warranty watchlist.
+7. Weather forecast → stow policies & BESS arbitrage schedule.
+8. Spare parts prediction → reorder plan; spares RFQs.
+9. Cyber posture (SCADA) → patch window booking; rollback.
+10. ESG dashboards → avoided CO₂e & biodiversity metrics.
 
 ### H) Warranty & Service
-1) Claim pack assembly → manufacturer portal payload.
-2) RMA SSCC labels → tracking to vendor.
-3) After‑fix verification photos → wiring overlays; close ticket.
-4) Extended warranty upsell at risk points → offers.
-5) Root‑cause library update → Reflection distills guides.
-6) VoIP scripted triage → consistent handling.
-7) SMS status bot → claim milestones.
-8) Third‑party service tender → marketplace; 3% fee.
-9) SLA breach detection → auto credits.
-10) Portfolio heatmap → CAPA plan.
+
+1. Claim pack assembly → manufacturer portal payload.
+2. RMA SSCC labels → tracking to vendor.
+3. After‑fix verification photos → wiring overlays; close ticket.
+4. Extended warranty upsell at risk points → offers.
+5. Root‑cause library update → Reflection distills guides.
+6. VoIP scripted triage → consistent handling.
+7. SMS status bot → claim milestones.
+8. Third‑party service tender → marketplace; 3% fee.
+9. SLA breach detection → auto credits.
+10. Portfolio heatmap → CAPA plan.
 
 ### I) Repowering & Upgrades
-1) BESS augmentation Y7 → capacity gap → options, ROI.
-2) Inverter derating trend → replacement plan; finance sensitivity.
-3) Hail‑prone rows → stronger glass; risk model.
-4) Tracker firmware → staged rollout; rollback.
-5) EV chargers added → load flow + protection recheck.
-6) PPC/EMS features → grid services revenue sim.
-7) SLD regeneration post changes → doc_pack diff.
-8) Re‑stringing after shading shift → autoroute; new gauge.
-9) Tariff change → reoptimise arbitrage; policy update.
-10) Upsell campaign → proposals at scale; conversion tracked.
+
+1. BESS augmentation Y7 → capacity gap → options, ROI.
+2. Inverter derating trend → replacement plan; finance sensitivity.
+3. Hail‑prone rows → stronger glass; risk model.
+4. Tracker firmware → staged rollout; rollback.
+5. EV chargers added → load flow + protection recheck.
+6. PPC/EMS features → grid services revenue sim.
+7. SLD regeneration post changes → doc_pack diff.
+8. Re‑stringing after shading shift → autoroute; new gauge.
+9. Tariff change → reoptimise arbitrage; policy update.
+10. Upsell campaign → proposals at scale; conversion tracked.
 
 ### J) Decommissioning & Circularity
-1) EoL plan → removal schedules; recycling partners; economics.
-2) Asset resale vs scrap → price forecasts; residuals.
-3) Transformer oil handling → DGA & disposal docs.
-4) Grounding grid extraction → safety steps; permits.
-5) Module recycling logistics → SSCC chain; certificates.
-6) Land restoration scope → seed mixes; erosion control.
-7) Bond/escrow release → evidence milestones.
-8) Warranty transfer/closeout → ledger updates.
-9) Lessons learned → Reflection updates standards.
-10) Sustainability report → lifecycle avoided CO₂e, circular metrics.
+
+1. EoL plan → removal schedules; recycling partners; economics.
+2. Asset resale vs scrap → price forecasts; residuals.
+3. Transformer oil handling → DGA & disposal docs.
+4. Grounding grid extraction → safety steps; permits.
+5. Module recycling logistics → SSCC chain; certificates.
+6. Land restoration scope → seed mixes; erosion control.
+7. Bond/escrow release → evidence milestones.
+8. Warranty transfer/closeout → ledger updates.
+9. Lessons learned → Reflection updates standards.
+10. Sustainability report → lifecycle avoided CO₂e, circular metrics.
 
 ---
 
 ## 13) Advanced Topics & Changelog
+
 - **ReflectionAgent:** mines audit logs + graph to improve prompts/playbooks; proposes rule updates (human‑approved).
 - **ModelSelector:** cost/quality routing; A/B swaps (small orchestration model vs large planner; vision for QC).
 - **RegionRouter:** tenant residency and local incentive sources; regional SLA targets.
@@ -289,31 +317,72 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
 ---
 
 ## 14) Appendix A — Patch Patterns (snippets)
+
 - **Add component instance**
+
 ```json
-[{"op":"add","path":"/design/components/-","value":{"id":"inv_002","type":"inverter","model":"X123","ports":{"dc":["dc1","dc2"],"ac":["ac1"]}}}]
+[
+  {
+    "op": "add",
+    "path": "/design/components/-",
+    "value": {
+      "id": "inv_002",
+      "type": "inverter",
+      "model": "X123",
+      "ports": { "dc": ["dc1", "dc2"], "ac": ["ac1"] }
+    }
+  }
+]
 ```
+
 - **Connect string to inverter port**
+
 ```json
-[{"op":"add","path":"/connections/-","value":{"from":"string_A","to":"inv_002/dc1","type":"dc"}}]
+[
+  {
+    "op": "add",
+    "path": "/connections/-",
+    "value": { "from": "string_A", "to": "inv_002/dc1", "type": "dc" }
+  }
+]
 ```
+
 - **Finance assumption update**
+
 ```json
-[{"op":"replace","path":"/finance/opex/maintenance_per_kw","value":12.5}]
+[{ "op": "replace", "path": "/finance/opex/maintenance_per_kw", "value": 12.5 }]
 ```
+
 - **Warranty ticket create**
+
 ```json
-[{"op":"add","path":"/warranty/tickets/-","value":{"id":"wt_101","component":"inv_002","issue":"GFCI fault","evidence":["img://..."],"status":"new"}}]
+[
+  {
+    "op": "add",
+    "path": "/warranty/tickets/-",
+    "value": {
+      "id": "wt_101",
+      "component": "inv_002",
+      "issue": "GFCI fault",
+      "evidence": ["img://..."],
+      "status": "new"
+    }
+  }
+]
 ```
+
 - **Rollback inverse** → call `generate_inverse_patch` on the last commit and re‑apply.
 
 ---
 
 ## 15) Appendix B — Tool I/O Schemas (Draft 2020‑12)
+
 > Strict schemas for Day‑1 tools. `additionalProperties: false` everywhere. Include in Tool Registry with **semver**; version bumps auto‑invalidate caches.
 
 ### 1) `validate_odl_sd`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -327,9 +396,18 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
     "schema_version": { "type": "string", "pattern": "^4\\.(1|2|x)$" },
     "checks": {
       "type": "array",
-      "items": { "type": "string", "enum": [
-        "structure", "types", "domain", "ports", "connections", "finance_links", "compliance"
-      ] },
+      "items": {
+        "type": "string",
+        "enum": [
+          "structure",
+          "types",
+          "domain",
+          "ports",
+          "connections",
+          "finance_links",
+          "compliance"
+        ]
+      },
       "uniqueItems": true
     },
     "fast": { "type": "boolean", "default": true }
@@ -337,7 +415,9 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "required": ["doc_id", "schema_version"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -358,7 +438,10 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
         "properties": {
           "path": { "type": "string" },
           "code": { "type": "string" },
-          "severity": { "type": "string", "enum": ["error", "warning", "info"] },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning", "info"]
+          },
           "message": { "type": "string" },
           "hint": { "type": "string" }
         },
@@ -375,12 +458,21 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       "required": ["errors", "warnings"]
     }
   },
-  "required": ["doc_id", "doc_version", "schema_version", "valid", "issues", "summary"]
+  "required": [
+    "doc_id",
+    "doc_version",
+    "schema_version",
+    "valid",
+    "issues",
+    "summary"
+  ]
 }
 ```
 
 ### 2) `simulate_energy`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -390,9 +482,16 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "additionalProperties": false,
   "properties": {
     "doc_id": { "type": "string" },
-    "scope": { "type": "string", "enum": ["portfolio", "site", "subsystem", "array"] },
+    "scope": {
+      "type": "string",
+      "enum": ["portfolio", "site", "subsystem", "array"]
+    },
     "site_id": { "type": "string" },
-    "subsystem_ids": { "type": "array", "items": {"type": "string"}, "uniqueItems": true },
+    "subsystem_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
     "period": {
       "type": "object",
       "additionalProperties": false,
@@ -402,12 +501,18 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       },
       "required": ["start", "end"]
     },
-    "granularity": { "type": "string", "enum": ["monthly", "hourly", "subhourly"] },
+    "granularity": {
+      "type": "string",
+      "enum": ["monthly", "hourly", "subhourly"]
+    },
     "weather": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "source": { "type": "string", "enum": ["TMY", "NSRDB", "ERA5", "Measured", "Custom"] },
+        "source": {
+          "type": "string",
+          "enum": ["TMY", "NSRDB", "ERA5", "Measured", "Custom"]
+        },
         "dataset_id": { "type": "string" },
         "lat": { "type": "number", "minimum": -90, "maximum": 90 },
         "lon": { "type": "number", "minimum": -180, "maximum": 180 }
@@ -417,17 +522,36 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "soiling": { "type": "number", "minimum": 0, "maximum": 0.2, "default": 0.02 },
-        "availability": { "type": "number", "minimum": 0.8, "maximum": 1.0, "default": 0.99 },
+        "soiling": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.2,
+          "default": 0.02
+        },
+        "availability": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 1.0,
+          "default": 0.99
+        },
         "temp_model": { "type": "string", "enum": ["NOCT", "SANDIA", "Faiman"] }
       }
     },
-    "returns": { "type": "array", "items": {"type": "string", "enum": ["summary", "losses", "timeseries", "pr", "capacity_factor"]}, "uniqueItems": true }
+    "returns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["summary", "losses", "timeseries", "pr", "capacity_factor"]
+      },
+      "uniqueItems": true
+    }
   },
   "required": ["doc_id", "scope", "period", "granularity"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -465,14 +589,16 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
         "required": ["ts", "p_ac_kw"]
       }
     },
-    "warnings": { "type": "array", "items": {"type": "string"} }
+    "warnings": { "type": "array", "items": { "type": "string" } }
   },
   "required": ["doc_id", "doc_version", "summary"]
 }
 ```
 
 ### 3) `simulate_finance`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -484,7 +610,12 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
     "doc_id": { "type": "string" },
     "scenario_name": { "type": "string", "minLength": 1 },
     "site_id": { "type": "string" },
-    "analysis_period_years": { "type": "integer", "minimum": 1, "maximum": 35, "default": 20 },
+    "analysis_period_years": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 35,
+      "default": 20
+    },
     "discount_rate": { "type": "number", "minimum": -0.2, "maximum": 0.5 },
     "debt_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
     "tax_rate": { "type": "number", "minimum": 0, "maximum": 1 },
@@ -500,12 +631,21 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       }
     },
     "incentives_auto_fetch": { "type": "boolean", "default": true },
-    "outputs": { "type": "array", "items": {"type": "string", "enum": ["irr","npv","payback","cashflows","sensitivity"]}, "uniqueItems": true }
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["irr", "npv", "payback", "cashflows", "sensitivity"]
+      },
+      "uniqueItems": true
+    }
   },
   "required": ["doc_id", "scenario_name", "analysis_period_years"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -532,18 +672,27 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
           "capex_usd": { "type": "number" },
           "net_usd": { "type": "number" }
         },
-        "required": ["year","net_usd"]
+        "required": ["year", "net_usd"]
       }
     },
     "assumptions_resolved": { "type": "object" },
-    "warnings": { "type": "array", "items": {"type": "string"} }
+    "warnings": { "type": "array", "items": { "type": "string" } }
   },
-  "required": ["doc_id", "doc_version", "scenario_name", "irr", "npv_usd", "payback_years"]
+  "required": [
+    "doc_id",
+    "doc_version",
+    "scenario_name",
+    "irr",
+    "npv_usd",
+    "payback_years"
+  ]
 }
 ```
 
 ### 4) `bom_sourcing`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -553,7 +702,10 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "additionalProperties": false,
   "properties": {
     "doc_id": { "type": "string" },
-    "bom_ref": { "type": "string", "description": "JSON Pointer to BOM, e.g., /bom/current" },
+    "bom_ref": {
+      "type": "string",
+      "description": "JSON Pointer to BOM, e.g., /bom/current"
+    },
     "region": { "type": "string" },
     "country": { "type": "string" },
     "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
@@ -563,19 +715,44 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       "additionalProperties": false,
       "properties": {
         "esg_min_score": { "type": "number", "minimum": 0, "maximum": 100 },
-        "preferred_brands": { "type": "array", "items": {"type": "string"}, "uniqueItems": true },
-        "exclude_brands": { "type": "array", "items": {"type": "string"}, "uniqueItems": true },
+        "preferred_brands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "exclude_brands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
         "max_lead_time_days": { "type": "integer", "minimum": 0 }
       }
     },
-    "rfq_mode": { "type": "string", "enum": ["price_only","landed_cost","availability_only","balanced"] },
-    "max_suppliers": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 },
-    "solicit_channels": { "type": "array", "items": {"type":"string","enum":["marketplace","approved_vendors","external_search"]}, "uniqueItems": true }
+    "rfq_mode": {
+      "type": "string",
+      "enum": ["price_only", "landed_cost", "availability_only", "balanced"]
+    },
+    "max_suppliers": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10
+    },
+    "solicit_channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["marketplace", "approved_vendors", "external_search"]
+      },
+      "uniqueItems": true
+    }
   },
   "required": ["doc_id", "bom_ref", "currency"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -610,27 +787,29 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
                 "lead_time_days": { "type": "integer", "minimum": 0 },
                 "availability": { "type": "integer", "minimum": 0 }
               },
-              "required": ["item_ref","unit_price"]
+              "required": ["item_ref", "unit_price"]
             }
           },
           "shipping_cost": { "type": "number", "minimum": 0 },
           "duties": { "type": "number", "minimum": 0 },
           "taxes": { "type": "number", "minimum": 0 }
         },
-        "required": ["quote_id","supplier_id","currency","items"]
+        "required": ["quote_id", "supplier_id", "currency", "items"]
       }
     },
-    "alternates": { "type": "array", "items": {"type": "object"} },
+    "alternates": { "type": "array", "items": { "type": "object" } },
     "recommended_award": { "type": "string" },
     "procurement_patch": { "type": "array", "items": { "type": "object" } },
-    "warnings": { "type": "array", "items": {"type": "string"} }
+    "warnings": { "type": "array", "items": { "type": "string" } }
   },
   "required": ["doc_id", "doc_version", "quotes"]
 }
 ```
 
 ### 5) `payments.create_quote`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -655,7 +834,7 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
           "unit_price": { "type": "number", "minimum": 0 },
           "tax_rate": { "type": "number", "minimum": 0, "maximum": 1 }
         },
-        "required": ["description","quantity","unit_price"]
+        "required": ["description", "quantity", "unit_price"]
       }
     },
     "terms": {
@@ -663,22 +842,31 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       "additionalProperties": false,
       "properties": {
         "valid_days": { "type": "integer", "minimum": 1, "maximum": 90 },
-        "payment_terms": { "type": "string", "enum": ["prepaid","net30","milestones"] },
+        "payment_terms": {
+          "type": "string",
+          "enum": ["prepaid", "net30", "milestones"]
+        },
         "deposit_percent": { "type": "number", "minimum": 0, "maximum": 1 },
         "escrow": { "type": "boolean", "default": false }
       }
     },
     "notify": {
       "type": "array",
-      "items": { "type": "string", "enum": ["email","whatsapp"] },
+      "items": { "type": "string", "enum": ["email", "whatsapp"] },
       "uniqueItems": true
     },
-    "recipients": { "type": "array", "items": {"type":"string", "format":"email"}, "uniqueItems": true }
+    "recipients": {
+      "type": "array",
+      "items": { "type": "string", "format": "email" },
+      "uniqueItems": true
+    }
   },
   "required": ["doc_id", "currency", "items"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -702,14 +890,26 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       },
       "required": ["total"]
     },
-    "status": { "type": "string", "enum": ["draft","sent","accepted","expired"] }
+    "status": {
+      "type": "string",
+      "enum": ["draft", "sent", "accepted", "expired"]
+    }
   },
-  "required": ["quote_id", "doc_id", "doc_version", "ezpay_url", "totals", "status"]
+  "required": [
+    "quote_id",
+    "doc_id",
+    "doc_version",
+    "ezpay_url",
+    "totals",
+    "status"
+  ]
 }
 ```
 
 ### 6) `datasheet_parser`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -720,20 +920,43 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "properties": {
     "source": {
       "oneOf": [
-        {"type":"object","properties":{"file_url":{"type":"string","format":"uri"}},"required":["file_url"],"additionalProperties":false},
-        {"type":"object","properties":{"image_url":{"type":"string","format":"uri"}},"required":["image_url"],"additionalProperties":false}
+        {
+          "type": "object",
+          "properties": { "file_url": { "type": "string", "format": "uri" } },
+          "required": ["file_url"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": { "image_url": { "type": "string", "format": "uri" } },
+          "required": ["image_url"],
+          "additionalProperties": false
+        }
       ]
     },
-    "parsing_profile": { "type": "string", "enum": ["pv_module","inverter","battery","combiner","cable","other"] },
+    "parsing_profile": {
+      "type": "string",
+      "enum": ["pv_module", "inverter", "battery", "combiner", "cable", "other"]
+    },
     "vendor": { "type": "string" },
-    "ocr_langs": { "type": "array", "items": {"type":"string"}, "uniqueItems": true },
-    "extract_fields": { "type": "array", "items": {"type":"string"}, "uniqueItems": true },
+    "ocr_langs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "extract_fields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
     "normalize_units": { "type": "boolean", "default": true }
   },
   "required": ["source", "parsing_profile"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -746,14 +969,16 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
     "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
     "fields_raw": { "type": "array", "items": { "type": "object" } },
     "source_hash": { "type": "string" },
-    "warnings": { "type": "array", "items": {"type":"string"} }
+    "warnings": { "type": "array", "items": { "type": "string" } }
   },
   "required": ["component_template", "confidence", "source_hash"]
 }
 ```
 
 ### 7) `image_analyzer`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -763,14 +988,39 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "additionalProperties": false,
   "properties": {
     "image_url": { "type": "string", "format": "uri" },
-    "tasks": { "type": "array", "items": {"type":"string","enum":["qc_blur","qc_exposure","detect_labels","detect_components","ocr_nameplate","thermal_hotspots","safety_violations"]}, "minItems": 1, "uniqueItems": true },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "qc_blur",
+          "qc_exposure",
+          "detect_labels",
+          "detect_components",
+          "ocr_nameplate",
+          "thermal_hotspots",
+          "safety_violations"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
     "context": { "type": "object" },
-    "privacy": { "type": "object", "properties": {"face_blur":{"type":"boolean"}, "geo_strip":{"type":"boolean"}}, "additionalProperties": false }
+    "privacy": {
+      "type": "object",
+      "properties": {
+        "face_blur": { "type": "boolean" },
+        "geo_strip": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
   },
   "required": ["image_url", "tasks"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -781,16 +1031,18 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "properties": {
     "findings": { "type": "array", "items": { "type": "object" } },
     "derived": { "type": "object" },
-    "issues": { "type": "array", "items": {"type":"object"} },
+    "issues": { "type": "array", "items": { "type": "object" } },
     "evidence_overlays_url": { "type": "string", "format": "uri" },
-    "redactions_applied": { "type": "array", "items": {"type":"string"} }
+    "redactions_applied": { "type": "array", "items": { "type": "string" } }
   },
   "required": ["findings"]
 }
 ```
 
 ### 8) `qc_rules`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -801,13 +1053,33 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "properties": {
     "doc_id": { "type": "string" },
     "scope_path": { "type": "string", "pattern": "^/" },
-    "rules": { "type": "array", "items": {"type":"string","enum":["dc_voltage_limits","ac_conductor_sizing","voltage_drop","string_mismatch","rapid_shutdown","grounding","breaker_sizing"]}, "minItems": 1, "uniqueItems": true },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "dc_voltage_limits",
+          "ac_conductor_sizing",
+          "voltage_drop",
+          "string_mismatch",
+          "rapid_shutdown",
+          "grounding",
+          "breaker_sizing"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
     "standards_context": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "region": { "type": "string" },
-        "codes": { "type": "array", "items": {"type":"string"}, "uniqueItems": true },
+        "codes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
         "temperature_c": { "type": "number" },
         "altitude_m": { "type": "number" }
       }
@@ -817,7 +1089,9 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "required": ["doc_id", "scope_path", "rules"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -839,10 +1113,13 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
           "path": { "type": "string" },
           "measured": { "type": "number" },
           "limit": { "type": "number" },
-          "severity": { "type": "string", "enum": ["blocker","error","warning"] },
+          "severity": {
+            "type": "string",
+            "enum": ["blocker", "error", "warning"]
+          },
           "message": { "type": "string" }
         },
-        "required": ["rule_id","path","severity","message"]
+        "required": ["rule_id", "path", "severity", "message"]
       }
     },
     "suggestions": { "type": "array", "items": { "type": "object" } },
@@ -853,7 +1130,9 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
 ```
 
 ### 9) `web_incentives`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -872,16 +1151,28 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
       },
       "required": ["country"]
     },
-    "tech": { "type": "string", "enum": ["pv","bess","pv+bess","evc"] },
-    "customer_type": { "type": "string", "enum": ["residential","commercial","utility"] },
+    "tech": { "type": "string", "enum": ["pv", "bess", "pv+bess", "evc"] },
+    "customer_type": {
+      "type": "string",
+      "enum": ["residential", "commercial", "utility"]
+    },
     "system_size_kw": { "type": "number", "minimum": 0 },
-    "program_types": { "type": "array", "items": {"type":"string","enum":["rebate","tax_credit","feed_in","net_metering","SREC"]}, "uniqueItems": true },
+    "program_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["rebate", "tax_credit", "feed_in", "net_metering", "SREC"]
+      },
+      "uniqueItems": true
+    },
     "as_of": { "type": "string", "format": "date" }
   },
   "required": ["region", "tech", "customer_type"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -899,26 +1190,40 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
           "program_id": { "type": "string" },
           "name": { "type": "string" },
           "description": { "type": "string" },
-          "amount_type": { "type": "string", "enum": ["flat","per_kw","percent"] },
+          "amount_type": {
+            "type": "string",
+            "enum": ["flat", "per_kw", "percent"]
+          },
           "amount_value": { "type": "number" },
           "cap": { "type": "number" },
           "stackable": { "type": "boolean" },
-          "links": { "type": "array", "items": {"type":"string","format":"uri"} },
+          "links": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" }
+          },
           "expires_on": { "type": "string", "format": "date" }
         },
-        "required": ["program_id","name","amount_type","amount_value"]
+        "required": ["program_id", "name", "amount_type", "amount_value"]
       }
     },
-    "compliance_requirements": { "type": "array", "items": {"type":"string"} },
+    "compliance_requirements": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "last_checked": { "type": "string", "format": "date-time" },
-    "sources": { "type": "array", "items": {"type":"string","format":"uri"} }
+    "sources": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" }
+    }
   },
   "required": ["incentives", "last_checked"]
 }
 ```
 
 ### 10) `esg_simulator`
+
 **Input**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -928,26 +1233,54 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
   "additionalProperties": false,
   "properties": {
     "doc_id": { "type": "string" },
-    "scope": { "type": "string", "enum": ["site","portfolio"] },
-    "methodology": { "type": "string", "enum": ["GHG_PowerSector","custom"] },
+    "scope": { "type": "string", "enum": ["site", "portfolio"] },
+    "methodology": { "type": "string", "enum": ["GHG_PowerSector", "custom"] },
     "grid_emission_factor": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "source": { "type": "string", "enum": ["iem","epa","defra","custom"] },
+        "source": {
+          "type": "string",
+          "enum": ["iem", "epa", "defra", "custom"]
+        },
         "kg_co2e_per_kwh": { "type": "number", "minimum": 0 }
       },
       "required": ["source"]
     },
     "embodied_carbon_modules": { "type": "number", "minimum": 0 },
-    "recycling_scenario": { "type": "string", "enum": ["none","partial","full"] },
-    "period": { "type": "object", "properties": {"start":{"type":"string","format":"date"}, "end":{"type":"string","format":"date"}}, "required":["start","end"], "additionalProperties": false },
-    "outputs": { "type": "array", "items": {"type":"string","enum":["annual_avoided_co2e","lifecycle_avoided","credits_estimate","report_pdf"]}, "uniqueItems": true }
+    "recycling_scenario": {
+      "type": "string",
+      "enum": ["none", "partial", "full"]
+    },
+    "period": {
+      "type": "object",
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" }
+      },
+      "required": ["start", "end"],
+      "additionalProperties": false
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "annual_avoided_co2e",
+          "lifecycle_avoided",
+          "credits_estimate",
+          "report_pdf"
+        ]
+      },
+      "uniqueItems": true
+    }
   },
   "required": ["doc_id", "scope", "methodology", "period"]
 }
 ```
+
 **Output**
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -979,6 +1312,7 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
 ---
 
 ## 16) Decisions Log (keep current)
+
 - **Tools are authoritative.** LLM output cannot override tool results.
 - **Patches only.** No free‑form writes to ODL‑SD; all changes are diffable and auditable.
 - **Reflection offline‑first.** Online learning allowed only for low‑risk hints; design writes remain human‑approved.
@@ -989,4 +1323,3 @@ Observability dashboards; AI SLAs; red‑team; cost/latency tuning; cohort repor
 ---
 
 **End of Unified Master Blueprint** — Treat this as the canonical document for AI architecture, development, governance, and tool contracts. Update via PR‑style edits with versioned changelog entries above.
-

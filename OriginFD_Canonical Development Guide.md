@@ -4,15 +4,15 @@ This is the **single source of truth** for how the OriginFD codebase is structur
 
 **Context in one breath:**
 
-* **Architecture spec:** ODL-SD v4.1 (document structure, lifecycle, JSON-Patch, data management).
+- **Architecture spec:** ODL-SD v4.1 (document structure, lifecycle, JSON-Patch, data management).
 
-* **AI system:** Planner/Router \+ Tool Registry \+ Policy Router (PSU budgets), RegionRouter, JSON-Patch contract.
+- **AI system:** Planner/Router \+ Tool Registry \+ Policy Router (PSU budgets), RegionRouter, JSON-Patch contract.
 
-* **RBAC & phase gates:** roles, rights, approvals, data classes.
+- **RBAC & phase gates:** roles, rights, approvals, data classes.
 
-* **Component libraries & CMS:** authoritative components \+ logistics, RFQ→PO→Ship→Install→RMA \+ media/QR.
+- **Component libraries & CMS:** authoritative components \+ logistics, RFQ→PO→Ship→Install→RMA \+ media/QR.
 
-* **Monetisation:** plans (Free/Pro/Enterprise), PSUs, marketplace fees, escrow triggers, provider-switch.
+- **Monetisation:** plans (Free/Pro/Enterprise), PSUs, marketplace fees, escrow triggers, provider-switch.
 
 Deploy target: **Google Cloud Run** (GCP-first), repo: `github.com/MJcoder-ai/OriginFD.git`, domain: **originfd.com** (Cloud Run domain mapping).
 
@@ -124,27 +124,27 @@ Deploy target: **Google Cloud Run** (GCP-first), repo: `github.com/MJcoder-ai/Or
 
 **Why this shape?**
 
-* Keeps **apps** (web+mobile) thin; all heavy logic lives in **domains/** and **packages/**.
+- Keeps **apps** (web+mobile) thin; all heavy logic lives in **domains/** and **packages/**.
 
-* AI **orchestrator** mirrors the reference layers (Planner/Router, Policy Router, Scheduler, tools).
+- AI **orchestrator** mirrors the reference layers (Planner/Router, Policy Router, Scheduler, tools).
 
-* ODL-SD stays the **single source of truth**; all mutations are **JSON-Patch** based, validated, auditable.
+- ODL-SD stays the **single source of truth**; all mutations are **JSON-Patch** based, validated, auditable.
 
 ---
 
 # **1\) Core conventions**
 
-* **Python:** 3.12; **FastAPI \+ SQLAlchemy 2 \+ Alembic**; **Celery** (Redis/MemoryStore) or **RQ** on Redis for simpler queues.
+- **Python:** 3.12; **FastAPI \+ SQLAlchemy 2 \+ Alembic**; **Celery** (Redis/MemoryStore) or **RQ** on Redis for simpler queues.
 
-* **TypeScript:** Node 20; **pnpm** workspaces; **Next.js 14**; **Expo** for mobile.
+- **TypeScript:** Node 20; **pnpm** workspaces; **Next.js 14**; **Expo** for mobile.
 
-* **DB:** Postgres (Cloud SQL) with row-level multi-tenancy (+ JSONB for ODL-SD docs).
+- **DB:** Postgres (Cloud SQL) with row-level multi-tenancy (+ JSONB for ODL-SD docs).
 
-* **Cache:** Redis (GCP MemoryStore) for sessions, CAG, ratelimits.
+- **Cache:** Redis (GCP MemoryStore) for sessions, CAG, ratelimits.
 
-* **Message/Eventing:** Pub/Sub; EPCIS-style events for logistics.
+- **Message/Eventing:** Pub/Sub; EPCIS-style events for logistics.
 
-* **Cloud:** GCP Cloud Run, Artifact Registry, Cloud Build, Secret Manager, Cloud SQL, Memorystore, Pub/Sub, Cloud Tasks/Workflows.
+- **Cloud:** GCP Cloud Run, Artifact Registry, Cloud Build, Secret Manager, Cloud SQL, Memorystore, Pub/Sub, Cloud Tasks/Workflows.
 
 ---
 
@@ -167,46 +167,46 @@ Deploy target: **Google Cloud Run** (GCP-first), repo: `github.com/MJcoder-ai/Or
 
 `@app.on_event("startup")`
 `async def _startup():`
-    `# warm caches, load tool registry, etc.`
-    `...`
+`# warm caches, load tool registry, etc.`
+`...`
 
 `class PatchRequest(BaseModel):`
-    `doc_id: str`
-    `doc_version: int`
-    `patch: list[dict]  # RFC6902`
-    `evidence: list[str] = []`
+`doc_id: str`
+`doc_version: int`
+`patch: list[dict]  # RFC6902`
+`evidence: list[str] = []`
 
 `@app.post("/odl/patch")`
 `async def patch_doc(body: PatchRequest,`
-                    `db: SessionDep,`
-                    `user=Depends(user_from_jwt),`
-                    `settings: Settings = Depends(get_settings)):`
-    `# enforce RBAC + phase gates before any write`
-    `guard_patch(user=user, doc_id=body.doc_id, patch=body.patch, db=db)   # RBAC & approvals`
-    `doc: OdlDocument = OdlDocument.load(db, body.doc_id)`
-    `if doc.version != body.doc_version:`
-        `raise HTTPException(409, "version_conflict")`
-    `new_doc = apply_patch(doc, body.patch, evidence=body.evidence)`
-    `validate_document(new_doc)  # schema v4.1 validation`
-    `new_doc.save(db, actor=user)`
-    `return {"ok": True, "doc_version": new_doc.version, "inverse": inverse_patch(body.patch)}`
+`db: SessionDep,`
+`user=Depends(user_from_jwt),`
+`settings: Settings = Depends(get_settings)):`
+`# enforce RBAC + phase gates before any write`
+`guard_patch(user=user, doc_id=body.doc_id, patch=body.patch, db=db)   # RBAC & approvals`
+`doc: OdlDocument = OdlDocument.load(db, body.doc_id)`
+`if doc.version != body.doc_version:`
+`raise HTTPException(409, "version_conflict")`
+`new_doc = apply_patch(doc, body.patch, evidence=body.evidence)`
+`validate_document(new_doc)  # schema v4.1 validation`
+`new_doc.save(db, actor=user)`
+`return {"ok": True, "doc_version": new_doc.version, "inverse": inverse_patch(body.patch)}`
 
-* **JSON-Patch** is the only write path; tool outputs are authoritative.
+- **JSON-Patch** is the only write path; tool outputs are authoritative.
 
-* The **guard** enforces RBAC (rights codes R/W/P/A/X/S), phase gates, approver roles.
+- The **guard** enforces RBAC (rights codes R/W/P/A/X/S), phase gates, approver roles.
 
 **`core/rbac.py` (excerpt)**
 
 `from odl_sd_rbac import has_rights, requires_approver, phase_gate_locked`
 
 `def guard_patch(user, doc_id, patch, db):`
-    `if phase_gate_locked(doc_id, patch, db):`
-        `raise PermissionError("phase_gate_locked")`
-    `# deny library/compliance writes unless role has P/A/W per table`
-    `if not has_rights(user, doc_id, patch):`
-        `raise PermissionError("insufficient_rights")`
-    `if requires_approver(patch) and not user.has_any(["expert","project_manager","asset_owner","super_user"]):`
-        `raise PermissionError("approver_required")`
+`if phase_gate_locked(doc_id, patch, db):`
+`raise PermissionError("phase_gate_locked")`
+`# deny library/compliance writes unless role has P/A/W per table`
+`if not has_rights(user, doc_id, patch):`
+`raise PermissionError("insufficient_rights")`
+`if requires_approver(patch) and not user.has_any(["expert","project_manager","asset_owner","super_user"]):`
+`raise PermissionError("approver_required")`
 
 RBAC/phase-gate semantics are implemented from the **User & Access Structure** (mandatory MFA roles, scope inheritance, approvals).
 
@@ -222,20 +222,20 @@ RBAC/phase-gate semantics are implemented from the **User & Access Structure** (
 `from graph_rag import ground_query`
 
 `async def plan_and_execute(task):`
-    `evidence = await ground_query(task)         # Ground-Before-Generate`
-    `enforce_psu_budget(task.org_id, estimate=task.estimate)`
-    `model = select_model(task.kind, region=task.region)  # RegionRouter aware`
-    `plan = await model.propose_plan(task, evidence=evidence)`
-    `for step in plan.steps:`
-        `tool = load_tool(step.tool)`
-        `out = await tool.run(step.inputs)       # deterministic tool call`
-        `step.attach_output(out)`
-    `# Critic/Verifier gate can veto; only then emit JSON-Patches`
-    `return plan.to_patches()`
+`evidence = await ground_query(task)         # Ground-Before-Generate`
+`enforce_psu_budget(task.org_id, estimate=task.estimate)`
+`model = select_model(task.kind, region=task.region)  # RegionRouter aware`
+`plan = await model.propose_plan(task, evidence=evidence)`
+`for step in plan.steps:`
+`tool = load_tool(step.tool)`
+`out = await tool.run(step.inputs)       # deterministic tool call`
+`step.attach_output(out)`
+`# Critic/Verifier gate can veto; only then emit JSON-Patches`
+`return plan.to_patches()`
 
-* Grounding via **Graph-RAG** of ODL-SD; tools are typed & versioned; **CAG store** caches prompts, embeddings, tool outputs.
+- Grounding via **Graph-RAG** of ODL-SD; tools are typed & versioned; **CAG store** caches prompts, embeddings, tool outputs.
 
-* Policy Router enforces **PSU** budgets from plan/tenant subscription.
+- Policy Router enforces **PSU** budgets from plan/tenant subscription.
 
 ## **2.3 Workers (Celery/RQ)**
 
@@ -251,15 +251,15 @@ RBAC/phase-gate semantics are implemented from the **User & Access Structure** (
 
 # **3\) Frontend strategy (apps/)**
 
-* **web (Next.js):** SSR \+ RSC, BFF routes proxy to `services/api` only; never call databases directly.
+- **web (Next.js):** SSR \+ RSC, BFF routes proxy to `services/api` only; never call databases directly.
 
-* **mobile apps:** three Expo apps target (technician, customer, logistics). The tech app enforces **capture policies** (POD, install, QC/thermal) and privacy (face/house-number blur).
+- **mobile apps:** three Expo apps target (technician, customer, logistics). The tech app enforces **capture policies** (POD, install, QC/thermal) and privacy (face/house-number blur).
 
 **Technician scan → EPCIS event (example)**
 
 `// apps/mobile-tech/src/lib/epcis.ts`
 `export async function postEpcisEvent(ev: EPCISEvent) {`
-  `return fetch("/api/bridge/ingest", { method:"POST", body: JSON.stringify(ev) });`
+`return fetch("/api/bridge/ingest", { method:"POST", body: JSON.stringify(ev) });`
 `}`
 `// Events: pickup, departed, arrived, delivered, install, service, etc.  (EPCIS 2.0)`
 
@@ -271,17 +271,17 @@ The required logistics and media capture steps and EPCIS fields are defined in t
 
 Each subfolder is **pure** (framework-free) functions \+ pydantic models:
 
-* **pv/**: stringing, voltage-drop, SLD hints (uses component ports).
+- **pv/**: stringing, voltage-drop, SLD hints (uses component ports).
 
-* **bess/**: SoC windows, thermal envelopes, UL9540A clearances.
+- **bess/**: SoC windows, thermal envelopes, UL9540A clearances.
 
-* **grid/**: ride-through curves, protection coordination (IEEE 1547/2800, NERC PRC).
+- **grid/**: ride-through curves, protection coordination (IEEE 1547/2800, NERC PRC).
 
-* **scada/**: KPIs (PR, availability, CF), alarm triage rules.
+- **scada/**: KPIs (PR, availability, CF), alarm triage rules.
 
-* **finance/**: IRR/NPV/tariff & incentives; regional climate loss adjustments.
+- **finance/**: IRR/NPV/tariff & incentives; regional climate loss adjustments.
 
-* **commerce/**: orders/escrow, service handovers, disputes; provider-switch flow.
+- **commerce/**: orders/escrow, service handovers, disputes; provider-switch flow.
 
 All of these operate on the ODL-SD doc object model (v4.1).
 
@@ -291,9 +291,9 @@ All of these operate on the ODL-SD doc object model (v4.1).
 
 ## **5.1 `odl_sd_schema/` (Python)**
 
-* **Purpose:** strongly-typed ODL-SD v4.1 models (Pydantic), JSON-Schema validation, helpers.
+- **Purpose:** strongly-typed ODL-SD v4.1 models (Pydantic), JSON-Schema validation, helpers.
 
-* **Also includes:** data-management helpers (partitioning, external refs, streaming).
+- **Also includes:** data-management helpers (partitioning, external refs, streaming).
 
 ## **5.2 `odl_sd_rbac/`**
 
@@ -308,8 +308,8 @@ Typed I/O schemas for tools (`validate_odl_sd`, `simulate_energy`, `simulate_fin
 `class SimulateEnergyIn(BaseModel): ...  # from schema`
 `class SimulateEnergyOut(BaseModel): ...`
 `async def simulate_energy(inp: SimulateEnergyIn) -> SimulateEnergyOut:`
-    `# pure compute; no free-text writes`
-    `return SimulateEnergyOut(...)`
+`# pure compute; no free-text writes`
+`return SimulateEnergyOut(...)`
 
 ## **5.4 `odl_sd_patch/`**
 
@@ -331,29 +331,29 @@ Generated TS types (OpenAPI \+ JSON Schemas) so web/mobile share the same contra
 
 # **6\) Data & components**
 
-* **Libraries:** Use the **unified component library** and **universal additions**; map ports and attributes for PV/BESS/GRID/SCADA across scales.
+- **Libraries:** Use the **unified component library** and **universal additions**; map ports and attributes for PV/BESS/GRID/SCADA across scales.
 
-* **CMS:** Embed `component_management` on components (RFQ, bids, PO, shipments, inventory, warranty, returns, compliance).
+- **CMS:** Embed `component_management` on components (RFQ, bids, PO, shipments, inventory, warranty, returns, compliance).
 
-* **Media & QR:** enforce capture policies & privacy; bind vectors (IEC symbols, SLD/Wiring SVG) into docs.
+- **Media & QR:** enforce capture policies & privacy; bind vectors (IEC symbols, SLD/Wiring SVG) into docs.
 
 ---
 
 # **7\) Infra (GCP-first)**
 
-* **Cloud Run** services: `originfd-api`, `originfd-orchestrator`, `originfd-workers`, `originfd-ingest`, `originfd-web`.
+- **Cloud Run** services: `originfd-api`, `originfd-orchestrator`, `originfd-workers`, `originfd-ingest`, `originfd-web`.
 
-* **DB:** Cloud SQL (Postgres) \+ SQLAlchemy migrations.
+- **DB:** Cloud SQL (Postgres) \+ SQLAlchemy migrations.
 
-* **Cache/Queues:** Memorystore (Redis), Pub/Sub; optional Cloud Tasks for scheduled flows.
+- **Cache/Queues:** Memorystore (Redis), Pub/Sub; optional Cloud Tasks for scheduled flows.
 
-* **CI/CD:** Cloud Build triggers on `main` → build (Docker) → deploy to Cloud Run; Artifact Registry per service.
+- **CI/CD:** Cloud Build triggers on `main` → build (Docker) → deploy to Cloud Run; Artifact Registry per service.
 
-* **Secrets:** Secret Manager (DB creds, JWT, vendor API keys).
+- **Secrets:** Secret Manager (DB creds, JWT, vendor API keys).
 
-* **Domain:** Cloud Run domain mapping → `www.originfd.com`, LB/CDN as needed.
+- **Domain:** Cloud Run domain mapping → `www.originfd.com`, LB/CDN as needed.
 
-* **Observability:** Cloud Logging, Error Reporting; budgets on PSUs & egress.
+- **Observability:** Cloud Logging, Error Reporting; budgets on PSUs & egress.
 
 Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 
@@ -361,49 +361,49 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 
 # **8\) Security strategy**
 
-* **RBAC & approvals** enforced on every patch; phase gates lock sections (e.g., libraries in commissioning).
+- **RBAC & approvals** enforced on every patch; phase gates lock sections (e.g., libraries in commissioning).
 
-* **Data classification** and **least-privilege** scopes per role; mandatory MFA for sensitive roles.
+- **Data classification** and **least-privilege** scopes per role; mandatory MFA for sensitive roles.
 
-* **JSON-Patch audit** (append-only); SIEM webhooks; session recording with consent.
+- **JSON-Patch audit** (append-only); SIEM webhooks; session recording with consent.
 
-* **SCADA/OT cybersecurity** patterns (zones, DPI firewalls, data diodes, NERC CIP/IEC 62443).
+- **SCADA/OT cybersecurity** patterns (zones, DPI firewalls, data diodes, NERC CIP/IEC 62443).
 
-* **Privacy in media**: auto-blur faces/house numbers; store raw in restricted tier; signed-URL redacted exports.
+- **Privacy in media**: auto-blur faces/house numbers; store raw in restricted tier; signed-URL redacted exports.
 
 ---
 
 # **9\) AI architecture & tools (how we implement the blueprint)**
 
-* **Planner/Router → ToolCaller → Critic/Verifier**: produce patches only after tool-verified evidence (**ground-before-generate**).
+- **Planner/Router → ToolCaller → Critic/Verifier**: produce patches only after tool-verified evidence (**ground-before-generate**).
 
-* **Policy Router**: per-plan **PSU** budgets (Pro includes 100 PSU/user/mo; Boost Pack adds 250), enforced before expensive steps.
+- **Policy Router**: per-plan **PSU** budgets (Pro includes 100 PSU/user/mo; Boost Pack adds 250), enforced before expensive steps.
 
-* **RegionRouter**: route models/storage by **residency** (US/EU/APAC).
+- **RegionRouter**: route models/storage by **residency** (US/EU/APAC).
 
-* **Tool Registry**: typed I/O for design/finance/ESG/marketplace/vision tools; each tool has `{name, semver, inputs, outputs, side_effects, rbac_scope}`.
+- **Tool Registry**: typed I/O for design/finance/ESG/marketplace/vision tools; each tool has `{name, semver, inputs, outputs, side_effects, rbac_scope}`.
 
 **Registering a tool (`services/orchestrator/tools/registry/*.py`)**
 
 `TOOL = {`
-  `"name": "simulate_finance@1.0.0",`
-  `"inputs_schema": "schemas/simulate_finance.input.json",`
-  `"outputs_schema": "schemas/simulate_finance.output.json",`
-  `"side_effects": "none",`
-  `"rbac_scope": ["finance_editor","financial_analyst"]`
+`"name": "simulate_finance@1.0.0",`
+`"inputs_schema": "schemas/simulate_finance.input.json",`
+`"outputs_schema": "schemas/simulate_finance.output.json",`
+`"side_effects": "none",`
+`"rbac_scope": ["finance_editor","financial_analyst"]`
 `}`
 
 ---
 
 # **10\) Marketplace, billing, and governance (code hooks)**
 
-* **Plans & billing:** model `Subscription`, `AIUsageMeter` and **fair-use** PSU accounting; upgrades prorate; trial rules.
+- **Plans & billing:** model `Subscription`, `AIUsageMeter` and **fair-use** PSU accounting; upgrades prorate; trial rules.
 
-* **Transactions:** components marketplace fee (5% supplier-paid), handover success fee (3% managing-company-paid), refunds/chargebacks with audit evidence.
+- **Transactions:** components marketplace fee (5% supplier-paid), handover success fee (3% managing-company-paid), refunds/chargebacks with audit evidence.
 
-* **Escrow milestones** bound to **governance events** (e.g., QR scan on site, commissioning started).
+- **Escrow milestones** bound to **governance events** (e.g., QR scan on site, commissioning started).
 
-* **Right-to-Switch** managing company while retaining warranty ledger & history.
+- **Right-to-Switch** managing company while retaining warranty ledger & history.
 
 ---
 
@@ -417,31 +417,31 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 `SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)`
 
 `def db_session(tenant_id: str):`
-    `db = SessionLocal()`
-    `db.execute("SET app.current_tenant = :tid", {"tid": tenant_id})`
-    `try:`
-        `yield db`
-    `finally:`
-        `db.close()`
+`db = SessionLocal()`
+`db.execute("SET app.current_tenant = :tid", {"tid": tenant_id})`
+`try:`
+`yield db`
+`finally:`
+`db.close()`
 
 ## **11.2 Celery task calling a tool**
 
 `@celery.task(name="tasks.energy.run")`
 `def run_energy(doc_id: str, scope: str, period: dict):`
-    `from odl_sd_tools.energy import SimulateEnergyIn, SimulateEnergyOut`
-    `inp = SimulateEnergyIn(doc_id=doc_id, scope=scope, period=period, granularity="hourly")`
-    `out: SimulateEnergyOut = simulate_energy(inp)`
-    `return out.model_dump()`
+`from odl_sd_tools.energy import SimulateEnergyIn, SimulateEnergyOut`
+`inp = SimulateEnergyIn(doc_id=doc_id, scope=scope, period=period, granularity="hourly")`
+`out: SimulateEnergyOut = simulate_energy(inp)`
+`return out.model_dump()`
 
 ## **11.3 Frontend patch helper (BFF)**
 
 `export async function applyPatch(docId: string, version: number, patch: any[]) {`
-  `const res = await fetch("/api/bridge/api/odl/patch", {`
-    `method: "POST", headers: {"content-type":"application/json"},`
-    `body: JSON.stringify({doc_id: docId, doc_version: version, patch})`
-  `});`
-  `if (!res.ok) throw new Error(await res.text());`
-  `return res.json();`
+`const res = await fetch("/api/bridge/api/odl/patch", {`
+`method: "POST", headers: {"content-type":"application/json"},`
+`body: JSON.stringify({doc_id: docId, doc_version: version, patch})`
+`});`
+`if (!res.ok) throw new Error(await res.text());`
+`return res.json();`
 `}`
 
 ---
@@ -449,14 +449,13 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 # **12\) Developer & code-gen AI rules (must follow)**
 
 1. **Where to put code:**
+   - UI: `apps/web/src/components/*` or `apps/mobile-*/src/*`.
 
-   * UI: `apps/web/src/components/*` or `apps/mobile-*/src/*`.
+   - HTTP only in `services/api/.../routers/*`.
 
-   * HTTP only in `services/api/.../routers/*`.
+   - Business logic **only** in `domains/*` or `packages/py/*`.
 
-   * Business logic **only** in `domains/*` or `packages/py/*`.
-
-   * AI steps and schemas live in `services/orchestrator` and `packages/py/odl_sd_tools`.
+   - AI steps and schemas live in `services/orchestrator` and `packages/py/odl_sd_tools`.
 
 2. **Never write directly** to ODL-SD docs; emit **JSON-Patches** only, validated & audited.
 
@@ -480,29 +479,28 @@ Terraform lives in `infra/gcp/terraform`, split by **modules** and **envs**.
 
 # **13\) Ready-to-run: local \+ CI**
 
-* **Local:** `docker compose up` → `services/api`, `orchestrator`, `workers`, `web`.
+- **Local:** `docker compose up` → `services/api`, `orchestrator`, `workers`, `web`.
 
-* **Migrations:** `alembic upgrade head`.
+- **Migrations:** `alembic upgrade head`.
 
-* **Tests:** `pytest -q`, `pnpm -w test`.
+- **Tests:** `pytest -q`, `pnpm -w test`.
 
-* **CI:** GitHub Actions → Cloud Build → Cloud Run (staging) → promo to prod on tag.
+- **CI:** GitHub Actions → Cloud Build → Cloud Run (staging) → promo to prod on tag.
 
 ---
 
 # **14\) Appendix — sample JSONs & links you’ll see in code**
 
-* **ODL-SD v4.1 document structure** and lifecycle sections used by validators and editors.
+- **ODL-SD v4.1 document structure** and lifecycle sections used by validators and editors.
 
-* **Data management** knobs (partitioning, external refs, streaming) used by `odl_sd_schema`.
+- **Data management** knobs (partitioning, external refs, streaming) used by `odl_sd_schema`.
 
-* **Component examples** (PV modules, inverters, BESS racks, trackers), across **residential → hyperscale**.
+- **Component examples** (PV modules, inverters, BESS racks, trackers), across **residential → hyperscale**.
 
-* **Universal additions (1-100)** used in logistics/SCADA and mechanical BoS.
+- **Universal additions (1-100)** used in logistics/SCADA and mechanical BoS.
 
 ---
 
 ## **Final note**
 
 This guide encodes the **architecture canon** (ODL-SD v4.1 \+ the AI Blueprint) into folder structure, code patterns, and enforcement points so that everything remains **contract-first** (schemas → tools → patches). When in doubt, align code to the referenced specs here (they are the law).
-

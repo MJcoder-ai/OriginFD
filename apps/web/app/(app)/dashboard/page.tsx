@@ -1,21 +1,40 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, Filter, MoreHorizontal, Zap, Battery, Sun, Grid3x3 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { apiClient } from '@/lib/api-client'
-import { useAuth } from '@/lib/auth/auth-provider'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, LoadingSpinner, ErrorBoundary } from '@originfd/ui'
-import { NewProjectModal } from '@/components/projects/new-project-modal'
-import type { DocumentResponse } from '@/lib/types'
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Zap,
+  Battery,
+  Sun,
+  Grid3x3,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth/auth-provider";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  LoadingSpinner,
+  ErrorBoundary,
+} from "@originfd/ui";
+import { NewProjectModal } from "@/components/projects/new-project-modal";
+import type { DocumentResponse } from "@/lib/types";
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const { user } = useAuth()
-  const [newProjectModalOpen, setNewProjectModalOpen] = React.useState(false)
-  const [selectedDomain, setSelectedDomain] = React.useState<string | undefined>()
-
+  const router = useRouter();
+  const { user } = useAuth();
+  const [newProjectModalOpen, setNewProjectModalOpen] = React.useState(false);
+  const [selectedDomain, setSelectedDomain] = React.useState<
+    string | undefined
+  >();
 
   // Fetch projects/documents
   const {
@@ -23,144 +42,155 @@ export default function DashboardPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['projects'],
+    queryKey: ["projects"],
     queryFn: () => apiClient.listProjects(),
-  })
+  });
 
   // Mock data for demo
   const mockProjects: DocumentResponse[] = [
     {
-      id: '1',
-      project_name: 'Solar Farm Arizona Phase 1',
-      domain: 'PV',
-      scale: 'UTILITY',
+      id: "1",
+      project_name: "Solar Farm Arizona Phase 1",
+      domain: "PV",
+      scale: "UTILITY",
       current_version: 3,
-      content_hash: 'sha256:abc123',
+      content_hash: "sha256:abc123",
       is_active: true,
-      created_at: '2024-01-15T10:30:00Z',
-      updated_at: '2024-01-20T15:45:00Z',
+      created_at: "2024-01-15T10:30:00Z",
+      updated_at: "2024-01-20T15:45:00Z",
     },
     {
-      id: '2',
-      project_name: 'Commercial BESS Installation',
-      domain: 'BESS',
-      scale: 'COMMERCIAL',
+      id: "2",
+      project_name: "Commercial BESS Installation",
+      domain: "BESS",
+      scale: "COMMERCIAL",
       current_version: 1,
-      content_hash: 'sha256:def456',
+      content_hash: "sha256:def456",
       is_active: true,
-      created_at: '2024-01-18T09:15:00Z',
-      updated_at: '2024-01-18T09:15:00Z',
+      created_at: "2024-01-18T09:15:00Z",
+      updated_at: "2024-01-18T09:15:00Z",
     },
     {
-      id: '3',
-      project_name: 'Hybrid Microgrid Campus',
-      domain: 'HYBRID',
-      scale: 'INDUSTRIAL',
+      id: "3",
+      project_name: "Hybrid Microgrid Campus",
+      domain: "HYBRID",
+      scale: "INDUSTRIAL",
       current_version: 2,
-      content_hash: 'sha256:ghi789',
+      content_hash: "sha256:ghi789",
       is_active: true,
-      created_at: '2024-01-22T14:20:00Z',
-      updated_at: '2024-01-23T11:30:00Z',
+      created_at: "2024-01-22T14:20:00Z",
+      updated_at: "2024-01-23T11:30:00Z",
     },
-  ]
+  ];
 
   const displayProjects = React.useMemo(() => {
     if (projects.length > 0) {
-      console.log('Dashboard: Using API data -', projects.length, 'projects loaded')
-      return projects
+      console.log(
+        "Dashboard: Using API data -",
+        projects.length,
+        "projects loaded",
+      );
+      return projects;
     } else {
       if (error) {
-        console.warn('Dashboard: API failed, falling back to mock data. Error:', error)
+        console.warn(
+          "Dashboard: API failed, falling back to mock data. Error:",
+          error,
+        );
       } else {
-        console.log('Dashboard: No API data available, using mock data -', mockProjects.length, 'projects')
+        console.log(
+          "Dashboard: No API data available, using mock data -",
+          mockProjects.length,
+          "projects",
+        );
       }
-      return mockProjects
+      return mockProjects;
     }
-  }, [projects, error])
+  }, [projects, error]);
 
   const getDomainIcon = (domain: string) => {
     switch (domain) {
-      case 'PV':
-        return <Sun className="h-5 w-5 text-yellow-600" />
-      case 'BESS':
-        return <Battery className="h-5 w-5 text-green-600" />
-      case 'HYBRID':
-        return <Zap className="h-5 w-5 text-purple-600" />
-      case 'GRID':
-        return <Grid3x3 className="h-5 w-5 text-blue-600" />
+      case "PV":
+        return <Sun className="h-5 w-5 text-yellow-600" />;
+      case "BESS":
+        return <Battery className="h-5 w-5 text-green-600" />;
+      case "HYBRID":
+        return <Zap className="h-5 w-5 text-purple-600" />;
+      case "GRID":
+        return <Grid3x3 className="h-5 w-5 text-blue-600" />;
       default:
-        return <Grid3x3 className="h-5 w-5 text-gray-600" />
+        return <Grid3x3 className="h-5 w-5 text-gray-600" />;
     }
-  }
+  };
 
   const getDomainColor = (domain: string) => {
     switch (domain) {
-      case 'PV':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'BESS':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'HYBRID':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'GRID':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case "PV":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "BESS":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "HYBRID":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "GRID":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getScaleBadgeColor = (scale: string) => {
     switch (scale) {
-      case 'UTILITY':
-        return 'bg-red-100 text-red-800 border-red-200'
-      case 'INDUSTRIAL':
-        return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'COMMERCIAL':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'RESIDENTIAL':
-        return 'bg-green-100 text-green-800 border-green-200'
+      case "UTILITY":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "INDUSTRIAL":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "COMMERCIAL":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "RESIDENTIAL":
+        return "bg-green-100 text-green-800 border-green-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const stats = [
     {
-      name: 'Total Projects',
+      name: "Total Projects",
       value: displayProjects.length,
       icon: Grid3x3,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
     },
     {
-      name: 'Active Projects',
-      value: displayProjects.filter(p => p.is_active).length,
+      name: "Active Projects",
+      value: displayProjects.filter((p) => p.is_active).length,
       icon: Zap,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      color: "text-green-600",
+      bgColor: "bg-green-100",
     },
     {
-      name: 'PV Projects',
-      value: displayProjects.filter(p => p.domain === 'PV').length,
+      name: "PV Projects",
+      value: displayProjects.filter((p) => p.domain === "PV").length,
       icon: Sun,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-100",
     },
     {
-      name: 'BESS Projects',
-      value: displayProjects.filter(p => p.domain === 'BESS').length,
+      name: "BESS Projects",
+      value: displayProjects.filter((p) => p.domain === "BESS").length,
       icon: Battery,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
     },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
@@ -172,13 +202,16 @@ export default function DashboardPage() {
             Welcome back, {user?.full_name || user?.email}
           </p>
         </div>
-        <Button onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setTimeout(() => {
-            setNewProjectModalOpen(true)
-          }, 0)
-        }} className="gap-2">
+        <Button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setTimeout(() => {
+              setNewProjectModalOpen(true);
+            }, 0);
+          }}
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -187,7 +220,7 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
-          const Icon = stat.icon
+          const Icon = stat.icon;
           return (
             <Card key={stat.name}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -202,7 +235,7 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">{stat.value}</div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
 
@@ -255,10 +288,14 @@ export default function DashboardPage() {
                           {project.project_name}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getDomainColor(project.domain)}`}>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getDomainColor(project.domain)}`}
+                          >
                             {project.domain}
                           </span>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getScaleBadgeColor(project.scale)}`}>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getScaleBadgeColor(project.scale)}`}
+                          >
                             {project.scale}
                           </span>
                           <span className="text-xs text-muted-foreground">
@@ -293,12 +330,12 @@ export default function DashboardPage() {
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            setSelectedDomain('PV')
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedDomain("PV");
             setTimeout(() => {
-              setNewProjectModalOpen(true)
-            }, 0)
+              setNewProjectModalOpen(true);
+            }, 0);
           }}
         >
           <CardHeader>
@@ -315,12 +352,12 @@ export default function DashboardPage() {
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            setSelectedDomain('BESS')
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedDomain("BESS");
             setTimeout(() => {
-              setNewProjectModalOpen(true)
-            }, 0)
+              setNewProjectModalOpen(true);
+            }, 0);
           }}
         >
           <CardHeader>
@@ -337,12 +374,12 @@ export default function DashboardPage() {
         <Card
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            setSelectedDomain('HYBRID')
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedDomain("HYBRID");
             setTimeout(() => {
-              setNewProjectModalOpen(true)
-            }, 0)
+              setNewProjectModalOpen(true);
+            }, 0);
           }}
         >
           <CardHeader>
@@ -361,13 +398,13 @@ export default function DashboardPage() {
       <NewProjectModal
         open={newProjectModalOpen}
         onOpenChange={(open) => {
-          setNewProjectModalOpen(open)
+          setNewProjectModalOpen(open);
           if (!open) {
-            setSelectedDomain(undefined)
+            setSelectedDomain(undefined);
           }
         }}
         defaultDomain={selectedDomain}
       />
     </div>
-  )
+  );
 }

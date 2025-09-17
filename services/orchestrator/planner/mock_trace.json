@@ -12,7 +12,7 @@
       "latency_ms": 1234,
       "evidence": ["https://example.com/evidence1"],
       "patch": [
-        {"op": "add", "path": "/components/-", "value": {"id": "cmp-1"}}
+        { "op": "add", "path": "/components/-", "value": { "id": "cmp-1" } }
       ]
     },
     {

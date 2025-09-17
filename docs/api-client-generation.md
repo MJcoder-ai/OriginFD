@@ -5,6 +5,7 @@ This document describes the automated OpenAPI client generation system that prev
 ## Overview
 
 The system automatically:
+
 1. **Detects API changes** in the backend
 2. **Generates TypeScript clients** from OpenAPI schema
 3. **Validates compatibility** with existing client usage
@@ -16,6 +17,7 @@ The system automatically:
 ### 1. Backend Schema Detection
 
 The FastAPI backend automatically exposes OpenAPI schema at:
+
 - **Schema JSON**: `http://localhost:8000/openapi.json`
 - **Interactive Docs**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`
@@ -23,6 +25,7 @@ The FastAPI backend automatically exposes OpenAPI schema at:
 ### 2. Automated Generation
 
 The generation script (`scripts/generate-api-client.js`):
+
 1. Fetches the live OpenAPI schema from the running API
 2. Uses `openapi-generator-cli` to generate TypeScript client
 3. Analyzes existing client to ensure coverage
@@ -31,6 +34,7 @@ The generation script (`scripts/generate-api-client.js`):
 ### 3. GitHub Actions Integration
 
 The workflow (`.github/workflows/api-client-sync.yml`) automatically:
+
 - **Triggers** on changes to `services/api/**`
 - **Runs weekly** to catch any drift
 - **Can be manually triggered** with force regeneration
@@ -57,6 +61,7 @@ npm run generate:api-client
 ### CI/CD Integration
 
 The system automatically runs on:
+
 - **Push to main** with API changes
 - **Pull requests** affecting the API
 - **Weekly schedule** (Mondays at 2 AM UTC)
@@ -83,15 +88,23 @@ Edit `scripts/generate-api-client.js` to customize:
 ```javascript
 const CONFIG = {
   // API endpoints
-  apiUrl: process.env.API_URL || 'http://localhost:8000',
+  apiUrl: process.env.API_URL || "http://localhost:8000",
 
   // Output paths
-  outputDir: path.join(__dirname, '..', 'generated', 'api-client'),
-  currentClientPath: path.join(__dirname, '..', 'packages', 'ts', 'http-client', 'src', 'index.ts'),
+  outputDir: path.join(__dirname, "..", "generated", "api-client"),
+  currentClientPath: path.join(
+    __dirname,
+    "..",
+    "packages",
+    "ts",
+    "http-client",
+    "src",
+    "index.ts",
+  ),
 
   // Generator settings
-  generatorName: 'typescript-axios',
-  packageName: '@originfd/http-client-generated',
+  generatorName: "typescript-axios",
+  packageName: "@originfd/http-client-generated",
 };
 ```
 
@@ -129,6 +142,7 @@ async def new_endpoint(data: NewRequest) -> NewResponse:
 ### 3. Analysis and Validation
 
 The system checks:
+
 - **Coverage**: Are all endpoints represented?
 - **Compatibility**: Do existing method calls still work?
 - **New methods**: What needs to be added to the client?
@@ -140,7 +154,7 @@ The system checks:
 export class OriginFDClient {
   // Add new method based on generated client
   async newEndpoint(data: NewRequest): Promise<NewResponse> {
-    return this.api.post('new-endpoint', { json: data }).json<NewResponse>();
+    return this.api.post("new-endpoint", { json: data }).json<NewResponse>();
   }
 }
 ```
@@ -150,6 +164,7 @@ export class OriginFDClient {
 ### Common Issues
 
 1. **API Server Not Running**
+
    ```bash
    # Error: API server not accessible
    # Solution: Start the API server
@@ -157,6 +172,7 @@ export class OriginFDClient {
    ```
 
 2. **Database Connection Issues**
+
    ```bash
    # Error: Database connection failed
    # Solution: Set up test database
@@ -220,6 +236,7 @@ npx openapi-generator-cli generate \
 ### GitHub Issues
 
 The system automatically creates issues when:
+
 - **Coverage drops below 95%**
 - **Missing methods** are detected
 - **Generation fails** repeatedly
@@ -227,6 +244,7 @@ The system automatically creates issues when:
 ### PR Comments
 
 On pull requests, the system provides:
+
 - **Coverage analysis** for API changes
 - **Impact assessment** on frontend clients
 - **Actionable recommendations** for developers
@@ -234,6 +252,7 @@ On pull requests, the system provides:
 ### Weekly Reports
 
 Scheduled runs provide:
+
 - **Drift detection** between deployments
 - **Coverage trends** over time
 - **Proactive maintenance** alerts

@@ -257,7 +257,7 @@ export class OriginFDClient {
   }
 
   async getPlannerTrace(runId: string): Promise<any> {
-    return this.request(`planner/${runId}`)
+    return this.request(`planner/${runId}`);
   }
 
   async listModels(): Promise<ModelInfo[]> {

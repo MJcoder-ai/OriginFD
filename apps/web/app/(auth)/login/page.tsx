@@ -1,28 +1,28 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Eye, EyeOff } from 'lucide-react'
-import toast from 'react-hot-toast'
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Eye, EyeOff } from "lucide-react";
+import toast from "react-hot-toast";
 
-import { useAuth } from '@/lib/auth/auth-provider'
-import { Button } from '@originfd/ui'
+import { useAuth } from "@/lib/auth/auth-provider";
+import { Button } from "@originfd/ui";
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
-})
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
 
-type LoginFormData = z.infer<typeof loginSchema>
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { login, isAuthenticated, isLoading } = useAuth()
-  const [showPassword, setShowPassword] = React.useState(false)
+  const router = useRouter();
+  const { login, isAuthenticated, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const {
     register,
@@ -31,38 +31,40 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
-  })
+  });
 
   // Redirect if already authenticated
   React.useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/dashboard')
+      router.push("/dashboard");
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, router]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password)
-      toast.success('Login successful! Redirecting...')
-      router.push('/dashboard')
+      await login(data.email, data.password);
+      toast.success("Login successful! Redirecting...");
+      router.push("/dashboard");
     } catch (error) {
-      console.error('Login error:', error)
+      console.error("Login error:", error);
       if (error instanceof Error) {
-        toast.error(error.message || 'Login failed. Please check your credentials.')
+        toast.error(
+          error.message || "Login failed. Please check your credentials.",
+        );
       } else {
-        toast.error('Login failed. Please check your credentials.')
+        toast.error("Login failed. Please check your credentials.");
       }
     }
-  }
+  };
 
   const handleDemoLogin = () => {
     handleSubmit((data) =>
-      onSubmit({ email: 'admin@originfd.com', password: 'admin' })
-    )()
-  }
+      onSubmit({ email: "admin@originfd.com", password: "admin" }),
+    )();
+  };
 
   if (isLoading) {
     return (
@@ -72,7 +74,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (isAuthenticated) {
@@ -83,7 +85,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Redirecting...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -104,29 +106,37 @@ export default function LoginPage() {
         <div className="bg-white shadow-xl rounded-2xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email address
               </label>
               <input
-                {...register('email')}
+                {...register("email")}
                 type="email"
                 autoComplete="email"
                 className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="Enter your email"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
                 <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
+                  {...register("password")}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   className="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                   placeholder="Enter your password"
@@ -144,7 +154,9 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -156,7 +168,10 @@ export default function LoginPage() {
                   type="checkbox"
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   Remember me
                 </label>
               </div>
@@ -202,18 +217,28 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Demo Credentials</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Demo Credentials
+                </span>
               </div>
             </div>
             <div className="mt-3 text-xs text-center text-gray-500 space-y-1">
-              <p>Email: <code className="bg-gray-100 px-2 py-1 rounded">admin@originfd.com</code></p>
-              <p>Password: <code className="bg-gray-100 px-2 py-1 rounded">admin</code></p>
+              <p>
+                Email:{" "}
+                <code className="bg-gray-100 px-2 py-1 rounded">
+                  admin@originfd.com
+                </code>
+              </p>
+              <p>
+                Password:{" "}
+                <code className="bg-gray-100 px-2 py-1 rounded">admin</code>
+              </p>
             </div>
           </div>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/register"
                 className="font-medium text-primary hover:text-primary/80"
@@ -226,11 +251,11 @@ export default function LoginPage() {
 
         <div className="text-center text-xs text-gray-500">
           <p>
-            By signing in, you agree to our{' '}
+            By signing in, you agree to our{" "}
             <Link href="/terms" className="underline">
               Terms of Service
-            </Link>{' '}
-            and{' '}
+            </Link>{" "}
+            and{" "}
             <Link href="/privacy" className="underline">
               Privacy Policy
             </Link>
@@ -239,5 +264,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

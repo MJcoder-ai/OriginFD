@@ -1,4 +1,5 @@
 """Dependency to access the graph store from FastAPI routes."""
+
 from fastapi import Request
 
 

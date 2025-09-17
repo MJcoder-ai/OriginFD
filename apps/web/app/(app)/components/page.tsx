@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -20,9 +20,9 @@ import {
   Archive,
   Download,
   Upload,
-  Settings
-} from 'lucide-react'
-import { useRouter } from 'next/navigation'
+  Settings,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   Button,
@@ -41,13 +41,17 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
-} from '@originfd/ui'
-import { componentAPI } from '@/lib/api-client'
-import { ComponentCreationWizard } from '@/components/components/component-creation-wizard'
-import type { ComponentResponse, ComponentCategory, ComponentDomain } from '@/lib/types'
-import { ComponentLifecycleManager } from '@/lib/component-lifecycle'
-import type { ODLComponentStatus } from '@originfd/types-odl'
+  TabsTrigger,
+} from "@originfd/ui";
+import { componentAPI } from "@/lib/api-client";
+import { ComponentCreationWizard } from "@/components/components/component-creation-wizard";
+import type {
+  ComponentResponse,
+  ComponentCategory,
+  ComponentDomain,
+} from "@/lib/types";
+import { ComponentLifecycleManager } from "@/lib/component-lifecycle";
+import type { ODLComponentStatus } from "@originfd/types-odl";
 
 const categoryIcons = {
   generation: Sun,
@@ -55,33 +59,34 @@ const categoryIcons = {
   distribution: Package,
   storage: Battery,
   monitoring: Activity,
-  control: Settings
-}
+  control: Settings,
+};
 
 const categoryColors = {
-  generation: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  transmission: 'bg-purple-100 text-purple-800 border-purple-200',
-  distribution: 'bg-gray-100 text-gray-800 border-gray-200',
-  storage: 'bg-green-100 text-green-800 border-green-200',
-  monitoring: 'bg-blue-100 text-blue-800 border-blue-200',
-  control: 'bg-indigo-100 text-indigo-800 border-indigo-200'
-}
+  generation: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  transmission: "bg-purple-100 text-purple-800 border-purple-200",
+  distribution: "bg-gray-100 text-gray-800 border-gray-200",
+  storage: "bg-green-100 text-green-800 border-green-200",
+  monitoring: "bg-blue-100 text-blue-800 border-blue-200",
+  control: "bg-indigo-100 text-indigo-800 border-indigo-200",
+};
 
 const getStatusColor = (status: ODLComponentStatus) => {
-  const metadata = ComponentLifecycleManager.getStatusMetadata(status)
-  const color = metadata?.color || 'gray'
-  return `bg-${color}-100 text-${color}-800`
-}
+  const metadata = ComponentLifecycleManager.getStatusMetadata(status);
+  const color = metadata?.color || "gray";
+  return `bg-${color}-100 text-${color}-800`;
+};
 
 export default function ComponentsPage() {
-  const router = useRouter()
-  const [newComponentModalOpen, setNewComponentModalOpen] = React.useState(false)
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid')
-  const [searchQuery, setSearchQuery] = React.useState('')
-  const [categoryFilter, setCategoryFilter] = React.useState<string>('')
-  const [domainFilter, setDomainFilter] = React.useState<string>('')
-  const [statusFilter, setStatusFilter] = React.useState<string>('')
-  const [page, setPage] = React.useState(1)
+  const router = useRouter();
+  const [newComponentModalOpen, setNewComponentModalOpen] =
+    React.useState(false);
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [categoryFilter, setCategoryFilter] = React.useState<string>("");
+  const [domainFilter, setDomainFilter] = React.useState<string>("");
+  const [statusFilter, setStatusFilter] = React.useState<string>("");
+  const [page, setPage] = React.useState(1);
 
   // Fetch components
   const {
@@ -89,55 +94,67 @@ export default function ComponentsPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['components', page, searchQuery, categoryFilter, domainFilter, statusFilter],
-    queryFn: () => componentAPI.listComponents({
+    queryKey: [
+      "components",
       page,
-      page_size: 20,
-      search: searchQuery || undefined,
-      category: categoryFilter === 'all' ? undefined : categoryFilter || undefined,
-      domain: domainFilter === 'all' ? undefined : domainFilter || undefined,
-      status: statusFilter === 'all' ? undefined : statusFilter || undefined
-    }),
-  })
+      searchQuery,
+      categoryFilter,
+      domainFilter,
+      statusFilter,
+    ],
+    queryFn: () =>
+      componentAPI.listComponents({
+        page,
+        page_size: 20,
+        search: searchQuery || undefined,
+        category:
+          categoryFilter === "all" ? undefined : categoryFilter || undefined,
+        domain: domainFilter === "all" ? undefined : domainFilter || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter || undefined,
+      }),
+  });
 
   // Fetch component stats
   const { data: stats } = useQuery({
-    queryKey: ['component-stats'],
+    queryKey: ["component-stats"],
     queryFn: () => componentAPI.getStats(),
-  })
+  });
 
-  const components = componentsData?.components || []
-  const totalComponents = componentsData?.total || 0
+  const components = componentsData?.components || [];
+  const totalComponents = componentsData?.total || 0;
 
   const getCategoryIcon = (category?: ComponentCategory) => {
-    if (!category) return Grid3x3
-    return categoryIcons[category] || Grid3x3
-  }
+    if (!category) return Grid3x3;
+    return categoryIcons[category] || Grid3x3;
+  };
 
   const getCategoryColor = (category?: ComponentCategory) => {
-    if (!category) return 'bg-slate-100 text-slate-800 border-slate-200'
-    return categoryColors[category] || 'bg-slate-100 text-slate-800 border-slate-200'
-  }
-
+    if (!category) return "bg-slate-100 text-slate-800 border-slate-200";
+    return (
+      categoryColors[category] || "bg-slate-100 text-slate-800 border-slate-200"
+    );
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const handleComponentClick = (component: ComponentResponse) => {
-    router.push(`/components/${component.id}`)
-  }
+    router.push(`/components/${component.id}`);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Component Library</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Component Library
+          </h1>
           <p className="text-muted-foreground">
             Manage your component catalog following ODL-SD v4.1 standards
           </p>
@@ -151,7 +168,10 @@ export default function ComponentsPage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button onClick={() => setNewComponentModalOpen(true)} className="gap-2">
+          <Button
+            onClick={() => setNewComponentModalOpen(true)}
+            className="gap-2"
+          >
             <Plus className="h-4 w-4" />
             New Component
           </Button>
@@ -163,7 +183,9 @@ export default function ComponentsPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Components</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Components
+              </CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -172,16 +194,22 @@ export default function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Components</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Components
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.active_components}</div>
+              <div className="text-2xl font-bold">
+                {stats.active_components}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Draft Components</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Draft Components
+              </CardTitle>
               <Edit className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -194,7 +222,9 @@ export default function ComponentsPage() {
               <Grid3x3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Object.keys(stats.categories).length}</div>
+              <div className="text-2xl font-bold">
+                {Object.keys(stats.categories).length}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -255,16 +285,16 @@ export default function ComponentsPage() {
         </div>
         <div className="flex items-center space-x-2">
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            variant={viewMode === "grid" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode("grid")}
           >
             <Grid3x3 className="h-4 w-4" />
           </Button>
           <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
+            variant={viewMode === "list" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode('list')}
+            onClick={() => setViewMode("list")}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -278,12 +308,16 @@ export default function ComponentsPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Error loading components. Please try again.</p>
+          <p className="text-muted-foreground">
+            Error loading components. Please try again.
+          </p>
         </div>
       ) : components.length === 0 ? (
         <div className="text-center py-12">
           <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">No components</h3>
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">
+            No components
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Get started by creating your first component.
           </p>
@@ -295,15 +329,17 @@ export default function ComponentsPage() {
           </div>
         </div>
       ) : (
-        <div className={
-          viewMode === 'grid'
-            ? 'grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-            : 'space-y-4'
-        }>
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              : "space-y-4"
+          }
+        >
           {components.map((component: ComponentResponse) => {
-            const CategoryIcon = getCategoryIcon()
+            const CategoryIcon = getCategoryIcon();
 
-            if (viewMode === 'grid') {
+            if (viewMode === "grid") {
               return (
                 <Card
                   key={component.id}
@@ -318,10 +354,21 @@ export default function ComponentsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-sm font-medium truncate">
-                            {component.component_management?.component_identity?.brand} {component.component_management?.component_identity?.part_number}
+                            {
+                              component.component_management?.component_identity
+                                ?.brand
+                            }{" "}
+                            {
+                              component.component_management?.component_identity
+                                ?.part_number
+                            }
                           </CardTitle>
                           <CardDescription className="text-xs">
-                            {component.component_management?.component_identity?.rating_w}W
+                            {
+                              component.component_management?.component_identity
+                                ?.rating_w
+                            }
+                            W
                           </CardDescription>
                         </div>
                       </div>
@@ -334,26 +381,41 @@ export default function ComponentsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Status</span>
-                        <Badge variant="secondary" className={getStatusColor(component.component_management?.status || 'draft')}>
-                          {component.component_management?.status || 'draft'}
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(
+                            component.component_management?.status || "draft",
+                          )}
+                        >
+                          {component.component_management?.status || "draft"}
                         </Badge>
                       </div>
                       {false && (
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Category</span>
-                          <Badge variant="outline" className={getCategoryColor()}>
+                          <span className="text-muted-foreground">
+                            Category
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={getCategoryColor()}
+                          >
                             Category
                           </Badge>
                         </div>
                       )}
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">Updated</span>
-                        <span>{formatDate(component.component_management?.audit?.updated_at || '')}</span>
+                        <span>
+                          {formatDate(
+                            component.component_management?.audit?.updated_at ||
+                              "",
+                          )}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )
+              );
             } else {
               return (
                 <Card
@@ -369,24 +431,50 @@ export default function ComponentsPage() {
                         </div>
                         <div>
                           <div className="font-medium">
-                            {component.component_management?.component_identity?.brand} {component.component_management?.component_identity?.part_number}
+                            {
+                              component.component_management?.component_identity
+                                ?.brand
+                            }{" "}
+                            {
+                              component.component_management?.component_identity
+                                ?.part_number
+                            }
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {component.component_management?.component_identity?.rating_w}W • {component.component_management?.component_identity?.component_id}
+                            {
+                              component.component_management?.component_identity
+                                ?.rating_w
+                            }
+                            W •{" "}
+                            {
+                              component.component_management?.component_identity
+                                ?.component_id
+                            }
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
                         {false && (
-                          <Badge variant="outline" className={getCategoryColor()}>
+                          <Badge
+                            variant="outline"
+                            className={getCategoryColor()}
+                          >
                             Category
                           </Badge>
                         )}
-                        <Badge variant="secondary" className={getStatusColor(component.component_management?.status || 'draft')}>
-                          {component.component_management?.status || 'draft'}
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(
+                            component.component_management?.status || "draft",
+                          )}
+                        >
+                          {component.component_management?.status || "draft"}
                         </Badge>
                         <div className="text-sm text-muted-foreground">
-                          {formatDate(component.component_management?.audit?.updated_at || '')}
+                          {formatDate(
+                            component.component_management?.audit?.updated_at ||
+                              "",
+                          )}
                         </div>
                         <Button variant="ghost" size="sm">
                           <MoreHorizontal className="h-4 w-4" />
@@ -395,7 +483,7 @@ export default function ComponentsPage() {
                     </div>
                   </CardContent>
                 </Card>
-              )
+              );
             }
           })}
         </div>
@@ -405,7 +493,9 @@ export default function ComponentsPage() {
       {totalComponents > 20 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, totalComponents)} of {totalComponents} components
+            Showing {(page - 1) * 20 + 1} to{" "}
+            {Math.min(page * 20, totalComponents)} of {totalComponents}{" "}
+            components
           </p>
           <div className="flex items-center space-x-2">
             <Button
@@ -434,5 +524,5 @@ export default function ComponentsPage() {
         onOpenChange={setNewComponentModalOpen}
       />
     </div>
-  )
+  );
 }

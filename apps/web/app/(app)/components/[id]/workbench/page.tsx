@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useParams } from 'next/navigation'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import * as React from "react";
+import { useParams } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Button,
   Card,
@@ -15,51 +15,56 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
-} from '@originfd/ui'
-import { componentAPI } from '@/lib/api-client'
-import { AICopilotService } from '@/components/ai/ai-copilot'
+  TableRow,
+} from "@originfd/ui";
+import { componentAPI } from "@/lib/api-client";
+import { AICopilotService } from "@/components/ai/ai-copilot";
 
 export default function ComponentWorkbenchPage() {
-  const params = useParams()
-  const componentId = params.id as string
-  const [parsedAttrs, setParsedAttrs] = React.useState<Record<string, string>>({})
-  const [aiSummary, setAiSummary] = React.useState('')
+  const params = useParams();
+  const componentId = params.id as string;
+  const [parsedAttrs, setParsedAttrs] = React.useState<Record<string, string>>(
+    {},
+  );
+  const [aiSummary, setAiSummary] = React.useState("");
 
   const { data: component } = useQuery({
-    queryKey: ['component', componentId],
+    queryKey: ["component", componentId],
     queryFn: () => componentAPI.getComponent(componentId),
     enabled: !!componentId,
-  })
+  });
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => componentAPI.parseDatasheet(file),
     onSuccess: (data) => {
-      setParsedAttrs(data.attributes || {})
-    }
-  })
+      setParsedAttrs(data.attributes || {});
+    },
+  });
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
-      const service = new AICopilotService()
+      const service = new AICopilotService();
       const response = await service.sendMessage(
-        `Compare existing component ${JSON.stringify(component)} with new attributes ${JSON.stringify(parsedAttrs)} and summarize differences`
-      )
-      return response.content
+        `Compare existing component ${JSON.stringify(component)} with new attributes ${JSON.stringify(parsedAttrs)} and summarize differences`,
+      );
+      return response.content;
     },
-    onSuccess: (content) => setAiSummary(content)
-  })
+    onSuccess: (content) => setAiSummary(content),
+  });
 
   const proposeMutation = useMutation({
-    mutationFn: () => componentAPI.updateComponent(componentId, { classification: parsedAttrs }),
-  })
+    mutationFn: () =>
+      componentAPI.updateComponent(componentId, {
+        classification: parsedAttrs,
+      }),
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      uploadMutation.mutate(file)
+      uploadMutation.mutate(file);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -68,7 +73,11 @@ export default function ComponentWorkbenchPage() {
       <div className="space-y-4">
         <Input type="file" onChange={handleFileChange} />
         {Object.keys(parsedAttrs).length > 0 && (
-          <Button variant="secondary" onClick={() => analyzeMutation.mutate()} disabled={analyzeMutation.isPending}>
+          <Button
+            variant="secondary"
+            onClick={() => analyzeMutation.mutate()}
+            disabled={analyzeMutation.isPending}
+          >
             Analyze with Copilot
           </Button>
         )}
@@ -103,19 +112,22 @@ export default function ComponentWorkbenchPage() {
                 {Object.entries(parsedAttrs).map(([key, value]) => (
                   <TableRow key={key}>
                     <TableCell className="font-medium">{key}</TableCell>
-                    <TableCell>{(component as any)[key] ?? '-'}</TableCell>
+                    <TableCell>{(component as any)[key] ?? "-"}</TableCell>
                     <TableCell>{value}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            <Button className="mt-4" onClick={() => proposeMutation.mutate()} disabled={proposeMutation.isPending}>
+            <Button
+              className="mt-4"
+              onClick={() => proposeMutation.mutate()}
+              disabled={proposeMutation.isPending}
+            >
               Propose Change
             </Button>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }
-

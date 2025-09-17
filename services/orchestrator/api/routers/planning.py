@@ -2,7 +2,8 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get('/')
+
+@router.get("/")
 async def planning_root():
     """Planning operations placeholder."""
-    return {'planning': 'ok'}
+    return {"planning": "ok"}

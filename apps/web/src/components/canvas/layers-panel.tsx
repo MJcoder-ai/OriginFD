@@ -1,26 +1,31 @@
-"use client"
-import * as React from 'react'
-import { Button } from '@originfd/ui'
+"use client";
+import * as React from "react";
+import { Button } from "@originfd/ui";
 
-export type LayerKey = 'ac' | 'dc' | 'routes' | 'equipment' | 'civil'
+export type LayerKey = "ac" | "dc" | "routes" | "equipment" | "civil";
 
 export function LayersPanel({
   active,
   onChange,
-}: { active: LayerKey[]; onChange: (layers: LayerKey[]) => void }) {
+}: {
+  active: LayerKey[];
+  onChange: (layers: LayerKey[]) => void;
+}) {
   const toggle = (k: LayerKey) => {
-    onChange(active.includes(k) ? active.filter(x => x !== k) : [...active, k])
-  }
+    onChange(
+      active.includes(k) ? active.filter((x) => x !== k) : [...active, k],
+    );
+  };
   const Chip = ({ k, label }: { k: LayerKey; label: string }) => (
     <Button
       size="sm"
-      variant={active.includes(k) ? 'default' : 'outline'}
+      variant={active.includes(k) ? "default" : "outline"}
       onClick={() => toggle(k)}
       className="h-6 px-2 text-xs"
     >
       {label}
     </Button>
-  )
+  );
   return (
     <div className="flex flex-wrap gap-2">
       <Chip k="ac" label="AC" />
@@ -29,7 +34,7 @@ export function LayersPanel({
       <Chip k="equipment" label="Equipment" />
       <Chip k="civil" label="Civil" />
     </div>
-  )
+  );
 }
 
-export default LayersPanel
+export default LayersPanel;

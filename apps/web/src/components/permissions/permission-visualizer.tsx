@@ -1,115 +1,128 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '@originfd/ui'
-import { Check, X } from 'lucide-react'
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent, Badge } from "@originfd/ui";
+import { Check, X } from "lucide-react";
 
 // Sample data structures representing the entity tree and permissions
 interface PermissionNode {
-  id: string
-  name: string
-  type: 'project' | 'document' | 'node'
-  children?: PermissionNode[]
+  id: string;
+  name: string;
+  type: "project" | "document" | "node";
+  children?: PermissionNode[];
 }
 
 interface RightDetail {
-  allowed: boolean
-  source: string // e.g. role/group/system
+  allowed: boolean;
+  source: string; // e.g. role/group/system
 }
 
 const entityTree: PermissionNode[] = [
   {
-    id: 'project-1',
-    name: 'Project Alpha',
-    type: 'project',
+    id: "project-1",
+    name: "Project Alpha",
+    type: "project",
     children: [
       {
-        id: 'doc-1',
-        name: 'Design Document',
-        type: 'document',
+        id: "doc-1",
+        name: "Design Document",
+        type: "document",
         children: [
-          { id: 'node-1', name: 'Node A', type: 'node' },
-          { id: 'node-2', name: 'Node B', type: 'node' },
+          { id: "node-1", name: "Node A", type: "node" },
+          { id: "node-2", name: "Node B", type: "node" },
         ],
       },
     ],
   },
-]
+];
 
 const rightsData: Record<string, Record<string, RightDetail>> = {
-  'project-1': {
-    create: { allowed: true, source: 'role:admin' },
-    read: { allowed: true, source: 'role:viewer' },
-    update: { allowed: false, source: 'system' },
-    delete: { allowed: false, source: 'system' },
+  "project-1": {
+    create: { allowed: true, source: "role:admin" },
+    read: { allowed: true, source: "role:viewer" },
+    update: { allowed: false, source: "system" },
+    delete: { allowed: false, source: "system" },
   },
-  'doc-1': {
-    create: { allowed: false, source: 'group:editors' },
-    read: { allowed: true, source: 'group:readers' },
-    update: { allowed: true, source: 'group:editors' },
-    delete: { allowed: false, source: 'system' },
+  "doc-1": {
+    create: { allowed: false, source: "group:editors" },
+    read: { allowed: true, source: "group:readers" },
+    update: { allowed: true, source: "group:editors" },
+    delete: { allowed: false, source: "system" },
   },
-  'node-1': {
-    create: { allowed: false, source: 'system' },
-    read: { allowed: true, source: 'role:viewer' },
-    update: { allowed: false, source: 'role:viewer' },
-    delete: { allowed: false, source: 'system' },
+  "node-1": {
+    create: { allowed: false, source: "system" },
+    read: { allowed: true, source: "role:viewer" },
+    update: { allowed: false, source: "role:viewer" },
+    delete: { allowed: false, source: "system" },
   },
-  'node-2': {
-    create: { allowed: true, source: 'role:engineer' },
-    read: { allowed: true, source: 'role:engineer' },
-    update: { allowed: true, source: 'role:engineer' },
-    delete: { allowed: false, source: 'system' },
+  "node-2": {
+    create: { allowed: true, source: "role:engineer" },
+    read: { allowed: true, source: "role:engineer" },
+    update: { allowed: true, source: "role:engineer" },
+    delete: { allowed: false, source: "system" },
   },
-}
+};
 
 const phaseLocks = [
-  { phase: 'Draft', locked: false, explanation: 'Content can be edited freely.' },
   {
-    phase: 'Review',
-    locked: true,
-    explanation: 'Edits require reviewer approval and are temporarily locked.',
+    phase: "Draft",
+    locked: false,
+    explanation: "Content can be edited freely.",
   },
   {
-    phase: 'Approved',
+    phase: "Review",
     locked: true,
-    explanation: 'The item is locked after approval and cannot be changed without reverting.',
+    explanation: "Edits require reviewer approval and are temporarily locked.",
   },
-]
+  {
+    phase: "Approved",
+    locked: true,
+    explanation:
+      "The item is locked after approval and cannot be changed without reverting.",
+  },
+];
 
 const approverMatrix = [
-  { phase: 'Review', approvers: ['Alice', 'Bob'] },
-  { phase: 'Approved', approvers: ['Project Manager'] },
-]
+  { phase: "Review", approvers: ["Alice", "Bob"] },
+  { phase: "Approved", approvers: ["Project Manager"] },
+];
 
-function Tree({ nodes, selectedId, onSelect }: {
-  nodes: PermissionNode[]
-  selectedId: string
-  onSelect: (id: string) => void
+function Tree({
+  nodes,
+  selectedId,
+  onSelect,
+}: {
+  nodes: PermissionNode[];
+  selectedId: string;
+  onSelect: (id: string) => void;
 }) {
   return (
     <ul className="ml-4 list-disc">
       {nodes.map((node) => (
         <li key={node.id}>
           <button
-            className={`text-left hover:underline ${selectedId === node.id ? 'font-semibold' : ''}`}
+            className={`text-left hover:underline ${selectedId === node.id ? "font-semibold" : ""}`}
             onClick={() => onSelect(node.id)}
           >
             {node.name}
           </button>
           {node.children && node.children.length > 0 && (
-            <Tree nodes={node.children} selectedId={selectedId} onSelect={onSelect} />
+            <Tree
+              nodes={node.children}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
           )}
         </li>
       ))}
     </ul>
-  )
+  );
 }
 
 export function PermissionVisualizer() {
-  const [selectedId, setSelectedId] = React.useState('project-1')
+  const [selectedId, setSelectedId] = React.useState("project-1");
 
-  const rights = rightsData[selectedId] || {}
+  const rights = rightsData[selectedId] || {};
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -118,7 +131,11 @@ export function PermissionVisualizer() {
           <CardTitle>Entity Tree</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tree nodes={entityTree} selectedId={selectedId} onSelect={setSelectedId} />
+          <Tree
+            nodes={entityTree}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
         </CardContent>
       </Card>
 
@@ -136,7 +153,7 @@ export function PermissionVisualizer() {
               </tr>
             </thead>
             <tbody>
-              {['create', 'read', 'update', 'delete'].map((op) => (
+              {["create", "read", "update", "delete"].map((op) => (
                 <tr key={op} className="border-t">
                   <td className="py-1 capitalize">{op}</td>
                   <td className="py-1">
@@ -146,7 +163,9 @@ export function PermissionVisualizer() {
                       <X className="h-4 w-4 text-red-600" />
                     )}
                   </td>
-                  <td className="py-1 text-muted-foreground">{rights[op]?.source || '-'}</td>
+                  <td className="py-1 text-muted-foreground">
+                    {rights[op]?.source || "-"}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -160,11 +179,13 @@ export function PermissionVisualizer() {
         </CardHeader>
         <CardContent>
           <ul className="text-sm space-y-1">
-            {['create', 'read', 'update', 'delete'].map((op) => (
+            {["create", "read", "update", "delete"].map((op) => (
               <li key={op} className="flex items-center gap-2">
                 <span className="w-20 capitalize">{op}:</span>
-                <Badge variant={rights[op]?.allowed ? 'default' : 'destructive'}>
-                  {rights[op]?.source || 'unknown'}
+                <Badge
+                  variant={rights[op]?.allowed ? "default" : "destructive"}
+                >
+                  {rights[op]?.source || "unknown"}
                 </Badge>
               </li>
             ))}
@@ -188,7 +209,8 @@ export function PermissionVisualizer() {
                     <Check className="h-4 w-4 text-green-600 mt-0.5" />
                   )}
                   <div>
-                    <span className="font-medium">{p.phase}</span> – {p.explanation}
+                    <span className="font-medium">{p.phase}</span> –{" "}
+                    {p.explanation}
                   </div>
                 </li>
               ))}
@@ -208,7 +230,7 @@ export function PermissionVisualizer() {
                 {approverMatrix.map((row) => (
                   <tr key={row.phase} className="border-t">
                     <td className="py-1">{row.phase}</td>
-                    <td className="py-1">{row.approvers.join(', ')}</td>
+                    <td className="py-1">{row.approvers.join(", ")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -217,8 +239,7 @@ export function PermissionVisualizer() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
-export default PermissionVisualizer
-
+export default PermissionVisualizer;

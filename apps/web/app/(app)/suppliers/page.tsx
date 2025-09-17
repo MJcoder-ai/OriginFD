@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -14,8 +14,8 @@ import {
   Mail,
   Phone,
   MapPin,
-  Award
-} from 'lucide-react'
+  Award,
+} from "lucide-react";
 
 import {
   Button,
@@ -34,8 +34,8 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
-} from '@originfd/ui'
+  TabsTrigger,
+} from "@originfd/ui";
 
 // Mock API for now - replace with real API client
 const suppliersAPI = {
@@ -44,58 +44,58 @@ const suppliersAPI = {
     return {
       suppliers: [
         {
-          id: '1',
-          supplier_id: 'SUP-ABC123',
-          name: 'Tesla Energy',
+          id: "1",
+          supplier_id: "SUP-ABC123",
+          name: "Tesla Energy",
           contact: {
-            email: 'procurement@tesla.com',
-            phone: '+1-555-0123',
-            address: 'Austin, TX, USA'
+            email: "procurement@tesla.com",
+            phone: "+1-555-0123",
+            address: "Austin, TX, USA",
           },
-          status: 'approved',
+          status: "approved",
           capabilities: {
-            categories: ['storage', 'conversion'],
-            certifications: ['UL', 'CE', 'FCC']
+            categories: ["storage", "conversion"],
+            certifications: ["UL", "CE", "FCC"],
           },
-          created_at: '2024-01-15T10:00:00Z'
+          created_at: "2024-01-15T10:00:00Z",
         },
         {
-          id: '2',
-          supplier_id: 'SUP-DEF456',
-          name: 'JinkoSolar',
+          id: "2",
+          supplier_id: "SUP-DEF456",
+          name: "JinkoSolar",
           contact: {
-            email: 'sales@jinkosolar.com',
-            phone: '+86-21-5180-8888',
-            address: 'Shanghai, China'
+            email: "sales@jinkosolar.com",
+            phone: "+86-21-5180-8888",
+            address: "Shanghai, China",
           },
-          status: 'approved',
+          status: "approved",
           capabilities: {
-            categories: ['generation'],
-            certifications: ['IEC', 'UL', 'TUV']
+            categories: ["generation"],
+            certifications: ["IEC", "UL", "TUV"],
           },
-          created_at: '2024-01-10T14:30:00Z'
+          created_at: "2024-01-10T14:30:00Z",
         },
         {
-          id: '3',
-          supplier_id: 'SUP-GHI789',
-          name: 'SMA Solar Technology',
+          id: "3",
+          supplier_id: "SUP-GHI789",
+          name: "SMA Solar Technology",
           contact: {
-            email: 'info@sma.de',
-            phone: '+49-561-9522-0',
-            address: 'Niestetal, Germany'
+            email: "info@sma.de",
+            phone: "+49-561-9522-0",
+            address: "Niestetal, Germany",
           },
-          status: 'draft',
+          status: "draft",
           capabilities: {
-            categories: ['conversion', 'monitoring'],
-            certifications: ['CE', 'VDE', 'UL']
+            categories: ["conversion", "monitoring"],
+            certifications: ["CE", "VDE", "UL"],
           },
-          created_at: '2024-01-20T09:15:00Z'
-        }
+          created_at: "2024-01-20T09:15:00Z",
+        },
       ],
       total: 3,
       page: 1,
-      page_size: 20
-    }
+      page_size: 20,
+    };
   },
 
   async getStats() {
@@ -103,27 +103,27 @@ const suppliersAPI = {
       total_suppliers: 15,
       approved_suppliers: 12,
       draft_suppliers: 3,
-      active_rfqs: 2
-    }
-  }
-}
+      active_rfqs: 2,
+    };
+  },
+};
 
 const statusColors = {
-  approved: 'bg-green-100 text-green-800 border-green-200',
-  draft: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  inactive: 'bg-red-100 text-red-800 border-red-200'
-}
+  approved: "bg-green-100 text-green-800 border-green-200",
+  draft: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  inactive: "bg-red-100 text-red-800 border-red-200",
+};
 
 const statusIcons = {
   approved: CheckCircle,
   draft: Clock,
-  inactive: XCircle
-}
+  inactive: XCircle,
+};
 
 export default function SuppliersPage() {
-  const [searchQuery, setSearchQuery] = React.useState('')
-  const [statusFilter, setStatusFilter] = React.useState<string>('')
-  const [page, setPage] = React.useState(1)
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<string>("");
+  const [page, setPage] = React.useState(1);
 
   // Fetch suppliers
   const {
@@ -131,47 +131,52 @@ export default function SuppliersPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['suppliers', page, searchQuery, statusFilter],
-    queryFn: () => suppliersAPI.listSuppliers({
-      page,
-      page_size: 20,
-      search: searchQuery || undefined,
-      status: statusFilter || undefined
-    }),
-  })
+    queryKey: ["suppliers", page, searchQuery, statusFilter],
+    queryFn: () =>
+      suppliersAPI.listSuppliers({
+        page,
+        page_size: 20,
+        search: searchQuery || undefined,
+        status: statusFilter || undefined,
+      }),
+  });
 
   // Fetch supplier stats
   const { data: stats } = useQuery({
-    queryKey: ['supplier-stats'],
+    queryKey: ["supplier-stats"],
     queryFn: () => suppliersAPI.getStats(),
-  })
+  });
 
-  const suppliers = suppliersData?.suppliers || []
-  const totalSuppliers = suppliersData?.total || 0
+  const suppliers = suppliersData?.suppliers || [];
+  const totalSuppliers = suppliersData?.total || 0;
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const getStatusIcon = (status: string) => {
-    const Icon = statusIcons[status as keyof typeof statusIcons] || Clock
-    return Icon
-  }
+    const Icon = statusIcons[status as keyof typeof statusIcons] || Clock;
+    return Icon;
+  };
 
   const getStatusColor = (status: string) => {
-    return statusColors[status as keyof typeof statusColors] || statusColors.draft
-  }
+    return (
+      statusColors[status as keyof typeof statusColors] || statusColors.draft
+    );
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Supplier Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Supplier Management
+          </h1>
           <p className="text-muted-foreground">
             Manage your supplier network and procurement relationships
           </p>
@@ -193,7 +198,9 @@ export default function SuppliersPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Suppliers
+              </CardTitle>
               <Building className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -202,16 +209,22 @@ export default function SuppliersPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved Suppliers</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Approved Suppliers
+              </CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.approved_suppliers}</div>
+              <div className="text-2xl font-bold">
+                {stats.approved_suppliers}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Pending Approval
+              </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -271,12 +284,16 @@ export default function SuppliersPage() {
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Error loading suppliers. Please try again.</p>
+              <p className="text-muted-foreground">
+                Error loading suppliers. Please try again.
+              </p>
             </div>
           ) : suppliers.length === 0 ? (
             <div className="text-center py-12">
               <Building className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">No suppliers</h3>
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                No suppliers
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Get started by adding your first supplier.
               </p>
@@ -290,10 +307,13 @@ export default function SuppliersPage() {
           ) : (
             <div className="space-y-4">
               {suppliers.map((supplier) => {
-                const StatusIcon = getStatusIcon(supplier.status)
+                const StatusIcon = getStatusIcon(supplier.status);
 
                 return (
-                  <Card key={supplier.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card
+                    key={supplier.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                  >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -302,8 +322,13 @@ export default function SuppliersPage() {
                           </div>
                           <div>
                             <div className="flex items-center space-x-2">
-                              <h3 className="font-semibold text-lg">{supplier.name}</h3>
-                              <Badge variant="outline" className={getStatusColor(supplier.status)}>
+                              <h3 className="font-semibold text-lg">
+                                {supplier.name}
+                              </h3>
+                              <Badge
+                                variant="outline"
+                                className={getStatusColor(supplier.status)}
+                              >
                                 <StatusIcon className="h-3 w-3 mr-1" />
                                 {supplier.status}
                               </Badge>
@@ -335,18 +360,30 @@ export default function SuppliersPage() {
                         </div>
                         <div className="flex items-center space-x-4">
                           <div className="text-right">
-                            <div className="text-sm text-muted-foreground">Capabilities</div>
+                            <div className="text-sm text-muted-foreground">
+                              Capabilities
+                            </div>
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {supplier.capabilities?.categories?.map((category: string) => (
-                                <Badge key={category} variant="secondary" className="text-xs">
-                                  {category}
-                                </Badge>
-                              ))}
+                              {supplier.capabilities?.categories?.map(
+                                (category: string) => (
+                                  <Badge
+                                    key={category}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {category}
+                                  </Badge>
+                                ),
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm text-muted-foreground">Added</div>
-                            <div className="text-sm">{formatDate(supplier.created_at)}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Added
+                            </div>
+                            <div className="text-sm">
+                              {formatDate(supplier.created_at)}
+                            </div>
                           </div>
                           <Button variant="ghost" size="sm">
                             <MoreHorizontal className="h-4 w-4" />
@@ -355,7 +392,7 @@ export default function SuppliersPage() {
                       </div>
                     </CardContent>
                   </Card>
-                )
+                );
               })}
             </div>
           )}
@@ -364,7 +401,9 @@ export default function SuppliersPage() {
           {totalSuppliers > 20 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, totalSuppliers)} of {totalSuppliers} suppliers
+                Showing {(page - 1) * 20 + 1} to{" "}
+                {Math.min(page * 20, totalSuppliers)} of {totalSuppliers}{" "}
+                suppliers
               </p>
               <div className="flex items-center space-x-2">
                 <Button
@@ -421,5 +460,5 @@ export default function SuppliersPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

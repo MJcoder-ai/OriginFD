@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAllProjects, addProject } from '../shared-data'
+import { NextRequest, NextResponse } from "next/server";
+import { getAllProjects, addProject } from "../shared-data";
 
 export async function GET() {
-  const projects = getAllProjects()
-  console.log('Fetching projects list:', projects.length, 'projects')
-  return NextResponse.json(projects)
+  const projects = getAllProjects();
+  console.log("Fetching projects list:", projects.length, "projects");
+  return NextResponse.json(projects);
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json();
 
     // Generate a new project ID using UUID format
-    const newId = `proj_${crypto.randomUUID()}`
-    const now = new Date().toISOString()
+    const newId = `proj_${crypto.randomUUID()}`;
+    const now = new Date().toISOString();
 
     const newProject = {
       id: newId,
@@ -25,17 +25,17 @@ export async function POST(request: NextRequest) {
       is_active: true,
       created_at: now,
       updated_at: now,
-    }
+    };
 
     // Add to shared data store
-    addProject(newProject)
+    addProject(newProject);
 
     // Simulate successful creation
-    return NextResponse.json(newProject, { status: 201 })
+    return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    )
+      { error: "Failed to create project" },
+      { status: 500 },
+    );
   }
 }

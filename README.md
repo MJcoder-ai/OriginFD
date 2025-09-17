@@ -5,6 +5,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS (Battery Energy Stor
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.12+
 - Node.js 20+
 - pnpm 8+
@@ -15,24 +16,28 @@ OriginFD is an enterprise-grade platform for solar PV, BESS (Battery Energy Stor
 ### Local Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/MJcoder-ai/OriginFD.git
    cd OriginFD
    ```
 
 2. **Install Python dependencies**
+
    ```bash
    pip install poetry
    poetry install
    ```
 
 3. **Install Node.js dependencies**
+
    ```bash
    npm install -g pnpm
    pnpm install
    ```
 
 4. **Start development environment**
+
    ```bash
    docker-compose up -d postgres redis
    poetry run alembic upgrade head
@@ -67,12 +72,14 @@ poetry export -f requirements.txt --output requirements.txt
 OriginFD follows a microservices architecture with the following key components:
 
 ### Core Services
+
 - **API Gateway** (`services/api/`): FastAPI-based REST API and webhooks
 - **AI Orchestrator** (`services/orchestrator/`): L1 AI system with Planner/Router
 - **Workers** (`services/workers/`): Background job processing with Celery
 - **Web App** (`apps/web/`): Next.js 14 frontend with SSR
 
 ### Domain Logic
+
 - **PV** (`domains/pv/`): Solar PV system sizing and design
 - **BESS** (`domains/bess/`): Battery storage system design
 - **Grid** (`domains/grid/`): Grid integration and compliance
@@ -80,18 +87,21 @@ OriginFD follows a microservices architecture with the following key components:
 - **Commerce** (`domains/commerce/`): Marketplace and transactions
 
 ### Shared Packages
+
 - **Python** (`packages/py/`): Shared Python libraries
 - **TypeScript** (`packages/ts/`): Shared frontend components and types
 
 ## Development Workflow
 
 ### Code Organization
+
 - Follow the canonical folder structure defined in `OriginFD_Canonical Development Guide.md`
 - All ODL-SD document mutations use JSON-Patch for auditability
 - RBAC and phase gates enforce governance at the API level
 - Domain logic is framework-agnostic and purely functional
 
 ### Running Tests
+
 ```bash
 # Python tests
 poetry run pytest
@@ -104,6 +114,7 @@ pnpm run test && poetry run pytest
 ```
 
 ### Code Quality
+
 ```bash
 # Format code
 poetry run black .
@@ -122,7 +133,9 @@ pnpm run type-check
 ## Deployment
 
 ### Google Cloud Platform
+
 The platform is designed for GCP deployment using:
+
 - **Cloud Run** for services
 - **Cloud SQL** (PostgreSQL) for data
 - **Memorystore** (Redis) for caching
@@ -131,6 +144,7 @@ The platform is designed for GCP deployment using:
 - **Artifact Registry** for images
 
 Deploy using Terraform:
+
 ```bash
 cd infra/gcp/terraform/envs/dev
 terraform init
@@ -141,24 +155,28 @@ terraform apply
 ## Key Features
 
 ### ODL-SD v4.1 Compliance
+
 - Complete energy system lifecycle management
 - JSON Schema validation for all documents
 - Hierarchical scaling from residential to utility-scale
 - Multi-domain support (PV, BESS, Grid, SCADA)
 
 ### AI-Powered Design
+
 - Ground-before-Generate approach with Graph-RAG
 - Deterministic tools with typed I/O schemas
 - Policy Router for budget enforcement (PSU metering)
 - Critic/Verifier gates for quality assurance
 
 ### Enterprise Security
+
 - Role-Based Access Control (RBAC)
 - Phase gates for approval workflows
 - Audit trails for all document changes
 - Data residency compliance (US/EU/APAC)
 
 ### Component Lifecycle Management (ODL-SD v4.1)
+
 - **19-Stage Lifecycle**: Complete component management from draft to archive
 - **Automated Workflows**: RFQ/bidding, purchase order management, inventory tracking
 - **Media Asset Management**: Document processing, AI extraction, compliance validation
@@ -166,12 +184,14 @@ terraform apply
 - **State Machine Validation**: Controlled transitions with requirements checking
 
 ### Marketplace & Commerce
+
 - Component marketplace with supplier management
 - RFQ and procurement workflows
 - Escrow and payment processing
 - Service handover and provider switching
 
 ### Tool Registry & SDK
+
 - Tool metadata exposed via `/tools` on the AI Orchestrator
 - Run any tool with sample inputs via `POST /tools/{tool_name}/sample`
 - Generate client SDK types: `python services/orchestrator/tools/generate_sdk.py`
@@ -188,6 +208,7 @@ OriginFD implements a comprehensive 19-stage component lifecycle management syst
 The component lifecycle consists of four major phases with 19 distinct stages:
 
 #### **Planning & Data Processing (Stages 1-5)**
+
 1. **DRAFT** → Initial component record creation and basic data capture
 2. **PARSED** → Datasheet parsing and technical specification extraction
 3. **ENRICHED** → Data enrichment, classification assignment, and normalization
@@ -195,6 +216,7 @@ The component lifecycle consists of four major phases with 19 distinct stages:
 5. **COMPLIANCE_PENDING** → Regulatory compliance review and certificate validation
 
 #### **Procurement & Ordering (Stages 6-11)**
+
 6. **APPROVED** → Component approved for procurement with quality assurance
 7. **AVAILABLE** → Component available for RFQ creation and project assignment
 8. **RFQ_OPEN** → Request for Quote published, collecting supplier bids
@@ -203,12 +225,14 @@ The component lifecycle consists of four major phases with 19 distinct stages:
 11. **ORDERED** → Order confirmed by supplier, production in progress
 
 #### **Logistics & Deployment (Stages 12-15)**
+
 12. **SHIPPED** → Component shipped from supplier, tracking in transit
 13. **RECEIVED** → Component received, inspected, and stored in inventory
 14. **INSTALLED** → Component physically installed at project location
 15. **COMMISSIONED** → Component commissioned, tested, and integrated
 
 #### **Operations & End-of-Life (Stages 16-19)**
+
 16. **OPERATIONAL** → Component in active service, performance monitoring
 17. **WARRANTY_ACTIVE** → Component under warranty coverage with active monitoring
 18. **RETIRED** → Component end-of-life, decommissioning in progress
@@ -217,6 +241,7 @@ The component lifecycle consists of four major phases with 19 distinct stages:
 ### Key Workflow Integrations
 
 #### **RFQ/Bidding System**
+
 - Create RFQs for available components with detailed specifications
 - Automated bid collection and evaluation with scoring matrix
 - Supplier communication and award management
@@ -240,6 +265,7 @@ POST /api/bridge/rfq
 ```
 
 #### **Purchase Order Management**
+
 - Automated PO generation from awarded RFQs
 - Multi-level approval workflows (Procurement → Finance → Executive)
 - Supplier acknowledgment tracking and milestone management
@@ -256,6 +282,7 @@ PATCH /api/bridge/purchase-orders/po_001/status
 ```
 
 #### **Media Asset Management**
+
 - Document upload with automated processing (OCR, data extraction)
 - AI-powered metadata extraction and classification
 - Version control with audit trails
@@ -273,6 +300,7 @@ POST /api/bridge/media/assets
 ```
 
 #### **Lifecycle Transitions**
+
 - State machine validation with transition rules
 - Requirement verification before status changes
 - Automated notifications to relevant stakeholders
@@ -308,12 +336,14 @@ Each role has customized dashboards, KPIs, and workflow notifications aligned wi
 ### API Endpoints
 
 #### **Component Management**
+
 - `GET /api/bridge/components` - List components with filtering
 - `GET /api/bridge/components/{id}` - Get component details
 - `POST /api/bridge/components/{id}/lifecycle` - Update lifecycle status
 - `GET /api/bridge/components/stats` - Component statistics
 
 #### **RFQ Management**
+
 - `GET /api/bridge/rfq` - List RFQs with status filtering
 - `POST /api/bridge/rfq` - Create new RFQ
 - `POST /api/bridge/rfq/{id}/bids` - Submit bid
@@ -321,12 +351,14 @@ Each role has customized dashboards, KPIs, and workflow notifications aligned wi
 - `POST /api/bridge/rfq/{id}/award` - Award RFQ
 
 #### **Purchase Order Management**
+
 - `GET /api/bridge/purchase-orders` - List purchase orders
 - `POST /api/bridge/purchase-orders` - Create purchase order
 - `POST /api/bridge/purchase-orders/{id}/approve` - Approve PO
 - `PATCH /api/bridge/purchase-orders/{id}/status` - Update PO status
 
 #### **Media Assets**
+
 - `GET /api/bridge/media/assets` - List media assets
 - `POST /api/bridge/media/assets` - Upload new asset
 - `GET /api/bridge/media/processing` - Processing job status
@@ -343,7 +375,7 @@ Each role has customized dashboards, KPIs, and workflow notifications aligned wi
 
 - [Development Plan](DEVELOPMENT_PLAN.md) - Phased development approach
 - [Canonical Development Guide](OriginFD_Canonical%20Development%20Guide.md) - Architecture and patterns
-- [ODL-SD v4.1 Specification](odl_sd_v41_spec.md) - Document format specification  
+- [ODL-SD v4.1 Specification](odl_sd_v41_spec.md) - Document format specification
 - [AI Architecture](ODL_SD%20AI%20Architecture_v_1_1.md) - AI system design
 - [Component Lifecycle Validation](COMPONENT_LIFECYCLE_VALIDATION.md) - Complete workflow validation
 - [User Profile Engagement Analysis](USER_PROFILE_ENGAGEMENT_ANALYSIS.md) - Stakeholder interaction patterns
@@ -363,6 +395,7 @@ Copyright (c) 2025 OriginFD. All rights reserved.
 ## Support
 
 For support and questions:
+
 - Email: support@originfd.com
 - Documentation: https://docs.originfd.com
 - Issues: https://github.com/MJcoder-ai/OriginFD/issues

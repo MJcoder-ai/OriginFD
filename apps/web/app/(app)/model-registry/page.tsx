@@ -1,22 +1,32 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient, ModelInfo } from '@/lib/api-client'
-import { Card, CardHeader, CardTitle, CardContent, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@originfd/ui'
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient, ModelInfo } from "@/lib/api-client";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Badge,
+} from "@originfd/ui";
 
 export default function ModelRegistryPage() {
   const { data: models = [], error } = useQuery<ModelInfo[]>({
-    queryKey: ['model-registry'],
+    queryKey: ["model-registry"],
     queryFn: () => apiClient.listModels(),
-  })
+  });
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Model Registry</h1>
-      {error && (
-        <p className="text-sm text-red-600">Failed to load models</p>
-      )}
+      {error && <p className="text-sm text-red-600">Failed to load models</p>}
       <Card>
         <CardHeader>
           <CardTitle>Registered Models</CardTitle>
@@ -45,9 +55,13 @@ export default function ModelRegistryPage() {
                   <TableCell>{m.cost_per_1k_tokens.toFixed(2)}</TableCell>
                   <TableCell>{m.latency_ms}</TableCell>
                   <TableCell>{m.eval_score.toFixed(2)}</TableCell>
-                  <TableCell>{Object.keys(m.routing_rules || {}).length}</TableCell>
                   <TableCell>
-                    <Badge variant={m.cag_hit_rate > 0.8 ? 'default' : 'secondary'}>
+                    {Object.keys(m.routing_rules || {}).length}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={m.cag_hit_rate > 0.8 ? "default" : "secondary"}
+                    >
                       {(m.cag_hit_rate * 100).toFixed(1)}%
                     </Badge>
                   </TableCell>
@@ -59,5 +73,5 @@ export default function ModelRegistryPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

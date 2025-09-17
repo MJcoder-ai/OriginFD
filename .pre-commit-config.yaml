@@ -11,7 +11,7 @@ repos:
       - id: end-of-file-fixer
         exclude: '\.min\.(js|css)$'
       - id: check-yaml
-        args: ['--unsafe']  # Allow custom YAML tags
+        args: ["--unsafe"] # Allow custom YAML tags
       - id: check-json
         exclude: '\.vscode/.*\.json$'
       - id: check-toml
@@ -23,7 +23,7 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: fix-byte-order-marker
       - id: mixed-line-ending
-        args: ['--fix=lf']
+        args: ["--fix=lf"]
 
   # Python code formatting and linting
   - repo: https://github.com/psf/black
@@ -46,9 +46,9 @@ repos:
       - id: flake8
         files: '^services/.*\.py$'
         args:
-          - '--max-line-length=88'
-          - '--extend-ignore=E203,W503'
-          - '--exclude=migrations,__pycache__,.git,build,dist'
+          - "--max-line-length=88"
+          - "--extend-ignore=E203,W503"
+          - "--exclude=migrations,__pycache__,.git,build,dist"
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
@@ -67,7 +67,7 @@ repos:
     hooks:
       - id: bandit
         files: '^services/.*\.py$'
-        args: [-r, --skip, B101]  # Skip assert_used test
+        args: [-r, --skip, B101] # Skip assert_used test
 
   # JavaScript/TypeScript formatting and linting
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -86,8 +86,8 @@ repos:
         args: [--fix, --max-warnings=0]
         additional_dependencies:
           - eslint@8.57.1
-          - '@typescript-eslint/eslint-plugin@6.21.0'
-          - '@typescript-eslint/parser@6.21.0'
+          - "@typescript-eslint/eslint-plugin@6.21.0"
+          - "@typescript-eslint/parser@6.21.0"
           - eslint-config-next@14.0.4
           - eslint-config-prettier@9.1.2
 
@@ -96,8 +96,8 @@ repos:
     rev: v2.12.0
     hooks:
       - id: hadolint
-        files: 'Dockerfile.*'
-        args: [--ignore, DL3008, --ignore, DL3009]  # Ignore apt version pinning
+        files: "Dockerfile.*"
+        args: [--ignore, DL3008, --ignore, DL3009] # Ignore apt version pinning
 
   # Security scanning
   - repo: https://github.com/trufflesecurity/trufflehog
@@ -142,7 +142,7 @@ repos:
         name: Database Migration Check
         entry: bash -c 'cd services/api && python -c "from alembic.config import Config; from alembic import command; cfg = Config(\"alembic.ini\"); command.check(cfg)" || echo "Migration check skipped - no database connection"'
         language: system
-        files: '^services/api/(models|alembic)/'
+        files: "^services/api/(models|alembic)/"
         pass_filenames: false
 
       # Docker build test
@@ -158,7 +158,7 @@ repos:
         name: API Client Generation Check
         entry: bash -c 'node scripts/generate-api-client.js --check-only || echo "API client check skipped - no running API server"'
         language: system
-        files: '^(services/api|packages/ts/http-client)/'
+        files: "^(services/api|packages/ts/http-client)/"
         pass_filenames: false
 
       # Environment file validation
@@ -176,8 +176,8 @@ ci:
     [pre-commit.ci] auto fixes from pre-commit hooks
 
     for more information, see https://pre-commit.ci
-  autoupdate_branch: ''
-  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
-  skip: [docker-build-test, api-client-check, migration-check]  # Skip resource-intensive checks in CI
+  skip: [docker-build-test, api-client-check, migration-check] # Skip resource-intensive checks in CI
   submodules: false

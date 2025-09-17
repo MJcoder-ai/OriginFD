@@ -1,11 +1,20 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { Bell, Search, Settings, User, LogOut, Moon, Sun, Monitor } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { useAuth } from '@/lib/auth/auth-provider'
-import { Button } from '@originfd/ui'
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import {
+  Bell,
+  Search,
+  Settings,
+  User,
+  LogOut,
+  Moon,
+  Sun,
+  Monitor,
+} from "lucide-react";
+import { useTheme } from "next-themes";
+import { useAuth } from "@/lib/auth/auth-provider";
+import { Button } from "@originfd/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,27 +27,27 @@ import {
   DropdownMenuSubTrigger,
   Avatar,
   AvatarFallback,
-  AvatarImage
-} from '@originfd/ui'
+  AvatarImage,
+} from "@originfd/ui";
 
 export function AppHeader() {
-  const router = useRouter()
-  const { user, logout } = useAuth()
-  const { setTheme, theme } = useTheme()
+  const router = useRouter();
+  const { user, logout } = useAuth();
+  const { setTheme, theme } = useTheme();
 
   const handleLogout = async () => {
-    await logout()
-  }
+    await logout();
+  };
 
   const getInitials = (name?: string) => {
-    if (!name) return 'U'
+    if (!name) return "U";
     return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-background border-b border-border">
@@ -59,7 +68,12 @@ export function AppHeader() {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative" aria-label="Open notifications">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              aria-label="Open notifications"
+            >
               <Bell className="h-4 w-4" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
                 3
@@ -76,7 +90,8 @@ export function AppHeader() {
                   <span className="text-xs text-muted-foreground">2m ago</span>
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  Energy simulation for Solar Farm Arizona Phase 1 completed successfully
+                  Energy simulation for Solar Farm Arizona Phase 1 completed
+                  successfully
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem className="flex-col items-start space-y-1 p-4">
@@ -115,15 +130,15 @@ export function AppHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setTheme('light')}>
+            <DropdownMenuItem onClick={() => setTheme("light")}>
               <Sun className="mr-2 h-4 w-4" />
               Light
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('dark')}>
+            <DropdownMenuItem onClick={() => setTheme("dark")}>
               <Moon className="mr-2 h-4 w-4" />
               Dark
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('system')}>
+            <DropdownMenuItem onClick={() => setTheme("system")}>
               <Monitor className="mr-2 h-4 w-4" />
               System
             </DropdownMenuItem>
@@ -133,7 +148,11 @@ export function AppHeader() {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User menu">
+            <Button
+              variant="ghost"
+              className="relative h-8 w-8 rounded-full"
+              aria-label="User menu"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarImage src="" alt={user?.email} />
                 <AvatarFallback>
@@ -146,7 +165,7 @@ export function AppHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {user?.full_name || 'User'}
+                  {user?.full_name || "User"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}
@@ -154,11 +173,11 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
+            <DropdownMenuItem onClick={() => router.push("/profile")}>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/settings')}>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
@@ -171,5 +190,5 @@ export function AppHeader() {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }

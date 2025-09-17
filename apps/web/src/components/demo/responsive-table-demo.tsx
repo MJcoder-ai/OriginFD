@@ -9,7 +9,7 @@ interface User {
   status: string;
 }
 
-const columns = [
+const columns: Array<{key: keyof User; header: string; priority: number}> = [
   { key: "name", header: "Name", priority: 1 },
   { key: "email", header: "Email", priority: 3 },
   { key: "role", header: "Role", priority: 2 },

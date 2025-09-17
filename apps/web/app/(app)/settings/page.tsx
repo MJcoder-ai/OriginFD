@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { toast } from 'react-hot-toast'
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "react-hot-toast";
 import {
   User,
   Bell,
@@ -15,8 +15,8 @@ import {
   Key,
   Users,
   Building,
-  Save
-} from 'lucide-react'
+  Save,
+} from "lucide-react";
 
 import {
   Button,
@@ -37,25 +37,25 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@originfd/ui'
-import { useAuth } from '@/lib/auth/auth-provider'
+} from "@originfd/ui";
+import { useAuth } from "@/lib/auth/auth-provider";
 
 const profileSchema = z.object({
-  full_name: z.string().min(1, 'Full name is required'),
-  email: z.string().email('Invalid email address'),
+  full_name: z.string().min(1, "Full name is required"),
+  email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   company: z.string().optional(),
   role: z.string().optional(),
   bio: z.string().optional(),
-})
+});
 
 const preferencesSchema = z.object({
-  theme: z.enum(['light', 'dark', 'system']),
+  theme: z.enum(["light", "dark", "system"]),
   language: z.string(),
   timezone: z.string(),
   currency: z.string(),
-  units: z.enum(['metric', 'imperial']),
-})
+  units: z.enum(["metric", "imperial"]),
+});
 
 const notificationSchema = z.object({
   email_notifications: z.boolean(),
@@ -63,37 +63,37 @@ const notificationSchema = z.object({
   project_updates: z.boolean(),
   system_alerts: z.boolean(),
   marketing_emails: z.boolean(),
-})
+});
 
-type ProfileFormData = z.infer<typeof profileSchema>
-type PreferencesFormData = z.infer<typeof preferencesSchema>
-type NotificationFormData = z.infer<typeof notificationSchema>
+type ProfileFormData = z.infer<typeof profileSchema>;
+type PreferencesFormData = z.infer<typeof preferencesSchema>;
+type NotificationFormData = z.infer<typeof notificationSchema>;
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: user?.full_name || '',
-      email: user?.email || '',
-      phone: '',
-      company: '',
-      role: '',
-      bio: '',
+      full_name: user?.full_name || "",
+      email: user?.email || "",
+      phone: "",
+      company: "",
+      role: "",
+      bio: "",
     },
-  })
+  });
 
   const preferencesForm = useForm<PreferencesFormData>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
-      theme: 'system',
-      language: 'en',
-      timezone: 'UTC',
-      currency: 'USD',
-      units: 'metric',
+      theme: "system",
+      language: "en",
+      timezone: "UTC",
+      currency: "USD",
+      units: "metric",
     },
-  })
+  });
 
   const notificationForm = useForm<NotificationFormData>({
     resolver: zodResolver(notificationSchema),
@@ -104,22 +104,22 @@ export default function SettingsPage() {
       system_alerts: true,
       marketing_emails: false,
     },
-  })
+  });
 
   const onProfileSubmit = (data: ProfileFormData) => {
-    console.log('Profile update:', data)
-    toast.success('Profile updated successfully!')
-  }
+    console.log("Profile update:", data);
+    toast.success("Profile updated successfully!");
+  };
 
   const onPreferencesSubmit = (data: PreferencesFormData) => {
-    console.log('Preferences update:', data)
-    toast.success('Preferences updated successfully!')
-  }
+    console.log("Preferences update:", data);
+    toast.success("Preferences updated successfully!");
+  };
 
   const onNotificationSubmit = (data: NotificationFormData) => {
-    console.log('Notification settings update:', data)
-    toast.success('Notification settings updated!')
-  }
+    console.log("Notification settings update:", data);
+    toast.success("Notification settings updated!");
+  };
 
   return (
     <div className="space-y-6">
@@ -142,7 +142,10 @@ export default function SettingsPage() {
             <Palette className="h-4 w-4" />
             Preferences
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger
+            value="notifications"
+            className="flex items-center gap-2"
+          >
             <Bell className="h-4 w-4" />
             Notifications
           </TabsTrigger>
@@ -170,13 +173,16 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+              <form
+                onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+                className="space-y-4"
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="full_name">Full Name</Label>
                     <Input
                       id="full_name"
-                      {...profileForm.register('full_name')}
+                      {...profileForm.register("full_name")}
                     />
                     {profileForm.formState.errors.full_name && (
                       <p className="text-sm text-red-600">
@@ -189,7 +195,7 @@ export default function SettingsPage() {
                     <Input
                       id="email"
                       type="email"
-                      {...profileForm.register('email')}
+                      {...profileForm.register("email")}
                     />
                     {profileForm.formState.errors.email && (
                       <p className="text-sm text-red-600">
@@ -199,25 +205,16 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      {...profileForm.register('phone')}
-                    />
+                    <Input id="phone" {...profileForm.register("phone")} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      {...profileForm.register('company')}
-                    />
+                    <Input id="company" {...profileForm.register("company")} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    {...profileForm.register('role')}
-                  />
+                  <Input id="role" {...profileForm.register("role")} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
@@ -225,7 +222,7 @@ export default function SettingsPage() {
                     id="bio"
                     rows={3}
                     placeholder="Tell us about yourself"
-                    {...profileForm.register('bio')}
+                    {...profileForm.register("bio")}
                   />
                 </div>
                 <Button type="submit" className="gap-2">
@@ -247,13 +244,18 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={preferencesForm.handleSubmit(onPreferencesSubmit)} className="space-y-4">
+              <form
+                onSubmit={preferencesForm.handleSubmit(onPreferencesSubmit)}
+                className="space-y-4"
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Theme</Label>
                     <Select
-                      value={preferencesForm.watch('theme')}
-                      onValueChange={(value) => preferencesForm.setValue('theme', value as any)}
+                      value={preferencesForm.watch("theme")}
+                      onValueChange={(value) =>
+                        preferencesForm.setValue("theme", value as any)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -268,8 +270,10 @@ export default function SettingsPage() {
                   <div className="space-y-2">
                     <Label>Language</Label>
                     <Select
-                      value={preferencesForm.watch('language')}
-                      onValueChange={(value) => preferencesForm.setValue('language', value)}
+                      value={preferencesForm.watch("language")}
+                      onValueChange={(value) =>
+                        preferencesForm.setValue("language", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -285,26 +289,38 @@ export default function SettingsPage() {
                   <div className="space-y-2">
                     <Label>Timezone</Label>
                     <Select
-                      value={preferencesForm.watch('timezone')}
-                      onValueChange={(value) => preferencesForm.setValue('timezone', value)}
+                      value={preferencesForm.watch("timezone")}
+                      onValueChange={(value) =>
+                        preferencesForm.setValue("timezone", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="UTC">UTC</SelectItem>
-                        <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                        <SelectItem value="America/Chicago">Central Time</SelectItem>
-                        <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                        <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                        <SelectItem value="America/New_York">
+                          Eastern Time
+                        </SelectItem>
+                        <SelectItem value="America/Chicago">
+                          Central Time
+                        </SelectItem>
+                        <SelectItem value="America/Denver">
+                          Mountain Time
+                        </SelectItem>
+                        <SelectItem value="America/Los_Angeles">
+                          Pacific Time
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Currency</Label>
                     <Select
-                      value={preferencesForm.watch('currency')}
-                      onValueChange={(value) => preferencesForm.setValue('currency', value)}
+                      value={preferencesForm.watch("currency")}
+                      onValueChange={(value) =>
+                        preferencesForm.setValue("currency", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -321,8 +337,10 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label>Unit System</Label>
                   <Select
-                    value={preferencesForm.watch('units')}
-                    onValueChange={(value) => preferencesForm.setValue('units', value as any)}
+                    value={preferencesForm.watch("units")}
+                    onValueChange={(value) =>
+                      preferencesForm.setValue("units", value as any)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -352,43 +370,66 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={notificationForm.handleSubmit(onNotificationSubmit)} className="space-y-4">
+              <form
+                onSubmit={notificationForm.handleSubmit(onNotificationSubmit)}
+                className="space-y-4"
+              >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                      <p className="text-sm text-muted-foreground">
+                        Receive notifications via email
+                      </p>
                     </div>
                     {/* TODO: Add Switch component */}
-                    <Button variant="outline" size="sm">Toggle</Button>
+                    <Button variant="outline" size="sm">
+                      Toggle
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Push Notifications</p>
-                      <p className="text-sm text-muted-foreground">Receive push notifications in your browser</p>
+                      <p className="text-sm text-muted-foreground">
+                        Receive push notifications in your browser
+                      </p>
                     </div>
-                    <Button variant="outline" size="sm">Toggle</Button>
+                    <Button variant="outline" size="sm">
+                      Toggle
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Project Updates</p>
-                      <p className="text-sm text-muted-foreground">Get notified about project changes</p>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified about project changes
+                      </p>
                     </div>
-                    <Button variant="outline" size="sm">Toggle</Button>
+                    <Button variant="outline" size="sm">
+                      Toggle
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">System Alerts</p>
-                      <p className="text-sm text-muted-foreground">Important system notifications</p>
+                      <p className="text-sm text-muted-foreground">
+                        Important system notifications
+                      </p>
                     </div>
-                    <Button variant="outline" size="sm">Toggle</Button>
+                    <Button variant="outline" size="sm">
+                      Toggle
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Marketing Emails</p>
-                      <p className="text-sm text-muted-foreground">Product updates and news</p>
+                      <p className="text-sm text-muted-foreground">
+                        Product updates and news
+                      </p>
                     </div>
-                    <Button variant="outline" size="sm">Toggle</Button>
+                    <Button variant="outline" size="sm">
+                      Toggle
+                    </Button>
                   </div>
                 </div>
                 <Button type="submit" className="gap-2">
@@ -415,7 +456,9 @@ export default function SettingsPage() {
             <CardContent>
               <div className="text-center py-12">
                 <Shield className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">Security Settings</h3>
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                  Security Settings
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Security features are coming soon.
                 </p>
@@ -438,7 +481,9 @@ export default function SettingsPage() {
             <CardContent>
               <div className="text-center py-12">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">Team Features</h3>
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                  Team Features
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Team management features are coming soon.
                 </p>
@@ -461,7 +506,9 @@ export default function SettingsPage() {
             <CardContent>
               <div className="text-center py-12">
                 <CreditCard className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">Billing Features</h3>
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                  Billing Features
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Billing and subscription features are coming soon.
                 </p>
@@ -471,5 +518,5 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

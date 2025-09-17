@@ -74,7 +74,7 @@
 </head>
 <body>
 
-    
+
 <div id="symbolPalette">
     <img src="https://drive.google.com/uc?export=view&id=190ff8p-6cfom1nshE3yk4vlnDr1XrHGZ" class="draggable" id="factory_grid" draggable="true">
     <img src="https://drive.google.com/uc?export=view&id=1uXCylCbVPnFXkK13kicBW4kEXos7X863" class="draggable" id="home_grid" draggable="true">
@@ -91,7 +91,7 @@
     <img src="https://drive.google.com/uc?export=view&id=10a2LrIkJTcxovDb203SIiRDJvmBVABMR" class="draggable" id="distribution_fuse_board_AC" draggable="true">
     <img src="https://drive.google.com/uc?export=view&id=1Fks_NeizGcGwvYgLAdNt9izuggyR2s92" class="draggable" id="distribution_fuse_board_DC" draggable="true">
     <img src="https://drive.google.com/uc?export=view&id=1WsppXpJ7hXVZU30v5aO1h397HaLMgI-u" class="draggable" id="earth" draggable="true">
-    
+
     <!-- Add more draggable symbols as needed -->
 </div>
 
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Make the symbol draggable within the canvas
         makeSymbolDraggable(wrapper);
 
-        
+
         const img = document.createElement('img');
         img.src = src;
         img.classList.add('draggable');
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-   
+
     document.getElementById('saveButton').addEventListener('click', () => {
         const uniqueSymbolRefs = new Set(); // Create a Set to store unique symbolRefs
         const savedData = {
@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             // Determine the maximum symbolRef number from the loaded symbols
-            const maxSymbolRef = Math.max(0, ...data.symbols.map(sym => 
+            const maxSymbolRef = Math.max(0, ...data.symbols.map(sym =>
             parseInt(sym.symbolRef.replace('symbol', '')))); // Assuming symbolRef is like "symbol1", "symbol2", etc.
 
             // Set the symbolCounter to one more than this maximum
@@ -498,4 +498,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-

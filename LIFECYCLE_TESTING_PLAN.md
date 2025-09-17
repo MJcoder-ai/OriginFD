@@ -17,24 +17,28 @@ This document provides a comprehensive testing plan for validating the complete 
 ### **1. Testing Levels**
 
 #### **Unit Testing**
+
 - Individual API endpoints
 - Component lifecycle state machine
 - UI component functionality
 - Data validation functions
 
 #### **Integration Testing**
+
 - API-UI integration
 - Workflow transitions
 - Database interactions
 - Third-party integrations
 
 #### **System Testing**
+
 - Complete lifecycle workflows
 - Multi-user scenarios
 - Performance under load
 - Security validations
 
 #### **User Acceptance Testing**
+
 - Role-based workflow testing
 - Business process validation
 - Usability testing
@@ -47,6 +51,7 @@ This document provides a comprehensive testing plan for validating the complete 
 ### **Test Suite 1: Component Management APIs**
 
 #### **Test Case 1.1: Component CRUD Operations**
+
 ```bash
 # Test component creation
 curl -X POST http://localhost:3000/api/bridge/components \
@@ -69,6 +74,7 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ```
 
 #### **Test Case 1.2: Component Listing and Filtering**
+
 ```bash
 # Test component listing
 curl "http://localhost:3000/api/bridge/components"
@@ -84,6 +90,7 @@ curl "http://localhost:3000/api/bridge/components?page=2&page_size=10"
 ```
 
 #### **Test Case 1.3: Component Statistics**
+
 ```bash
 # Test component statistics
 curl "http://localhost:3000/api/bridge/components/stats"
@@ -95,6 +102,7 @@ curl "http://localhost:3000/api/bridge/components/stats"
 ### **Test Suite 2: Lifecycle Transition APIs**
 
 #### **Test Case 2.1: Valid Status Transitions**
+
 ```bash
 # Test draft → parsed transition
 curl -X POST http://localhost:3000/api/bridge/components/comp_001/lifecycle \
@@ -113,6 +121,7 @@ curl -X POST http://localhost:3000/api/bridge/components/comp_001/lifecycle \
 ```
 
 #### **Test Case 2.2: Invalid Status Transitions**
+
 ```bash
 # Test invalid transition (draft → operational)
 curl -X POST http://localhost:3000/api/bridge/components/comp_001/lifecycle \
@@ -128,6 +137,7 @@ curl -X POST http://localhost:3000/api/bridge/components/comp_001/lifecycle \
 ```
 
 #### **Test Case 2.3: Lifecycle State Queries**
+
 ```bash
 # Test getting valid transitions for current state
 curl "http://localhost:3000/api/bridge/components/comp_001/lifecycle"
@@ -139,6 +149,7 @@ curl "http://localhost:3000/api/bridge/components/comp_001/lifecycle"
 ### **Test Suite 3: RFQ Management APIs**
 
 #### **Test Case 3.1: RFQ Creation**
+
 ```bash
 # Test RFQ creation
 curl -X POST http://localhost:3000/api/bridge/rfq \
@@ -175,6 +186,7 @@ curl -X POST http://localhost:3000/api/bridge/rfq \
 ```
 
 #### **Test Case 3.2: Bid Submission**
+
 ```bash
 # Test bid submission
 curl -X POST http://localhost:3000/api/bridge/rfq/rfq_001/bids \
@@ -204,6 +216,7 @@ curl -X POST http://localhost:3000/api/bridge/rfq/rfq_001/bids \
 ```
 
 #### **Test Case 3.3: Bid Evaluation**
+
 ```bash
 # Test bid evaluation
 curl -X POST http://localhost:3000/api/bridge/rfq/rfq_001/evaluate \
@@ -234,6 +247,7 @@ curl -X POST http://localhost:3000/api/bridge/rfq/rfq_001/evaluate \
 ```
 
 #### **Test Case 3.4: RFQ Award**
+
 ```bash
 # Test RFQ award
 curl -X POST http://localhost:3000/api/bridge/rfq/rfq_001/award \
@@ -255,6 +269,7 @@ curl -X POST http://localhost:3000/api/bridge/rfq/rfq_001/award \
 ### **Test Suite 4: Purchase Order APIs**
 
 #### **Test Case 4.1: PO Creation**
+
 ```bash
 # Test PO creation from RFQ award
 curl -X POST http://localhost:3000/api/bridge/purchase-orders \
@@ -285,6 +300,7 @@ curl -X POST http://localhost:3000/api/bridge/purchase-orders \
 ```
 
 #### **Test Case 4.2: PO Approval**
+
 ```bash
 # Test PO approval
 curl -X POST http://localhost:3000/api/bridge/purchase-orders/po_001/approve \
@@ -301,6 +317,7 @@ curl -X POST http://localhost:3000/api/bridge/purchase-orders/po_001/approve \
 ```
 
 #### **Test Case 4.3: PO Status Updates**
+
 ```bash
 # Test PO status update
 curl -X PATCH http://localhost:3000/api/bridge/purchase-orders/po_001/status \
@@ -318,6 +335,7 @@ curl -X PATCH http://localhost:3000/api/bridge/purchase-orders/po_001/status \
 ### **Test Suite 5: Media Asset Management APIs**
 
 #### **Test Case 5.1: Asset Upload**
+
 ```bash
 # Test media asset upload
 curl -X POST http://localhost:3000/api/bridge/media/assets \
@@ -337,6 +355,7 @@ curl -X POST http://localhost:3000/api/bridge/media/assets \
 ```
 
 #### **Test Case 5.2: Processing Jobs**
+
 ```bash
 # Test processing job creation
 curl -X POST http://localhost:3000/api/bridge/media/processing \
@@ -358,21 +377,25 @@ curl -X POST http://localhost:3000/api/bridge/media/processing \
 ### **Test Suite 6: Component Lifecycle Dashboard**
 
 #### **Test Case 6.1: Dashboard Loading**
+
 - **Action**: Navigate to `/lifecycle`
 - **Expected**: Dashboard loads with lifecycle overview cards
 - **Validation**: All 19 stages displayed, statistics accurate
 
 #### **Test Case 6.2: Component Filtering**
+
 - **Action**: Use stage filter dropdown
 - **Expected**: Components filtered by selected stage
 - **Validation**: Filter results match API response
 
 #### **Test Case 6.3: Lifecycle Transitions**
+
 - **Action**: Click "Transition" button on component card
 - **Expected**: Transition dialog opens with valid options
 - **Validation**: Only valid transitions shown, requirements checked
 
 #### **Test Case 6.4: Bulk Operations**
+
 - **Action**: Select multiple components and perform bulk action
 - **Expected**: Action applied to all selected components
 - **Validation**: All components updated, audit trail created
@@ -380,16 +403,19 @@ curl -X POST http://localhost:3000/api/bridge/media/processing \
 ### **Test Suite 7: RFQ Management Interface**
 
 #### **Test Case 7.1: RFQ Creation Wizard**
+
 - **Action**: Click "Create New RFQ" button
 - **Expected**: Multi-step wizard opens
 - **Validation**: All steps accessible, validation working
 
 #### **Test Case 7.2: RFQ Dashboard**
+
 - **Action**: Navigate to `/rfq`
 - **Expected**: RFQ list with statistics cards
 - **Validation**: Data matches API, filters functional
 
 #### **Test Case 7.3: Bid Management**
+
 - **Action**: View RFQ details and manage bids
 - **Expected**: Bid list with evaluation options
 - **Validation**: Bid scores calculated correctly
@@ -397,16 +423,19 @@ curl -X POST http://localhost:3000/api/bridge/media/processing \
 ### **Test Suite 8: Purchase Order Interface**
 
 #### **Test Case 8.1: PO Dashboard**
+
 - **Action**: Navigate to `/purchase-orders`
 - **Expected**: PO list with approval workflow status
 - **Validation**: Status badges correct, approval options available
 
 #### **Test Case 8.2: PO Approval Workflow**
+
 - **Action**: Click "Review" on pending PO
 - **Expected**: Approval dialog with options
 - **Validation**: Workflow progresses correctly after approval
 
 #### **Test Case 8.3: PO Details View**
+
 - **Action**: Click "View" on any PO
 - **Expected**: Detailed PO information modal
 - **Validation**: All PO data displayed accurately
@@ -418,6 +447,7 @@ curl -X POST http://localhost:3000/api/bridge/media/processing \
 ### **Test Suite 9: Complete Lifecycle Workflows**
 
 #### **Test Case 9.1: Draft to Available Workflow**
+
 ```
 WORKFLOW: Component Creation to Market Ready
 1. Create component in DRAFT status
@@ -431,6 +461,7 @@ VALIDATION: Each transition successful, requirements met, audit trail complete
 ```
 
 #### **Test Case 9.2: Procurement to Delivery Workflow**
+
 ```
 WORKFLOW: Available Component to Delivered
 1. Create RFQ from available component (AVAILABLE → RFQ_OPEN)
@@ -444,6 +475,7 @@ VALIDATION: Integration between systems working, status updates propagate
 ```
 
 #### **Test Case 9.3: Installation to Operational Workflow**
+
 ```
 WORKFLOW: Received Component to Operational
 1. Move to installation site (RECEIVED → INSTALLED)
@@ -455,6 +487,7 @@ VALIDATION: Field operations integration, performance tracking active
 ```
 
 #### **Test Case 9.4: End-of-Life Workflow**
+
 ```
 WORKFLOW: Operational to Archived
 1. Performance degradation detected (OPERATIONAL → RETIRED)
@@ -471,18 +504,21 @@ VALIDATION: Asset lifecycle complete, records preserved
 ### **Test Suite 10: Role-Based Access Testing**
 
 #### **Test Case 10.1: Data Entry Specialist**
+
 - **Role**: Data Entry Specialist
 - **Accessible Stages**: DRAFT, PARSED, ENRICHED
 - **Actions**: Create components, upload datasheets, basic data entry
 - **Validation**: Cannot access advanced stages, appropriate UI elements shown
 
 #### **Test Case 10.2: Procurement Manager**
+
 - **Role**: Procurement Manager
 - **Accessible Stages**: AVAILABLE, RFQ_OPEN, RFQ_AWARDED, PURCHASING
 - **Actions**: Create RFQs, evaluate bids, approve POs
 - **Validation**: Full procurement workflow access, approval capabilities
 
 #### **Test Case 10.3: Operations Manager**
+
 - **Role**: Operations Manager
 - **Accessible Stages**: OPERATIONAL, WARRANTY_ACTIVE, RETIRED
 - **Actions**: Monitor performance, manage maintenance, plan retirement
@@ -491,11 +527,13 @@ VALIDATION: Asset lifecycle complete, records preserved
 ### **Test Suite 11: Multi-User Scenarios**
 
 #### **Test Case 11.1: Concurrent Editing**
+
 - **Scenario**: Multiple users editing same component
 - **Expected**: Conflict resolution, real-time updates
 - **Validation**: No data corruption, audit trail accurate
 
 #### **Test Case 11.2: Workflow Handoffs**
+
 - **Scenario**: Component transitions between user roles
 - **Expected**: Proper notifications, access permissions updated
 - **Validation**: Seamless handoff, no workflow interruptions
@@ -507,6 +545,7 @@ VALIDATION: Asset lifecycle complete, records preserved
 ### **Test Suite 12: Performance Testing**
 
 #### **Test Case 12.1: Load Testing**
+
 ```bash
 # Simulate 100 concurrent users accessing lifecycle dashboard
 artillery run --target http://localhost:3000 \
@@ -524,6 +563,7 @@ artillery run --target http://localhost:3000 \
 ```
 
 #### **Test Case 12.2: Database Performance**
+
 ```sql
 -- Test large component queries
 SELECT * FROM components WHERE status = 'operational' LIMIT 10000;
@@ -546,6 +586,7 @@ GROUP BY c.id, c.status;
 ### **Test Suite 13: Security Testing**
 
 #### **Test Case 13.1: Authentication Testing**
+
 ```bash
 # Test unauthorized access
 curl http://localhost:3000/api/bridge/components
@@ -559,6 +600,7 @@ curl -H "Authorization: Bearer invalid_token" \
 ```
 
 #### **Test Case 13.2: Authorization Testing**
+
 ```bash
 # Test role-based access (data entry user accessing procurement)
 curl -H "Authorization: Bearer data_entry_token" \
@@ -569,6 +611,7 @@ curl -H "Authorization: Bearer data_entry_token" \
 ```
 
 #### **Test Case 13.3: Input Validation Testing**
+
 ```bash
 # Test SQL injection attempts
 curl -X POST http://localhost:3000/api/bridge/components \
@@ -592,18 +635,21 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ### **Test Suite 14: Mobile Responsiveness**
 
 #### **Test Case 14.1: Mobile Dashboard**
+
 - **Device**: iPhone 13 (390x844)
 - **Action**: Navigate to lifecycle dashboard
 - **Expected**: Responsive layout, touch-friendly controls
 - **Validation**: All functionality accessible on mobile
 
 #### **Test Case 14.2: Mobile Workflow Operations**
+
 - **Device**: iPad Air (820x1180)
 - **Action**: Complete RFQ creation on tablet
 - **Expected**: Multi-step wizard works on touch interface
 - **Validation**: Form inputs accessible, validation working
 
 #### **Test Case 14.3: Offline Functionality**
+
 - **Action**: Disconnect internet, use cached data
 - **Expected**: Basic viewing functionality available
 - **Validation**: PWA features working, data syncs when online
@@ -615,16 +661,19 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ### **Test Suite 15: System Integration**
 
 #### **Test Case 15.1: Database Integration**
+
 - **Action**: Perform CRUD operations through API
 - **Expected**: Database transactions complete successfully
 - **Validation**: Data consistency maintained, constraints enforced
 
 #### **Test Case 15.2: Email Integration**
+
 - **Action**: Trigger workflow notifications
 - **Expected**: Emails sent to appropriate stakeholders
 - **Validation**: Correct recipients, message content accurate
 
 #### **Test Case 15.3: File Storage Integration**
+
 - **Action**: Upload media assets
 - **Expected**: Files stored securely, access controls working
 - **Validation**: File integrity maintained, permissions correct
@@ -634,20 +683,24 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ## **Test Execution Schedule**
 
 ### **Week 1: API Testing**
+
 - **Days 1-2**: Component and lifecycle APIs
 - **Days 3-4**: RFQ and bidding APIs
 - **Day 5**: Purchase order APIs
 
 ### **Week 2: UI Testing**
+
 - **Days 1-2**: Lifecycle dashboard testing
 - **Days 3-4**: RFQ and PO interface testing
 - **Day 5**: Cross-component integration
 
 ### **Week 3: Workflow Testing**
+
 - **Days 1-3**: End-to-end workflow validation
 - **Days 4-5**: Multi-user scenario testing
 
 ### **Week 4: Performance and Security**
+
 - **Days 1-2**: Performance testing and optimization
 - **Days 3-4**: Security testing and validation
 - **Day 5**: Mobile and responsive testing
@@ -657,18 +710,21 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ## **Test Environment Setup**
 
 ### **Requirements**
+
 - **Database**: PostgreSQL 15+ with test data
 - **Cache**: Redis 7+ for session management
 - **Storage**: File system or cloud storage for media assets
 - **Monitoring**: Application performance monitoring tools
 
 ### **Test Data**
+
 - **Components**: 100 test components across all 19 lifecycle stages
 - **Users**: 20 test users representing all 15 user profiles
 - **RFQs**: 25 test RFQs in various stages
 - **Purchase Orders**: 15 test POs with different statuses
 
 ### **Automation Tools**
+
 - **API Testing**: Postman/Newman for automated API tests
 - **UI Testing**: Playwright for end-to-end browser testing
 - **Performance**: Artillery for load testing
@@ -679,24 +735,28 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ## **Success Criteria**
 
 ### **Functional Requirements**
+
 - ✅ All 19 lifecycle stages functional
 - ✅ All state transitions working correctly
 - ✅ All user roles have appropriate access
 - ✅ All workflows complete successfully
 
 ### **Performance Requirements**
+
 - ✅ API response times < 500ms for 95% of requests
 - ✅ UI loading times < 2 seconds
 - ✅ System supports 100+ concurrent users
 - ✅ Database queries optimized for large datasets
 
 ### **Security Requirements**
+
 - ✅ Authentication required for all endpoints
 - ✅ Authorization working for all user roles
 - ✅ Input validation prevents security vulnerabilities
 - ✅ Audit trails capture all user actions
 
 ### **Usability Requirements**
+
 - ✅ Mobile responsive across all device sizes
 - ✅ Accessibility compliance (WCAG 2.1 AA)
 - ✅ Intuitive workflow for all user profiles
@@ -707,18 +767,21 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ## **Test Reporting**
 
 ### **Daily Reports**
+
 - Test cases executed
 - Pass/fail status
 - Issues identified
 - Performance metrics
 
 ### **Weekly Summary**
+
 - Overall test progress
 - Critical issues status
 - Risk assessment
 - Go/no-go recommendation
 
 ### **Final Report**
+
 - Complete test results
 - System performance analysis
 - Security assessment
@@ -729,12 +792,14 @@ curl -X POST http://localhost:3000/api/bridge/components \
 ## **Risk Mitigation**
 
 ### **High Risk Items**
+
 1. **State Machine Complexity**: Comprehensive transition testing required
 2. **Multi-User Conflicts**: Concurrent access testing critical
 3. **Performance Under Load**: Extensive load testing needed
 4. **Data Integrity**: Database transaction testing essential
 
 ### **Mitigation Strategies**
+
 1. **Automated Testing**: Comprehensive test suite automation
 2. **Continuous Integration**: Tests run on every code change
 3. **Performance Monitoring**: Real-time performance tracking
@@ -742,6 +807,6 @@ curl -X POST http://localhost:3000/api/bridge/components \
 
 ---
 
-*Last Updated: 2025-01-12*
-*Created By: Claude Code Implementation Team*
-*Next Review: Weekly during testing phases*
+_Last Updated: 2025-01-12_
+_Created By: Claude Code Implementation Team_
+_Next Review: Weekly during testing phases_

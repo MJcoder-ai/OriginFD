@@ -1,17 +1,13 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useRequireAuth } from '@/lib/auth/auth-provider'
-import { AppSidebar } from '@/components/layout/app-sidebar'
-import { AppHeader } from '@/components/layout/app-header'
-import { AICopilot } from '@/components/ai/ai-copilot'
+import * as React from "react";
+import { useRequireAuth } from "@/lib/auth/auth-provider";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { AppHeader } from "@/components/layout/app-header";
+import { AICopilot } from "@/components/ai/ai-copilot";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const { isAuthenticated, isLoading } = useRequireAuth()
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useRequireAuth();
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -21,7 +17,7 @@ export default function AppLayout({
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -35,13 +31,11 @@ export default function AppLayout({
         <AppHeader />
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
 
       {/* AI Copilot */}
       <AICopilot />
     </div>
-  )
+  );
 }

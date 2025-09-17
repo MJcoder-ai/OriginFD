@@ -1,58 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
-import path from 'path'
-import fs from 'fs'
+import { NextRequest, NextResponse } from "next/server";
+import { spawn } from "child_process";
+import path from "path";
+import fs from "fs";
 
 // Mock documents for review functionality
 const mockDocuments: { [key: string]: any } = {
-  'proj_550e8400-e29b-41d4-a716-446655440001': {
+  "proj_550e8400-e29b-41d4-a716-446655440001": {
     finance: { capex: 100000, opex: 50000 },
-    meta: { project: 'Solar Farm Arizona Phase 1' }
+    meta: { project: "Solar Farm Arizona Phase 1" },
   },
-  'proj_550e8400-e29b-41d4-a716-446655440002': {
+  "proj_550e8400-e29b-41d4-a716-446655440002": {
     finance: { capex: 80000, opex: 30000 },
-    meta: { project: 'Commercial BESS Installation' }
+    meta: { project: "Commercial BESS Installation" },
   },
-  'proj_550e8400-e29b-41d4-a716-446655440003': {
+  "proj_550e8400-e29b-41d4-a716-446655440003": {
     finance: { capex: 60000, opex: 25000 },
-    meta: { project: 'Hybrid Microgrid Campus' }
+    meta: { project: "Hybrid Microgrid Campus" },
   },
-  '1': {
+  "1": {
     finance: { capex: 100000, opex: 50000 },
-    meta: { project: 'Solar Farm Arizona Phase 1' }
+    meta: { project: "Solar Farm Arizona Phase 1" },
   },
-  '2': {
+  "2": {
     finance: { capex: 80000, opex: 30000 },
-    meta: { project: 'Commercial BESS Installation' }
+    meta: { project: "Commercial BESS Installation" },
   },
-  '3': {
+  "3": {
     finance: { capex: 60000, opex: 25000 },
-    meta: { project: 'Hybrid Microgrid Campus' }
-  }
-}
+    meta: { project: "Hybrid Microgrid Campus" },
+  },
+};
 
 function getPythonPath() {
-  let pyPath = path.resolve(process.cwd(), '..', '..', 'packages', 'py')
+  let pyPath = path.resolve(process.cwd(), "..", "..", "packages", "py");
   if (!fs.existsSync(pyPath)) {
-    pyPath = path.resolve(process.cwd(), 'packages', 'py')
+    pyPath = path.resolve(process.cwd(), "packages", "py");
   }
-  return pyPath
+  return pyPath;
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
-  const baseDoc = mockDocuments[params.id]
+  const baseDoc = mockDocuments[params.id];
   if (!baseDoc) {
-    return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    return NextResponse.json({ error: "Document not found" }, { status: 404 });
   }
 
   // Create a modified version to simulate pending changes
-  const targetDoc = JSON.parse(JSON.stringify(baseDoc))
-  targetDoc.finance = targetDoc.finance || {}
-  const originalCapex = targetDoc.finance.capex || 0
-  targetDoc.finance.capex = originalCapex + 10000
+  const targetDoc = JSON.parse(JSON.stringify(baseDoc));
+  targetDoc.finance = targetDoc.finance || {};
+  const originalCapex = targetDoc.finance.capex || 0;
+  targetDoc.finance.capex = originalCapex + 10000;
 
   const script = `
 import json, sys
@@ -82,29 +82,32 @@ try:
 except Exception as e:
     deltas = {'error': str(e)}
 print(json.dumps({'diff': sections, 'kpi_deltas': deltas}))
-`
+`;
 
-  const pyPath = getPythonPath()
+  const pyPath = getPythonPath();
 
   return new Promise<NextResponse>((resolve) => {
     const py = spawn(
-      'python',
-      ['-c', script, JSON.stringify(baseDoc), JSON.stringify(targetDoc)],
-      { env: { ...process.env, PYTHONPATH: pyPath } }
-    )
-    let out = ''
-    let err = ''
-    py.stdout.on('data', (d) => (out += d.toString()))
-    py.stderr.on('data', (d) => (err += d.toString()))
-    py.on('close', () => {
+      "python",
+      ["-c", script, JSON.stringify(baseDoc), JSON.stringify(targetDoc)],
+      { env: { ...process.env, PYTHONPATH: pyPath } },
+    );
+    let out = "";
+    let err = "";
+    py.stdout.on("data", (d) => (out += d.toString()));
+    py.stderr.on("data", (d) => (err += d.toString()));
+    py.on("close", () => {
       if (err) {
-        console.error('Diff error:', err)
+        console.error("Diff error:", err);
         resolve(
-          NextResponse.json({ error: 'diff computation failed' }, { status: 500 })
-        )
+          NextResponse.json(
+            { error: "diff computation failed" },
+            { status: 500 },
+          ),
+        );
       } else {
-        resolve(NextResponse.json(JSON.parse(out)))
+        resolve(NextResponse.json(JSON.parse(out)));
       }
-    })
-  })
+    });
+  });
 }

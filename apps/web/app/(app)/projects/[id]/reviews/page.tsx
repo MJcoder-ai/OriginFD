@@ -1,137 +1,153 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, Filter, CheckSquare, Clock, User, MoreHorizontal, Eye } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@originfd/ui'
-import ReviewActions from '@/components/projects/review-actions'
-import { LifecycleJourney } from '@/components/projects/lifecycle-journey'
+import * as React from "react";
+import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Plus,
+  Search,
+  Filter,
+  CheckSquare,
+  Clock,
+  User,
+  MoreHorizontal,
+  Eye,
+} from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@originfd/ui";
+import ReviewActions from "@/components/projects/review-actions";
+import { LifecycleJourney } from "@/components/projects/lifecycle-journey";
 
 export default function ProjectReviewsPage() {
-  const params = useParams()
-  const projectId = params.id as string
+  const params = useParams();
+  const projectId = params.id as string;
 
   // Fetch project details
   const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ['project', projectId],
+    queryKey: ["project", projectId],
     queryFn: () => apiClient.getProject(projectId),
-  })
+  });
 
   // Mock reviews data for now
   const reviews = [
     {
-      id: 'review-1',
-      title: 'Design Review - Phase 1',
-      description: 'Initial system design and layout review',
-      status: 'Completed',
-      priority: 'High',
-      assignee: 'Sarah Johnson',
-      reviewer: 'Mike Chen',
-      dueDate: '2024-01-25T00:00:00Z',
-      completedDate: '2024-01-20T15:45:00Z',
+      id: "review-1",
+      title: "Design Review - Phase 1",
+      description: "Initial system design and layout review",
+      status: "Completed",
+      priority: "High",
+      assignee: "Sarah Johnson",
+      reviewer: "Mike Chen",
+      dueDate: "2024-01-25T00:00:00Z",
+      completedDate: "2024-01-20T15:45:00Z",
       comments: 12,
-      type: 'Design Review',
+      type: "Design Review",
     },
     {
-      id: 'review-2',
-      title: 'Safety Compliance Check',
-      description: 'Review safety protocols and regulatory compliance',
-      status: 'In Progress',
-      priority: 'Critical',
-      assignee: 'David Wilson',
-      reviewer: 'Lisa Rodriguez',
-      dueDate: '2024-01-28T00:00:00Z',
+      id: "review-2",
+      title: "Safety Compliance Check",
+      description: "Review safety protocols and regulatory compliance",
+      status: "In Progress",
+      priority: "Critical",
+      assignee: "David Wilson",
+      reviewer: "Lisa Rodriguez",
+      dueDate: "2024-01-28T00:00:00Z",
       completedDate: null,
       comments: 5,
-      type: 'Compliance Review',
+      type: "Compliance Review",
     },
     {
-      id: 'review-3',
-      title: 'Cost Analysis Approval',
-      description: 'Financial review and budget approval process',
-      status: 'Pending',
-      priority: 'Medium',
-      assignee: 'Emma Taylor',
-      reviewer: 'Robert Kim',
-      dueDate: '2024-02-01T00:00:00Z',
+      id: "review-3",
+      title: "Cost Analysis Approval",
+      description: "Financial review and budget approval process",
+      status: "Pending",
+      priority: "Medium",
+      assignee: "Emma Taylor",
+      reviewer: "Robert Kim",
+      dueDate: "2024-02-01T00:00:00Z",
       completedDate: null,
       comments: 2,
-      type: 'Financial Review',
+      type: "Financial Review",
     },
     {
-      id: 'review-4',
-      title: 'Technical Specifications',
-      description: 'Review of technical specifications and requirements',
-      status: 'Approved',
-      priority: 'High',
-      assignee: 'Alex Brown',
-      reviewer: 'Jennifer Wu',
-      dueDate: '2024-01-22T00:00:00Z',
-      completedDate: '2024-01-21T10:30:00Z',
+      id: "review-4",
+      title: "Technical Specifications",
+      description: "Review of technical specifications and requirements",
+      status: "Approved",
+      priority: "High",
+      assignee: "Alex Brown",
+      reviewer: "Jennifer Wu",
+      dueDate: "2024-01-22T00:00:00Z",
+      completedDate: "2024-01-21T10:30:00Z",
       comments: 8,
-      type: 'Technical Review',
+      type: "Technical Review",
     },
-  ]
+  ];
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Completed':
-      case 'Approved':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'Rejected':
-        return 'bg-red-100 text-red-800 border-red-200'
+      case "Completed":
+      case "Approved":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "In Progress":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Rejected":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'Critical':
-        return 'bg-red-100 text-red-800 border-red-200'
-      case 'High':
-        return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'Low':
-        return 'bg-green-100 text-green-800 border-green-200'
+      case "Critical":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "High":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "Medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Low":
+        return "bg-green-100 text-green-800 border-green-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Completed':
-      case 'Approved':
-        return <CheckSquare className="h-5 w-5 text-green-600" />
-      case 'In Progress':
-        return <Clock className="h-5 w-5 text-blue-600" />
+      case "Completed":
+      case "Approved":
+        return <CheckSquare className="h-5 w-5 text-green-600" />;
+      case "In Progress":
+        return <Clock className="h-5 w-5 text-blue-600" />;
       default:
-        return <CheckSquare className="h-5 w-5 text-gray-600" />
+        return <CheckSquare className="h-5 w-5 text-gray-600" />;
     }
-  }
+  };
 
   if (projectLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -139,7 +155,9 @@ export default function ProjectReviewsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reviews & Approvals</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Reviews & Approvals
+          </h1>
           <p className="text-muted-foreground">
             Review workflow and approval processes for {project?.project_name}
           </p>
@@ -191,10 +209,14 @@ export default function ProjectReviewsPage() {
                   <div className="flex-1">
                     <CardTitle className="text-lg">{review.title}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(review.status)}`}>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(review.status)}`}
+                      >
                         {review.status}
                       </span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(review.priority)}`}>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(review.priority)}`}
+                      >
                         {review.priority}
                       </span>
                     </div>
@@ -204,7 +226,7 @@ export default function ProjectReviewsPage() {
                   variant="ghost"
                   size="sm"
                   onClick={(e) => {
-                    e.stopPropagation()
+                    e.stopPropagation();
                     // Handle menu actions
                   }}
                 >
@@ -272,7 +294,9 @@ export default function ProjectReviewsPage() {
             <div className="text-muted-foreground mb-4">
               <CheckSquare className="h-12 w-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No reviews yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No reviews yet
+            </h3>
             <p className="text-muted-foreground mb-4">
               Create your first review to start the approval process.
             </p>
@@ -284,5 +308,5 @@ export default function ProjectReviewsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

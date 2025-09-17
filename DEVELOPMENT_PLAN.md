@@ -1,14 +1,17 @@
 # OriginFD Development Plan
 
 ## Project Overview
+
 OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy system design, procurement, and operations management. Built on the ODL-SD v4.1 specification with integrated AI architecture.
 
 ## Development Phases
 
 ### Phase 1: Foundation & Core Infrastructure (Weeks 1-4)
+
 **Objective:** Establish monorepo structure and core services
 
 **Key Deliverables:**
+
 - Complete monorepo structure implementation
 - Basic FastAPI gateway with ODL-SD schema validation
 - Docker containerization and Cloud Run deployment
@@ -18,6 +21,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 **Team Requirements:** 2-3 Backend Developers, 1 DevOps Engineer
 
 **Critical Path:**
+
 1. Set up monorepo structure according to canonical guide
 2. Implement core FastAPI service with basic routing
 3. Create Docker containers and GCP deployment pipeline
@@ -25,9 +29,11 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 5. Implement JWT authentication and basic RBAC
 
 ### Phase 2: ODL-SD Core & AI Architecture (Weeks 5-8)
+
 **Objective:** Implement core ODL-SD document handling and AI orchestrator
 
 **Key Deliverables:**
+
 - ODL-SD v4.1 schema validation and JSON-Patch system
 - AI L1 Orchestrator with Planner/Router
 - Tool registry framework
@@ -37,6 +43,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 **Team Requirements:** 2 AI/ML Engineers, 2 Backend Developers
 
 **Critical Path:**
+
 1. Implement ODL-SD schema validation with Pydantic
 2. Create JSON-Patch mutation system with rollback
 3. Build AI orchestrator service architecture
@@ -44,9 +51,11 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 5. Create tool registry with versioned schemas
 
 ### Phase 3: Frontend Applications (Weeks 9-12)
+
 **Objective:** Build user-facing web and mobile applications
 
 **Key Deliverables:**
+
 - Next.js 14 web application with dashboard
 - React Native technician app (basic functionality)
 - Component library and design system
@@ -56,6 +65,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 **Team Requirements:** 2-3 Frontend Developers, 1 Mobile Developer, 1 UI/UX Designer
 
 **Critical Path:**
+
 1. Set up Next.js 14 with App Router and SSR
 2. Create shared component library with shadcn/ui
 3. Implement authentication flows and RBAC guards
@@ -63,9 +73,11 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 5. Create React Native technician app with core features
 
 ### Phase 4: Domain Logic & Tools (Weeks 13-16)
+
 **Objective:** Implement domain-specific logic and tools
 
 **Key Deliverables:**
+
 - PV, BESS, and Grid domain modules
 - Financial modeling tools
 - Design validation tools
@@ -75,6 +87,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 **Team Requirements:** 2 Domain Experts, 2 Backend Developers
 
 **Critical Path:**
+
 1. Implement PV sizing and string calculation tools
 2. Create BESS sizing and safety envelope tools
 3. Build grid code compliance checking
@@ -82,9 +95,11 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 5. Integrate unified component library
 
 ### Phase 5: Marketplace & Commerce (Weeks 17-20)
+
 **Objective:** Build marketplace and commercial features
 
 **Key Deliverables:**
+
 - Component marketplace
 - Escrow and payment processing
 - Subscription and billing system
@@ -94,6 +109,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 **Team Requirements:** 2 Backend Developers, 1 Payments Specialist
 
 **Critical Path:**
+
 1. Create component marketplace with supplier onboarding
 2. Implement escrow and payment processing
 3. Build subscription tiers and PSU metering
@@ -101,9 +117,11 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 5. Implement service handover and provider switching
 
 ### Phase 6: Operations & Logistics (Weeks 21-24)
+
 **Objective:** Complete operational tools and mobile apps
 
 **Key Deliverables:**
+
 - EPCIS event tracking
 - Logistics and inventory management
 - QC and compliance tools
@@ -113,6 +131,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 **Team Requirements:** 2 Backend Developers, 2 Mobile Developers
 
 **Critical Path:**
+
 1. Implement EPCIS event tracking system
 2. Build logistics and inventory management
 3. Create QC tools with image analysis
@@ -122,6 +141,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 ## Parallel Development Strategy
 
 ### Team Structure
+
 - **Core Platform Team:** Backend services, API gateway, database
 - **AI/ML Team:** Orchestrator, tools, Graph-RAG, policy routing
 - **Frontend Team:** Web application, shared components, UI/UX
@@ -130,6 +150,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 - **DevOps Team:** Infrastructure, CI/CD, monitoring, security
 
 ### Development Workflow
+
 1. **Feature Branches:** Each team works on feature branches
 2. **API-First:** Define OpenAPI specs before implementation
 3. **Schema-First:** JSON schemas define all data contracts
@@ -138,6 +159,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 6. **Continuous Integration:** Automated testing and deployment
 
 ### Communication & Coordination
+
 - **Daily Standups:** Team-level standups with cross-team sync
 - **Weekly Planning:** Cross-team dependency planning
 - **Sprint Reviews:** Bi-weekly feature demonstrations
@@ -146,17 +168,20 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 ## Risk Management
 
 ### Technical Risks
+
 - **Schema Evolution:** Careful versioning of ODL-SD schemas
 - **AI Model Costs:** PSU budgeting and model selection
 - **Data Consistency:** ACID transactions for critical operations
 - **Performance:** Caching strategy for large documents
 
 ### Resource Risks
+
 - **Team Dependencies:** Clear API contracts to minimize blocking
 - **Skill Gaps:** Training on domain-specific knowledge
 - **Timeline Pressure:** Prioritize MVP features first
 
 ### Mitigation Strategies
+
 - **Incremental Delivery:** Working features every 2 weeks
 - **Fallback Options:** Manual workflows where AI isn't ready
 - **Performance Testing:** Load testing from Phase 2
@@ -165,6 +190,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 ## Success Metrics
 
 ### Phase 1 Success Criteria
+
 - [ ] Monorepo structure matches canonical guide
 - [ ] FastAPI service deployed to Cloud Run
 - [ ] Basic authentication working
@@ -172,6 +198,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 - [ ] CI/CD pipeline operational
 
 ### Phase 2 Success Criteria
+
 - [ ] ODL-SD documents can be created and validated
 - [ ] JSON-Patch mutations work with rollback
 - [ ] Basic AI orchestrator responds to requests
@@ -179,6 +206,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 - [ ] Graph-RAG retrieval returns relevant results
 
 ### Phase 3 Success Criteria
+
 - [ ] Web dashboard shows project list and basic editing
 - [ ] Mobile app can scan QR codes and capture photos
 - [ ] Authentication works across all applications
@@ -188,6 +216,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 ## Current Status Update (September 2025)
 
 ### ✅ **COMPLETED**
+
 - [x] Monorepo structure set up
 - [x] Next.js 14 web application with stable Tailwind CSS
 - [x] Authentication system (mock data working)
@@ -200,6 +229,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 ## **Phase 1A: Backend Foundation (THIS WEEK)**
 
 ### **Claude (AI Assistant) - Backend Focus**
+
 **Starting immediately:**
 
 1. **FastAPI Backend Service Setup**
@@ -219,6 +249,7 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
    - [ ] Test authentication flow end-to-end
 
 ### **Human Developer - Frontend Features**
+
 **Can work in parallel:**
 
 1. **New Project Functionality**
@@ -244,18 +275,22 @@ OriginFD is an enterprise-grade platform for solar PV, BESS, and hybrid energy s
 ## **Coordination Strategy**
 
 ### **Daily Sync Protocol:**
+
 - **Morning:** Share previous day's progress
 - **Midday:** Quick status check on blockers
 - **Evening:** Plan next day's tasks
 
 ### **API Contract Definition:**
+
 Before backend implementation, define:
+
 - Authentication endpoints and payloads
 - Project CRUD endpoints
 - Error response formats
 - Status codes and validation rules
 
 ### **Testing Strategy:**
+
 - **Backend:** Postman collection for API testing
 - **Frontend:** Test with mock responses first
 - **Integration:** End-to-end testing once connected
@@ -263,6 +298,7 @@ Before backend implementation, define:
 ---
 
 ## **Week 1 Success Targets:**
+
 - [ ] User can login with real authentication
 - [ ] Backend APIs are documented and testable
 - [ ] "New Project" form is functional (frontend)

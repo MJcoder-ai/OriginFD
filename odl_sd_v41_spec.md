@@ -1,5 +1,7 @@
 # ODL-SD Technical Specification
+
 ## OriginFlow Design Language - System Document
+
 ### Version 4.1 - Complete Design-to-Operation Lifecycle Specification
 
 ---
@@ -9,6 +11,7 @@
 ODL-SD v4.1 is a comprehensive, self-contained JSON document format for representing solar PV, battery storage, and hybrid energy systems from initial concept through decommissioning. This specification addresses the complete lifecycle including design, procurement, construction, commissioning, operations, maintenance, and end-of-life management.
 
 **Key Capabilities:**
+
 - Multi-domain support (PV, BESS, Grid Interface, SCADA)
 - Hierarchical scaling from 1kW residential to multi-GW portfolios
 - Comprehensive financial modeling with sensitivity analysis and climate adjustments
@@ -19,6 +22,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 - Data management strategies for large-scale deployments
 
 **Version 4.1 Enhancements:**
+
 - Formal JSON Schema validation definitions
 - Complete PV degradation models matching BESS detail
 - Climate-specific loss adjustments and regional financial modeling
@@ -61,22 +65,22 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     }
   },
 
-  "hierarchy": {},           // Portfolio → Site → Plant → Block structure
-  "requirements": {},        // Functional, constraints, regulatory, ESG
-  "libraries": {},          // Component definitions with full port typing
-  "instances": [],          // Placed components with lifecycle tracking
-  "connections": [],        // Port-to-port wiring with edge kinds
-  "structures": {},         // Mechanical supports and foundations
-  "physical": {},           // Surfaces, zones, routing, loads
-  "analysis": [],           // Versioned calculations and simulations
-  "compliance": {},         // Multi-jurisdiction evidence-based checks
-  "finance": {},            // Comprehensive financial modeling
-  "operations": {},         // Service, monitoring, performance
-  "esg": {},               // Environmental, social, governance metrics
-  "governance": {},         // Approvals, signatures, change control
-  "external_models": {},    // IFC, CIM, weather data mappings
-  "audit": [],             // Complete change history
-  "data_management": {}     // Scalability and validation strategies
+  "hierarchy": {}, // Portfolio → Site → Plant → Block structure
+  "requirements": {}, // Functional, constraints, regulatory, ESG
+  "libraries": {}, // Component definitions with full port typing
+  "instances": [], // Placed components with lifecycle tracking
+  "connections": [], // Port-to-port wiring with edge kinds
+  "structures": {}, // Mechanical supports and foundations
+  "physical": {}, // Surfaces, zones, routing, loads
+  "analysis": [], // Versioned calculations and simulations
+  "compliance": {}, // Multi-jurisdiction evidence-based checks
+  "finance": {}, // Comprehensive financial modeling
+  "operations": {}, // Service, monitoring, performance
+  "esg": {}, // Environmental, social, governance metrics
+  "governance": {}, // Approvals, signatures, change control
+  "external_models": {}, // IFC, CIM, weather data mappings
+  "audit": [], // Complete change history
+  "data_management": {} // Scalability and validation strategies
 }
 ```
 
@@ -138,7 +142,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "method": "spot_rate|fixed_rate|api_dynamic",
           "api_endpoint": "optional:https://api.exchangerates.com/v1/latest",
           "historical_rates": {
-            "2025-01-01": {"EUR_USD": 1.1, "GBP_USD": 1.3}
+            "2025-01-01": { "EUR_USD": 1.1, "GBP_USD": 1.3 }
           }
         },
         "consolidation": "project|portfolio"
@@ -162,18 +166,20 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     "port_definition": {
       "type": "object",
       "properties": {
-        "id": {"type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"},
-        "direction": {"enum": ["input", "output", "bidirectional"]},
+        "id": { "type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$" },
+        "direction": { "enum": ["input", "output", "bidirectional"] },
         "signal": {
           "type": "object",
           "properties": {
-            "kind": {"enum": ["dc", "ac", "data", "control", "thermal", "measurement"]},
+            "kind": {
+              "enum": ["dc", "ac", "data", "control", "thermal", "measurement"]
+            },
             "voltage_v": {
               "type": "object",
               "properties": {
-                "nominal": {"type": "number"},
-                "min": {"type": "number"},
-                "max": {"type": "number"}
+                "nominal": { "type": "number" },
+                "min": { "type": "number" },
+                "max": { "type": "number" }
               }
             }
           },
@@ -186,26 +192,34 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     "instance_definition": {
       "type": "object",
       "properties": {
-        "id": {"type": "string"},
-        "type_ref": {"type": "string"},
-        "parent_ref": {"type": "string"},
+        "id": { "type": "string" },
+        "type_ref": { "type": "string" },
+        "parent_ref": { "type": "string" },
         "location": {
           "type": "object",
           "properties": {
-            "lat": {"type": "number", "minimum": -90, "maximum": 90},
-            "lon": {"type": "number", "minimum": -180, "maximum": 180},
-            "elevation_m": {"type": "number"}
+            "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+            "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+            "elevation_m": { "type": "number" }
           }
         },
         "lifecycle_status": {
-          "enum": ["planned", "procured", "installed", "commissioned", "operational", "maintenance", "decommissioned"]
+          "enum": [
+            "planned",
+            "procured",
+            "installed",
+            "commissioned",
+            "operational",
+            "maintenance",
+            "decommissioned"
+          ]
         },
         "digital_twin": {
           "type": "object",
           "properties": {
-            "model_url": {"type": "string", "format": "uri"},
-            "last_sync": {"type": "string", "format": "date-time"},
-            "sync_frequency_hours": {"type": "integer", "minimum": 1}
+            "model_url": { "type": "string", "format": "uri" },
+            "last_sync": { "type": "string", "format": "date-time" },
+            "sync_frequency_hours": { "type": "integer", "minimum": 1 }
           }
         }
       },
@@ -215,34 +229,44 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     "connection_definition": {
       "type": "object",
       "properties": {
-        "id": {"type": "string"},
+        "id": { "type": "string" },
         "from": {
           "type": "object",
           "properties": {
-            "instance_id": {"type": "string"},
-            "port_id": {"type": "string"}
+            "instance_id": { "type": "string" },
+            "port_id": { "type": "string" }
           },
           "required": ["instance_id", "port_id"]
         },
         "to": {
           "type": "object",
           "properties": {
-            "instance_id": {"type": "string"},
-            "port_id": {"type": "string"}
+            "instance_id": { "type": "string" },
+            "port_id": { "type": "string" }
           },
           "required": ["instance_id", "port_id"]
         },
         "kind": {
-          "enum": ["dc_power", "ac_power", "data_modbus", "data_can", "data_ethernet", "control_digital", "control_analog", "thermal_liquid", "thermal_air"]
+          "enum": [
+            "dc_power",
+            "ac_power",
+            "data_modbus",
+            "data_can",
+            "data_ethernet",
+            "control_digital",
+            "control_analog",
+            "thermal_liquid",
+            "thermal_air"
+          ]
         },
         "attributes": {
           "type": "object",
           "properties": {
-            "cable_type": {"type": "string"},
-            "length_m": {"type": "number", "minimum": 0},
-            "resistance_ohm": {"type": "number", "minimum": 0},
-            "validated": {"type": "boolean"},
-            "validation_timestamp": {"type": "string", "format": "date-time"}
+            "cable_type": { "type": "string" },
+            "length_m": { "type": "number", "minimum": 0 },
+            "resistance_ohm": { "type": "number", "minimum": 0 },
+            "validated": { "type": "boolean" },
+            "validation_timestamp": { "type": "string", "format": "date-time" }
           }
         }
       },
@@ -252,8 +276,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     "sub_element_definition": {
       "type": "object",
       "properties": {
-        "type_ref": {"type": "string"},
-        "qty": {"type": "integer", "minimum": 1}
+        "type_ref": { "type": "string" },
+        "qty": { "type": "integer", "minimum": 1 }
       },
       "required": ["type_ref", "qty"]
     }
@@ -262,11 +286,11 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
   "properties": {
     "instances": {
       "type": "array",
-      "items": {"$ref": "#/definitions/instance_definition"}
+      "items": { "$ref": "#/definitions/instance_definition" }
     },
     "connections": {
       "type": "array",
-      "items": {"$ref": "#/definitions/connection_definition"}
+      "items": { "$ref": "#/definitions/connection_definition" }
     }
   }
 }
@@ -352,8 +376,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "direction": "bidirectional",
             "signal": {
               "kind": "dc",
-              "voltage_v": {"nominal": 3.2, "min": 2.5, "max": 3.65},
-              "current_a": {"continuous": 280, "peak": 560}
+              "voltage_v": { "nominal": 3.2, "min": 2.5, "max": 3.65 },
+              "current_a": { "continuous": 280, "peak": 560 }
             },
             "physical": {
               "connector": "M8_terminal",
@@ -416,19 +440,19 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         },
         "operating_envelope": {
           "charge": {
-            "temperature_c": {"min": 0, "max": 45},
-            "current_c_rate": {"max": 1},
-            "voltage_v": {"max": 3.65}
+            "temperature_c": { "min": 0, "max": 45 },
+            "current_c_rate": { "max": 1 },
+            "voltage_v": { "max": 3.65 }
           },
           "discharge": {
-            "temperature_c": {"min": -20, "max": 55},
-            "current_c_rate": {"max": 2},
-            "voltage_v": {"min": 2.5}
+            "temperature_c": { "min": -20, "max": 55 },
+            "current_c_rate": { "max": 2 },
+            "voltage_v": { "min": 2.5 }
           },
           "storage": {
-            "temperature_c": {"min": -30, "max": 60},
-            "soc_pct": {"recommended": 50},
-            "duration_months": {"max": 12}
+            "temperature_c": { "min": -30, "max": 60 },
+            "soc_pct": { "recommended": 50 },
+            "duration_months": { "max": 12 }
           }
         }
       },
@@ -447,8 +471,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "direction": "bidirectional",
             "signal": {
               "kind": "dc",
-              "voltage_v": {"min": 50, "max": 73, "nominal": 64},
-              "current_a": {"max": 3920}
+              "voltage_v": { "min": 50, "max": 73, "nominal": 64 },
+              "current_a": { "max": 3920 }
             }
           },
           {
@@ -466,17 +490,17 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "signal": {
               "kind": "thermal",
               "medium": "glycol_water_50_50",
-              "flow_lpm": {"min": 10, "max": 50},
-              "temperature_c": {"min": 15, "max": 25}
+              "flow_lpm": { "min": 10, "max": 50 },
+              "temperature_c": { "min": 15, "max": 25 }
             }
           }
         ],
         "sub_elements": [
-          {"type_ref": "bess_module", "qty": 280},
-          {"type_ref": "bms_rack_controller", "qty": 1},
-          {"type_ref": "dc_breaker_400a", "qty": 1},
-          {"type_ref": "current_sensor_hall", "qty": 14},
-          {"type_ref": "temp_sensor_ntc", "qty": 28}
+          { "type_ref": "bess_module", "qty": 280 },
+          { "type_ref": "bms_rack_controller", "qty": 1 },
+          { "type_ref": "dc_breaker_400a", "qty": 1 },
+          { "type_ref": "current_sensor_hall", "qty": 14 },
+          { "type_ref": "temp_sensor_ntc", "qty": 28 }
         ],
         "protection": {
           "overcurrent": {
@@ -509,8 +533,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "direction": "bidirectional",
             "signal": {
               "kind": "dc",
-              "voltage_v": {"min": 600, "max": 1000},
-              "current_a": {"max": 2500}
+              "voltage_v": { "min": 600, "max": 1000 },
+              "current_a": { "max": 2500 }
             }
           },
           {
@@ -520,8 +544,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
               "kind": "ac",
               "voltage_v_rms": 480,
               "phases": 3,
-              "frequency_hz": {"nominal": 60, "range": [57, 63]},
-              "current_a": {"max": 1804}
+              "frequency_hz": { "nominal": 60, "range": [57, 63] },
+              "current_a": { "max": 1804 }
             }
           },
           {
@@ -673,7 +697,13 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       }
     },
     "testing": {
-      "factory_tests": ["ratio", "vector_group", "impedance", "no_load_loss", "load_loss"],
+      "factory_tests": [
+        "ratio",
+        "vector_group",
+        "impedance",
+        "no_load_loss",
+        "load_loss"
+      ],
       "site_tests": ["insulation_resistance", "tan_delta", "sfra", "dga"],
       "routine_tests": ["oil_analysis", "thermography", "partial_discharge"]
     }
@@ -730,30 +760,34 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
     ],
     "protection_functions": {
       "differential": {
-        "87T": {"enabled": true, "slope_pct": 30, "min_operate_pu": 0.3},
-        "87N": {"enabled": true, "pickup_pu": 0.1}
+        "87T": { "enabled": true, "slope_pct": 30, "min_operate_pu": 0.3 },
+        "87N": { "enabled": true, "pickup_pu": 0.1 }
       },
       "overcurrent": {
-        "50": {"pickup_a": 5000, "time_delay_ms": 0},
-        "51": {"pickup_a": 1000, "time_dial": 3, "curve": "IEC_very_inverse"},
-        "50N": {"pickup_a": 500, "time_delay_ms": 100},
-        "51N": {"pickup_a": 100, "time_dial": 2, "curve": "IEC_standard_inverse"}
+        "50": { "pickup_a": 5000, "time_delay_ms": 0 },
+        "51": { "pickup_a": 1000, "time_dial": 3, "curve": "IEC_very_inverse" },
+        "50N": { "pickup_a": 500, "time_delay_ms": 100 },
+        "51N": {
+          "pickup_a": 100,
+          "time_dial": 2,
+          "curve": "IEC_standard_inverse"
+        }
       },
       "voltage": {
-        "27": {"pickup_v": 0.88, "time_delay_s": 2},
-        "59": {"pickup_v": 1.1, "time_delay_s": 2},
-        "47": {"pickup_v": 0.05, "time_delay_s": 0.5}
+        "27": { "pickup_v": 0.88, "time_delay_s": 2 },
+        "59": { "pickup_v": 1.1, "time_delay_s": 2 },
+        "47": { "pickup_v": 0.05, "time_delay_s": 0.5 }
       },
       "frequency": {
-        "81O": {"pickup_hz": 61.8, "time_delay_s": 0.5},
-        "81U": {"pickup_hz": 57.0, "time_delay_s": 0.5},
-        "81R": {"pickup_hz_s": 3.0, "time_delay_s": 0.1}
+        "81O": { "pickup_hz": 61.8, "time_delay_s": 0.5 },
+        "81U": { "pickup_hz": 57.0, "time_delay_s": 0.5 },
+        "81R": { "pickup_hz_s": 3.0, "time_delay_s": 0.1 }
       },
       "distance": {
         "21": {
           "zones": [
-            {"reach_ohm": 5, "angle_deg": 85, "time_delay_ms": 0},
-            {"reach_ohm": 8, "angle_deg": 85, "time_delay_ms": 400}
+            { "reach_ohm": 5, "angle_deg": 85, "time_delay_ms": 0 },
+            { "reach_ohm": 8, "angle_deg": 85, "time_delay_ms": 400 }
           ]
         }
       },
@@ -935,8 +969,12 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "direction": "output",
             "signal": {
               "kind": "dc",
-              "voltage_v": {"stc": 49.8, "noct": 46.5, "max_system": 1500},
-              "current_a": {"stc": 11.44, "noct": 9.21, "short_circuit": 12.02}
+              "voltage_v": { "stc": 49.8, "noct": 46.5, "max_system": 1500 },
+              "current_a": {
+                "stc": 11.44,
+                "noct": 9.21,
+                "short_circuit": 12.02
+              }
             }
           },
           {
@@ -1119,7 +1157,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "debt": {
         "senior": {
           "amount": 90000000,
-          "percentage": 0.60,
+          "percentage": 0.6,
           "rate_pct": 5.5,
           "term_years": 18,
           "grace_period_years": 1,
@@ -1128,7 +1166,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         },
         "subordinated": {
           "amount": 15000000,
-          "percentage": 0.10,
+          "percentage": 0.1,
           "rate_pct": 8.0,
           "term_years": 10
         }
@@ -1363,9 +1401,9 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "initial_rate": 0.055,
           "escalation_pct": 2.0,
           "time_of_delivery": {
-            "peak": {"multiplier": 1.3, "hours": [16, 21]},
-            "shoulder": {"multiplier": 1.0, "hours": [6, 16]},
-            "off_peak": {"multiplier": 0.7, "hours": [21, 6]}
+            "peak": { "multiplier": 1.3, "hours": [16, 21] },
+            "shoulder": { "multiplier": 1.0, "hours": [6, 16] },
+            "off_peak": { "multiplier": 0.7, "hours": [21, 6] }
           }
         },
         "curtailment": {
@@ -1469,8 +1507,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "curtailment_pct": 1,
           "total_pct": 14.3,
           "climate_adjustments": {
-            "arid": {"soiling_pct": 5, "total_pct": 17.8},
-            "temperate": {"soiling_pct": 2, "total_pct": 14.3}
+            "arid": { "soiling_pct": 5, "total_pct": 17.8 },
+            "temperate": { "soiling_pct": 2, "total_pct": 14.3 }
           }
         }
       },
@@ -1595,7 +1633,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "endpoint": "https://api.exchangerates.com/v1/latest",
           "update_frequency_hours": 24,
           "fallback_rates": {
-            "EUR_USD": 1.10,
+            "EUR_USD": 1.1,
             "GBP_USD": 1.27,
             "JPY_USD": 0.0067,
             "AUD_USD": 0.65
@@ -1920,8 +1958,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "scada_system": {
           "platform": "Ignition_8.1",
           "servers": {
-            "primary": {"ip": "10.0.1.10", "role": "active"},
-            "secondary": {"ip": "10.0.1.11", "role": "standby"}
+            "primary": { "ip": "10.0.1.10", "role": "active" },
+            "secondary": { "ip": "10.0.1.11", "role": "standby" }
           },
           "historians": {
             "type": "OSI_PI",
@@ -1936,41 +1974,71 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         },
         "data_points": {
           "meteorological": {
-            "ghi": {"units": "W/m2", "scan_rate_s": 1},
-            "dni": {"units": "W/m2", "scan_rate_s": 1},
-            "ambient_temp": {"units": "C", "scan_rate_s": 1},
-            "module_temp": {"units": "C", "scan_rate_s": 10},
-            "wind_speed": {"units": "m/s", "scan_rate_s": 1},
-            "wind_direction": {"units": "deg", "scan_rate_s": 1}
+            "ghi": { "units": "W/m2", "scan_rate_s": 1 },
+            "dni": { "units": "W/m2", "scan_rate_s": 1 },
+            "ambient_temp": { "units": "C", "scan_rate_s": 1 },
+            "module_temp": { "units": "C", "scan_rate_s": 10 },
+            "wind_speed": { "units": "m/s", "scan_rate_s": 1 },
+            "wind_direction": { "units": "deg", "scan_rate_s": 1 }
           },
           "electrical": {
-            "string_current": {"count": 10000, "units": "A", "scan_rate_s": 10},
-            "string_voltage": {"count": 10000, "units": "V", "scan_rate_s": 10},
-            "inverter_power": {"count": 30, "units": "kW", "scan_rate_s": 1},
-            "inverter_energy": {"count": 30, "units": "kWh", "scan_rate_s": 60},
-            "grid_voltage": {"count": 3, "units": "V", "scan_rate_s": 1},
-            "grid_frequency": {"count": 1, "units": "Hz", "scan_rate_s": 1}
+            "string_current": {
+              "count": 10000,
+              "units": "A",
+              "scan_rate_s": 10
+            },
+            "string_voltage": {
+              "count": 10000,
+              "units": "V",
+              "scan_rate_s": 10
+            },
+            "inverter_power": { "count": 30, "units": "kW", "scan_rate_s": 1 },
+            "inverter_energy": {
+              "count": 30,
+              "units": "kWh",
+              "scan_rate_s": 60
+            },
+            "grid_voltage": { "count": 3, "units": "V", "scan_rate_s": 1 },
+            "grid_frequency": { "count": 1, "units": "Hz", "scan_rate_s": 1 }
           },
           "calculated": {
-            "performance_ratio": {"formula": "actual/expected", "scan_rate_s": 300},
-            "availability": {"formula": "uptime/period", "scan_rate_s": 300},
-            "capacity_factor": {"formula": "energy/rated", "scan_rate_s": 3600},
-            "soiling_ratio": {"formula": "clean/soiled", "scan_rate_s": 3600}
+            "performance_ratio": {
+              "formula": "actual/expected",
+              "scan_rate_s": 300
+            },
+            "availability": { "formula": "uptime/period", "scan_rate_s": 300 },
+            "capacity_factor": {
+              "formula": "energy/rated",
+              "scan_rate_s": 3600
+            },
+            "soiling_ratio": { "formula": "clean/soiled", "scan_rate_s": 3600 }
           }
         },
         "alarms": {
           "priorities": {
-            "critical": {"response_min": 15, "examples": ["inverter_trip", "transformer_fault"]},
-            "high": {"response_min": 60, "examples": ["tracker_fault", "string_open"]},
-            "medium": {"response_hours": 4, "examples": ["communication_loss", "performance_low"]},
-            "low": {"response_hours": 24, "examples": ["sensor_drift", "soiling_high"]}
+            "critical": {
+              "response_min": 15,
+              "examples": ["inverter_trip", "transformer_fault"]
+            },
+            "high": {
+              "response_min": 60,
+              "examples": ["tracker_fault", "string_open"]
+            },
+            "medium": {
+              "response_hours": 4,
+              "examples": ["communication_loss", "performance_low"]
+            },
+            "low": {
+              "response_hours": 24,
+              "examples": ["sensor_drift", "soiling_high"]
+            }
           },
           "notification": {
             "methods": ["email", "sms", "app_push"],
             "escalation": {
-              "level_1": {"delay_min": 0, "contacts": ["operator"]},
-              "level_2": {"delay_min": 30, "contacts": ["supervisor"]},
-              "level_3": {"delay_min": 120, "contacts": ["manager"]}
+              "level_1": { "delay_min": 0, "contacts": ["operator"] },
+              "level_2": { "delay_min": 30, "contacts": ["supervisor"] },
+              "level_3": { "delay_min": 120, "contacts": ["manager"] }
             }
           }
         }
@@ -2153,18 +2221,25 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 
         "spare_parts": {
           "critical": {
-            "modules": {"quantity": 300, "percentage": 0.1},
-            "fuses": {"quantity": 500, "types": ["15A", "20A", "25A", "30A"]},
-            "inverter_cards": {"quantity": 10, "types": ["control", "power", "communication"]},
-            "tracker_motors": {"quantity": 10}
+            "modules": { "quantity": 300, "percentage": 0.1 },
+            "fuses": { "quantity": 500, "types": ["15A", "20A", "25A", "30A"] },
+            "inverter_cards": {
+              "quantity": 10,
+              "types": ["control", "power", "communication"]
+            },
+            "tracker_motors": { "quantity": 10 }
           },
           "consumables": {
-            "filters": {"quantity": 100},
+            "filters": { "quantity": 100 },
             "lubricants_liters": 200,
             "cleaning_supplies": "adequate"
           },
           "tools": {
-            "specialized": ["iv_curve_tracer", "insulation_tester", "thermal_camera"],
+            "specialized": [
+              "iv_curve_tracer",
+              "insulation_tester",
+              "thermal_camera"
+            ],
             "standard": ["multimeter", "clamp_meter", "torque_wrench"]
           }
         }
@@ -2284,7 +2359,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         "total_net": 4000000,
         "liabilities": {
           "soil_remediation": {
-            "probabilistic_cost": {"mean": 1000000, "std_dev": 200000},
+            "probabilistic_cost": { "mean": 1000000, "std_dev": 200000 },
             "triggers": ["bess_leak", "chemical_spill"]
           },
           "total_net_with_liabilities": 5000000
@@ -2363,11 +2438,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "impact": "medium",
             "risk_score": 8,
             "mitigation": {
-              "preventive": [
-                "ester_based_oil",
-                "bund_wall",
-                "oil_monitoring"
-              ],
+              "preventive": ["ester_based_oil", "bund_wall", "oil_monitoring"],
               "reactive": [
                 "soil_testing",
                 "bioremediation",
@@ -2452,9 +2523,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
             "count": 8,
             "depth_m": 30,
             "sampling_frequency": "quarterly",
-            "parameters": [
-              "ph", "tds", "hydrocarbons", "metals", "pfas"
-            ]
+            "parameters": ["ph", "tds", "hydrocarbons", "metals", "pfas"]
           },
           "treatment_systems": {
             "pump_and_treat": {
@@ -2608,7 +2677,11 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
         ],
         "monitoring": {
           "frequency": "annual",
-          "metrics": ["species_diversity", "population_counts", "habitat_quality"],
+          "metrics": [
+            "species_diversity",
+            "population_counts",
+            "habitat_quality"
+          ],
           "reporting": "public"
         }
       },
@@ -2709,9 +2782,9 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 
     "governance": {
       "ownership_structure": {
-        "sponsor": {"name": "RenewCo", "stake_pct": 51},
-        "financial_partner": {"name": "GreenFund", "stake_pct": 30},
-        "tax_equity": {"name": "BankCorp", "stake_pct": 19}
+        "sponsor": { "name": "RenewCo", "stake_pct": 51 },
+        "financial_partner": { "name": "GreenFund", "stake_pct": 30 },
+        "tax_equity": { "name": "BankCorp", "stake_pct": 19 }
       },
 
       "board_composition": {
@@ -3045,9 +3118,12 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "elevation_diff_m": 20
         },
         "parameters": [
-          "ghi", "dni", "dhi",
+          "ghi",
+          "dni",
+          "dhi",
           "ambient_temperature",
-          "wind_speed", "wind_direction"
+          "wind_speed",
+          "wind_direction"
         ],
         "file": "s3://weather/724666TYA.csv"
       },
@@ -3203,23 +3279,26 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 
     "integrated_compliance_matrix": {
       "voltage_limits": {
-        "federal": {"min_pu": 0.88, "max_pu": 1.10},
-        "state": {"min_pu": 0.88, "max_pu": 1.10},
-        "utility": {"min_pu": 0.90, "max_pu": 1.05},
-        "applied": {"min_pu": 0.90, "max_pu": 1.05}
+        "federal": { "min_pu": 0.88, "max_pu": 1.1 },
+        "state": { "min_pu": 0.88, "max_pu": 1.1 },
+        "utility": { "min_pu": 0.9, "max_pu": 1.05 },
+        "applied": { "min_pu": 0.9, "max_pu": 1.05 }
       },
       "frequency_limits": {
-        "federal": {"min_hz": 57.0, "max_hz": 61.8},
-        "state": {"min_hz": 57.0, "max_hz": 61.8},
-        "utility": {"min_hz": 57.5, "max_hz": 61.5},
-        "applied": {"min_hz": 57.5, "max_hz": 61.5}
+        "federal": { "min_hz": 57.0, "max_hz": 61.8 },
+        "state": { "min_hz": 57.0, "max_hz": 61.8 },
+        "utility": { "min_hz": 57.5, "max_hz": 61.5 },
+        "applied": { "min_hz": 57.5, "max_hz": 61.5 }
       }
     },
 
     "standards_summaries": {
       "IEEE_1547": {
         "key_clauses": [
-          {"clause": "4.1.1", "summary": "Interconnection system response to abnormal voltages: Must ride through dips to 0.5 pu for 0.16-21 seconds."}
+          {
+            "clause": "4.1.1",
+            "summary": "Interconnection system response to abnormal voltages: Must ride through dips to 0.5 pu for 0.16-21 seconds."
+          }
         ]
       }
     }
@@ -3249,11 +3328,7 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
           "power_factor_range": [0.85, 0.85],
           "voltage_control": "enabled"
         },
-        "contingencies": [
-          "N-1",
-          "N-1-1",
-          "critical_3_phase_fault"
-        ]
+        "contingencies": ["N-1", "N-1-1", "critical_3_phase_fault"]
       },
 
       "outputs": {
@@ -3338,8 +3413,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
 
           "small_signal_stability": {
             "eigenvalues": [
-              {"real": -0.5, "imag": 3.2, "damping_ratio": 0.156},
-              {"real": -0.3, "imag": 8.5, "damping_ratio": 0.035}
+              { "real": -0.5, "imag": 3.2, "damping_ratio": 0.156 },
+              { "real": -0.3, "imag": 8.5, "damping_ratio": 0.035 }
             ],
             "critical_mode": "inter_area_oscillation",
             "damping_adequate": true
@@ -3418,8 +3493,8 @@ ODL-SD v4.1 is a comprehensive, self-contained JSON document format for represen
       "type_ref": "bess_rack",
       "parent_ref": "BESS_CONTAINER_001",
       "location": {
-        "lat": 35.2830,
-        "lon": -116.0540,
+        "lat": 35.283,
+        "lon": -116.054,
         "elevation_m": 620
       },
       "lifecycle_status": "commissioned",
@@ -3575,6 +3650,7 @@ This ODL-SD Technical Specification v4.1 provides a truly comprehensive framewor
 7. **Implementation Guidance** - Working examples, comprehensive glossary, and standards summaries for improved clarity
 
 The specification maintains its core principle of being a **portable, self-contained design document** while providing enhanced depth for:
+
 - Bankable project finance with Monte Carlo risk analysis
 - Utility-scale deployment with multi-GW portfolio support
 - Multi-stakeholder governance with digital signatures

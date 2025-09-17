@@ -1,58 +1,78 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { useParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api-client'
-import { Button, ErrorBoundary, LoadingSpinner } from '@originfd/ui'
-import { Layers, Map, Download, Settings, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Grid3x3, Maximize2, RotateCcw, Keyboard, Navigation } from 'lucide-react'
-import { SLDCanvas } from '@/components/canvas/sld-canvas'
-import { SiteCanvas } from '@/components/canvas/site-canvas'
-import { CanvasBusProvider } from '@/components/canvas/bus'
-import { LayersPanel, LayerKey } from '@/components/canvas/layers-panel'
-import { InspectorPanel } from '@/components/canvas/inspector-panel'
-import { exportCanvasSVGToPDF } from '@/components/canvas/export-pdf'
+import * as React from "react";
+import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { Button, ErrorBoundary, LoadingSpinner } from "@originfd/ui";
+import {
+  Layers,
+  Map,
+  Download,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Grid3x3,
+  Maximize2,
+  RotateCcw,
+  Keyboard,
+  Navigation,
+} from "lucide-react";
+import { SLDCanvas } from "@/components/canvas/sld-canvas";
+import { SiteCanvas } from "@/components/canvas/site-canvas";
+import { CanvasBusProvider } from "@/components/canvas/bus";
+import { LayersPanel, LayerKey } from "@/components/canvas/layers-panel";
+import { InspectorPanel } from "@/components/canvas/inspector-panel";
+import { exportCanvasSVGToPDF } from "@/components/canvas/export-pdf";
 
 export default function CanvasPage() {
-  const params = useParams()
-  const projectId = params.id as string
-  const canvasId = params.canvasId as string
+  const params = useParams();
+  const projectId = params.id as string;
+  const canvasId = params.canvasId as string;
 
-  const { data: doc, isLoading, error } = useQuery({
-    queryKey: ['project-document', projectId],
+  const {
+    data: doc,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["project-document", projectId],
     queryFn: () => apiClient.getPrimaryProjectDocument(projectId),
     enabled: !!projectId,
-  })
+  });
 
-  const type = canvasId?.startsWith('sld') ? 'sld' : 'site'
-  const [layers, setLayers] = React.useState<LayerKey[]>(type === 'sld' ? ['ac', 'dc'] : ['equipment', 'routes', 'civil'])
-  const [showInspector, setShowInspector] = React.useState(true)
-  const [showGrid, setShowGrid] = React.useState(false)
-  const [showShortcuts, setShowShortcuts] = React.useState(false)
-  const [zoom, setZoom] = React.useState(100)
-  const containerRef = React.useRef<HTMLDivElement | null>(null)
+  const type = canvasId?.startsWith("sld") ? "sld" : "site";
+  const [layers, setLayers] = React.useState<LayerKey[]>(
+    type === "sld" ? ["ac", "dc"] : ["equipment", "routes", "civil"],
+  );
+  const [showInspector, setShowInspector] = React.useState(true);
+  const [showGrid, setShowGrid] = React.useState(false);
+  const [showShortcuts, setShowShortcuts] = React.useState(false);
+  const [zoom, setZoom] = React.useState(100);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
   // Keyboard shortcuts
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'g') setShowGrid((v) => !v)
-      if (e.key.toLowerCase() === 'i') setShowInspector((v) => !v)
-      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
-        e.preventDefault()
-        setZoom((z) => Math.min(200, z + 25))
+      if (e.key.toLowerCase() === "g") setShowGrid((v) => !v);
+      if (e.key.toLowerCase() === "i") setShowInspector((v) => !v);
+      if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
+        e.preventDefault();
+        setZoom((z) => Math.min(200, z + 25));
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-        e.preventDefault()
-        setZoom((z) => Math.max(25, z - 25))
+      if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+        e.preventDefault();
+        setZoom((z) => Math.max(25, z - 25));
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault()
-        setZoom(100)
+      if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+        e.preventDefault();
+        setZoom(100);
       }
-      if (e.key === '?') setShowShortcuts((v) => !v)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+      if (e.key === "?") setShowShortcuts((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -69,9 +89,13 @@ export default function CanvasPage() {
       {/* Compact Top Toolbar */}
       <div className="flex items-center justify-center px-4 py-1.5 bg-card border-b border-border shadow-sm relative">
         <div className="flex items-center gap-4">
-          {type === 'sld' ? <Layers className="h-4 w-4 text-blue-600" /> : <Map className="h-4 w-4 text-green-600" />}
+          {type === "sld" ? (
+            <Layers className="h-4 w-4 text-blue-600" />
+          ) : (
+            <Map className="h-4 w-4 text-green-600" />
+          )}
           <span className="text-sm font-medium text-foreground">
-            {type === 'sld' ? 'Single Line Diagram' : 'Site Layout'}
+            {type === "sld" ? "Single Line Diagram" : "Site Layout"}
           </span>
           <div className="h-4 w-px bg-border mx-3" />
           <LayersPanel active={layers} onChange={setLayers} />
@@ -98,8 +122,11 @@ export default function CanvasPage() {
             variant="ghost"
             size="sm"
             onClick={async () => {
-              if (!containerRef.current) return
-              await exportCanvasSVGToPDF(containerRef.current, `${type}-${canvasId}.pdf`)
+              if (!containerRef.current) return;
+              await exportCanvasSVGToPDF(
+                containerRef.current,
+                `${type}-${canvasId}.pdf`,
+              );
             }}
             title="Export PDF"
           >
@@ -124,15 +151,21 @@ export default function CanvasPage() {
 
           <ErrorBoundary>
             <CanvasBusProvider>
-              {type === 'sld' ? (
+              {type === "sld" ? (
                 <SLDCanvas
                   projectId={projectId}
                   document={doc}
-                  scope={canvasId.replace('sld-', '')}
-                  activeLayers={layers.filter((l): l is 'ac'|'dc' => l === 'ac' || l === 'dc')}
+                  scope={canvasId.replace("sld-", "")}
+                  activeLayers={layers.filter(
+                    (l): l is "ac" | "dc" => l === "ac" || l === "dc",
+                  )}
                 />
               ) : (
-                <SiteCanvas projectId={projectId} document={doc} activeLayers={layers} />
+                <SiteCanvas
+                  projectId={projectId}
+                  document={doc}
+                  activeLayers={layers}
+                />
               )}
             </CanvasBusProvider>
           </ErrorBoundary>
@@ -144,7 +177,9 @@ export default function CanvasPage() {
               <span className="text-muted-foreground/60">•</span>
               <span>Layers: {layers.length}</span>
               <span className="text-muted-foreground">•</span>
-              <span className="text-primary font-medium">{type === 'sld' ? 'SLD' : 'Site'}</span>
+              <span className="text-primary font-medium">
+                {type === "sld" ? "SLD" : "Site"}
+              </span>
             </div>
           </div>
 
@@ -179,12 +214,14 @@ export default function CanvasPage() {
             </Button>
           </div>
 
-
           {/* Floating Mini-Map */}
           <div className="absolute top-16 right-4 bg-card border border-border rounded-lg shadow-md p-3 w-28 h-24 hover:shadow-lg transition-shadow z-10">
             <div className="text-xs font-medium text-foreground mb-2 flex items-center justify-between">
               <span>Navigator</span>
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" title="Live view"></div>
+              <div
+                className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
+                title="Live view"
+              ></div>
             </div>
             <div className="w-full h-14 bg-gradient-to-br from-background to-muted rounded border border-border relative overflow-hidden cursor-pointer hover:border-primary transition-colors">
               {/* Grid pattern background */}
@@ -199,18 +236,27 @@ export default function CanvasPage() {
               <div
                 className="absolute bg-primary/20 border border-primary rounded-sm"
                 style={{
-                  left: '20%',
-                  top: '20%',
-                  width: '60%',
-                  height: '60%',
+                  left: "20%",
+                  top: "20%",
+                  width: "60%",
+                  height: "60%",
                 }}
                 title="Current View"
               />
 
               {/* Component indicators */}
-              <div className="absolute w-1 h-1 bg-blue-600 rounded-full shadow-sm" style={{left: '35%', top: '40%'}} />
-              <div className="absolute w-1 h-1 bg-green-600 rounded-full shadow-sm" style={{left: '55%', top: '35%'}} />
-              <div className="absolute w-1 h-1 bg-orange-600 rounded-full shadow-sm" style={{left: '45%', top: '55%'}} />
+              <div
+                className="absolute w-1 h-1 bg-blue-600 rounded-full shadow-sm"
+                style={{ left: "35%", top: "40%" }}
+              />
+              <div
+                className="absolute w-1 h-1 bg-green-600 rounded-full shadow-sm"
+                style={{ left: "55%", top: "35%" }}
+              />
+              <div
+                className="absolute w-1 h-1 bg-orange-600 rounded-full shadow-sm"
+                style={{ left: "45%", top: "55%" }}
+              />
             </div>
           </div>
 
@@ -219,7 +265,9 @@ export default function CanvasPage() {
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
               <div className="bg-card rounded-lg shadow-xl border border-border p-6 max-w-md w-full mx-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">Keyboard Shortcuts</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Keyboard Shortcuts
+                  </h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -232,28 +280,40 @@ export default function CanvasPage() {
                 <div className="space-y-3 text-sm">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="font-medium text-foreground mb-2">Navigation</div>
+                      <div className="font-medium text-foreground mb-2">
+                        Navigation
+                      </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
                           <span>Pan Canvas</span>
-                          <kbd className="bg-muted px-1 rounded">Space + Drag</kbd>
+                          <kbd className="bg-muted px-1 rounded">
+                            Space + Drag
+                          </kbd>
                         </div>
                         <div className="flex justify-between">
                           <span>Zoom In</span>
-                          <kbd className="bg-gray-100 px-1 rounded">Ctrl + +</kbd>
+                          <kbd className="bg-gray-100 px-1 rounded">
+                            Ctrl + +
+                          </kbd>
                         </div>
                         <div className="flex justify-between">
                           <span>Zoom Out</span>
-                          <kbd className="bg-gray-100 px-1 rounded">Ctrl + -</kbd>
+                          <kbd className="bg-gray-100 px-1 rounded">
+                            Ctrl + -
+                          </kbd>
                         </div>
                         <div className="flex justify-between">
                           <span>Reset Zoom</span>
-                          <kbd className="bg-gray-100 px-1 rounded">Ctrl + 0</kbd>
+                          <kbd className="bg-gray-100 px-1 rounded">
+                            Ctrl + 0
+                          </kbd>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <div className="font-medium text-foreground mb-2">Tools</div>
+                      <div className="font-medium text-foreground mb-2">
+                        Tools
+                      </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
                           <span>Toggle Grid</span>
@@ -265,7 +325,9 @@ export default function CanvasPage() {
                         </div>
                         <div className="flex justify-between">
                           <span>Export PDF</span>
-                          <kbd className="bg-gray-100 px-1 rounded">Ctrl + E</kbd>
+                          <kbd className="bg-gray-100 px-1 rounded">
+                            Ctrl + E
+                          </kbd>
                         </div>
                         <div className="flex justify-between">
                           <span>Show Shortcuts</span>
@@ -295,7 +357,10 @@ export default function CanvasPage() {
               </Button>
             </div>
             <div className="flex-1 overflow-hidden">
-              <InspectorPanel projectId={projectId} currentCanvasId={canvasId} />
+              <InspectorPanel
+                projectId={projectId}
+                currentCanvasId={canvasId}
+              />
             </div>
           </div>
         )}
@@ -313,5 +378,5 @@ export default function CanvasPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

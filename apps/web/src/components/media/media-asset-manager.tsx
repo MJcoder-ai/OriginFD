@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -32,8 +32,8 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
-} from '@originfd/ui'
+  TabsTrigger,
+} from "@originfd/ui";
 import {
   FileText,
   Image,
@@ -50,154 +50,192 @@ import {
   Calendar,
   User,
   HardDrive,
-  Tag
-} from 'lucide-react'
+  Tag,
+} from "lucide-react";
 
 interface MediaAsset {
-  id: string
-  component_id: string
-  type: 'datasheet' | 'warranty' | 'installation' | 'faq' | 'certificate' | 'test_report' | 'image' | 'video' | 'other'
-  name: string
-  description?: string
-  file_url: string
-  file_size: number
-  file_type: string
-  checksum: string
-  uploaded_by: string
-  uploaded_at: string
-  version: number
-  is_active: boolean
-  tags: string[]
-  metadata: Record<string, any>
+  id: string;
+  component_id: string;
+  type:
+    | "datasheet"
+    | "warranty"
+    | "installation"
+    | "faq"
+    | "certificate"
+    | "test_report"
+    | "image"
+    | "video"
+    | "other";
+  name: string;
+  description?: string;
+  file_url: string;
+  file_size: number;
+  file_type: string;
+  checksum: string;
+  uploaded_by: string;
+  uploaded_at: string;
+  version: number;
+  is_active: boolean;
+  tags: string[];
+  metadata: Record<string, any>;
 }
 
 interface MediaAssetManagerProps {
-  componentId?: string
-  readonly?: boolean
+  componentId?: string;
+  readonly?: boolean;
 }
 
 const getAssetTypeIcon = (type: string) => {
   switch (type) {
-    case 'datasheet': return FileText
-    case 'certificate': return Award
-    case 'image': return Image
-    case 'video': return Video
-    case 'installation': return FileText
-    case 'warranty': return FileIcon
-    case 'test_report': return FileText
-    case 'faq': return FileText
-    default: return FileIcon
+    case "datasheet":
+      return FileText;
+    case "certificate":
+      return Award;
+    case "image":
+      return Image;
+    case "video":
+      return Video;
+    case "installation":
+      return FileText;
+    case "warranty":
+      return FileIcon;
+    case "test_report":
+      return FileText;
+    case "faq":
+      return FileText;
+    default:
+      return FileIcon;
   }
-}
+};
 
 const getAssetTypeBadgeVariant = (type: string) => {
   switch (type) {
-    case 'datasheet': return 'default'
-    case 'certificate': return 'default'
-    case 'image': return 'secondary'
-    case 'video': return 'secondary'
-    case 'warranty': return 'outline'
-    case 'installation': return 'outline'
-    default: return 'outline'
+    case "datasheet":
+      return "default";
+    case "certificate":
+      return "default";
+    case "image":
+      return "secondary";
+    case "video":
+      return "secondary";
+    case "warranty":
+      return "outline";
+    case "installation":
+      return "outline";
+    default:
+      return "outline";
   }
-}
+};
 
-export default function MediaAssetManager({ componentId, readonly = false }: MediaAssetManagerProps) {
-  const queryClient = useQueryClient()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null)
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+export default function MediaAssetManager({
+  componentId,
+  readonly = false,
+}: MediaAssetManagerProps) {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadForm, setUploadForm] = useState({
-    type: 'datasheet',
-    name: '',
-    description: '',
-    tags: '',
-    component_id: componentId || ''
-  })
+    type: "datasheet",
+    name: "",
+    description: "",
+    tags: "",
+    component_id: componentId || "",
+  });
 
   // Fetch media assets
-  const { data: assetsData, isLoading, error } = useQuery({
-    queryKey: ['media-assets', componentId, typeFilter],
+  const {
+    data: assetsData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["media-assets", componentId, typeFilter],
     queryFn: async () => {
-      let url = '/api/bridge/media'
-      const params = new URLSearchParams()
+      let url = "/api/bridge/media";
+      const params = new URLSearchParams();
 
-      if (componentId) params.append('component_id', componentId)
-      if (typeFilter !== 'all') params.append('type', typeFilter)
-      params.append('active_only', 'true')
+      if (componentId) params.append("component_id", componentId);
+      if (typeFilter !== "all") params.append("type", typeFilter);
+      params.append("active_only", "true");
 
-      if (params.toString()) url += `?${params.toString()}`
+      if (params.toString()) url += `?${params.toString()}`;
 
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('Failed to fetch media assets')
-      return response.json()
-    }
-  })
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch media assets");
+      return response.json();
+    },
+  });
 
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (assetData: any) => {
-      const response = await fetch('/api/bridge/media', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(assetData)
-      })
-      if (!response.ok) throw new Error('Failed to upload asset')
-      return response.json()
+      const response = await fetch("/api/bridge/media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assetData),
+      });
+      if (!response.ok) throw new Error("Failed to upload asset");
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media-assets'] })
-      setUploadDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["media-assets"] });
+      setUploadDialogOpen(false);
       setUploadForm({
-        type: 'datasheet',
-        name: '',
-        description: '',
-        tags: '',
-        component_id: componentId || ''
-      })
-    }
-  })
+        type: "datasheet",
+        name: "",
+        description: "",
+        tags: "",
+        component_id: componentId || "",
+      });
+    },
+  });
 
-  const assets = assetsData?.assets || []
-  const statistics = assetsData?.statistics || {}
+  const assets = assetsData?.assets || [];
+  const statistics = assetsData?.statistics || {};
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const filteredAssets = assets.filter((asset: MediaAsset) => {
-    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         asset.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         asset.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    return matchesSearch
-  })
+    const matchesSearch =
+      asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.tags.some((tag) =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    return matchesSearch;
+  });
 
   const handleUpload = () => {
-    const tagsArray = uploadForm.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+    const tagsArray = uploadForm.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
 
     uploadMutation.mutate({
       ...uploadForm,
       tags: tagsArray,
       file_size: 1000000, // Mock file size
-      file_type: uploadForm.type === 'image' ? 'image/jpeg' : 'application/pdf',
-      uploaded_by: 'current_user'
-    })
-  }
+      file_type: uploadForm.type === "image" ? "image/jpeg" : "application/pdf",
+      uploaded_by: "current_user",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -207,7 +245,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
           <p>Loading media assets...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -235,7 +273,9 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
               <FileIcon className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">Total Assets</p>
-                <p className="text-2xl font-bold">{statistics.active_assets || 0}</p>
+                <p className="text-2xl font-bold">
+                  {statistics.active_assets || 0}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -258,7 +298,10 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Image className="h-4 w-4 text-green-500" aria-label="Image count icon" />
+              <Image
+                className="h-4 w-4 text-green-500"
+                aria-label="Image count icon"
+              />
               <div>
                 <p className="text-sm font-medium">Images</p>
                 <p className="text-2xl font-bold text-green-600">
@@ -277,8 +320,8 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                 <p className="text-sm font-medium">Documents</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {(statistics.by_type?.datasheet || 0) +
-                   (statistics.by_type?.certificate || 0) +
-                   (statistics.by_type?.installation || 0)}
+                    (statistics.by_type?.certificate || 0) +
+                    (statistics.by_type?.installation || 0)}
                 </p>
               </div>
             </div>
@@ -333,7 +376,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
             </TableHeader>
             <TableBody>
               {filteredAssets.map((asset: MediaAsset) => {
-                const Icon = getAssetTypeIcon(asset.type)
+                const Icon = getAssetTypeIcon(asset.type);
 
                 return (
                   <TableRow key={asset.id}>
@@ -362,13 +405,19 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                     <TableCell>
                       <div className="text-sm">
                         <p>{formatDate(asset.uploaded_at)}</p>
-                        <p className="text-muted-foreground">by {asset.uploaded_by}</p>
+                        <p className="text-muted-foreground">
+                          by {asset.uploaded_by}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {asset.tags.slice(0, 2).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -391,7 +440,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(asset.file_url, '_blank')}
+                          onClick={() => window.open(asset.file_url, "_blank")}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -403,7 +452,7 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                       </div>
                     </TableCell>
                   </TableRow>
-                )
+                );
               })}
             </TableBody>
           </Table>
@@ -413,7 +462,10 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
               <FileIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
               <p>No media assets found matching your criteria.</p>
               {!readonly && (
-                <Button onClick={() => setUploadDialogOpen(true)} className="mt-4">
+                <Button
+                  onClick={() => setUploadDialogOpen(true)}
+                  className="mt-4"
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Upload First Asset
                 </Button>
@@ -433,7 +485,12 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
           <div className="space-y-4">
             <div>
               <Label htmlFor="asset_type">Asset Type</Label>
-              <Select value={uploadForm.type} onValueChange={(value) => setUploadForm(prev => ({ ...prev, type: value }))}>
+              <Select
+                value={uploadForm.type}
+                onValueChange={(value) =>
+                  setUploadForm((prev) => ({ ...prev, type: value }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select asset type" />
                 </SelectTrigger>
@@ -442,7 +499,9 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                   <SelectItem value="certificate">Certificate</SelectItem>
                   <SelectItem value="image">Image</SelectItem>
                   <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="installation">Installation Guide</SelectItem>
+                  <SelectItem value="installation">
+                    Installation Guide
+                  </SelectItem>
                   <SelectItem value="warranty">Warranty Document</SelectItem>
                   <SelectItem value="test_report">Test Report</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
@@ -455,7 +514,9 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
               <Input
                 id="asset_name"
                 value={uploadForm.name}
-                onChange={(e) => setUploadForm(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setUploadForm((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Example_Datasheet.pdf"
               />
             </div>
@@ -465,7 +526,12 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
               <Textarea
                 id="asset_description"
                 value={uploadForm.description}
-                onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setUploadForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Brief description of the asset..."
                 rows={3}
               />
@@ -476,7 +542,9 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
               <Input
                 id="asset_tags"
                 value={uploadForm.tags}
-                onChange={(e) => setUploadForm(prev => ({ ...prev, tags: e.target.value }))}
+                onChange={(e) =>
+                  setUploadForm((prev) => ({ ...prev, tags: e.target.value }))
+                }
                 placeholder="datasheet, technical-specs, v2.1"
               />
             </div>
@@ -487,7 +555,12 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
                 <Input
                   id="component_id"
                   value={uploadForm.component_id}
-                  onChange={(e) => setUploadForm(prev => ({ ...prev, component_id: e.target.value }))}
+                  onChange={(e) =>
+                    setUploadForm((prev) => ({
+                      ...prev,
+                      component_id: e.target.value,
+                    }))
+                  }
                   placeholder="comp_001"
                 />
               </div>
@@ -504,7 +577,11 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={uploadMutation.isPending || !uploadForm.name || !uploadForm.component_id}
+              disabled={
+                uploadMutation.isPending ||
+                !uploadForm.name ||
+                !uploadForm.component_id
+              }
             >
               {uploadMutation.isPending ? (
                 <>
@@ -524,7 +601,10 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
 
       {/* Asset Detail Dialog */}
       {selectedAsset && (
-        <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
+        <Dialog
+          open={!!selectedAsset}
+          onOpenChange={() => setSelectedAsset(null)}
+        >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{selectedAsset.name}</DialogTitle>
@@ -533,36 +613,50 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Type</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Type
+                  </Label>
                   <p>{selectedAsset.type}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Size</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Size
+                  </Label>
                   <p>{formatFileSize(selectedAsset.file_size)}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Version</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Version
+                  </Label>
                   <p>v{selectedAsset.version}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Component</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Component
+                  </Label>
                   <p>{selectedAsset.component_id}</p>
                 </div>
               </div>
 
               {selectedAsset.description && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Description
+                  </Label>
                   <p>{selectedAsset.description}</p>
                 </div>
               )}
 
               {selectedAsset.tags.length > 0 && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Tags
+                  </Label>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {selectedAsset.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary">{tag}</Badge>
+                      <Badge key={index} variant="secondary">
+                        {tag}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -570,20 +664,29 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Uploaded</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Uploaded
+                  </Label>
                   <p>{formatDate(selectedAsset.uploaded_at)}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Uploaded by</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Uploaded by
+                  </Label>
                   <p>{selectedAsset.uploaded_by}</p>
                 </div>
               </div>
 
               <div className="flex justify-end gap-4">
-                <Button variant="outline" onClick={() => setSelectedAsset(null)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedAsset(null)}
+                >
                   Close
                 </Button>
-                <Button onClick={() => window.open(selectedAsset.file_url, '_blank')}>
+                <Button
+                  onClick={() => window.open(selectedAsset.file_url, "_blank")}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Download
                 </Button>
@@ -593,5 +696,5 @@ export default function MediaAssetManager({ componentId, readonly = false }: Med
         </Dialog>
       )}
     </div>
-  )
+  );
 }

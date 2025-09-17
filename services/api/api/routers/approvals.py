@@ -1,5 +1,5 @@
-
 """Endpoints for handling project change approvals."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Literal
@@ -41,4 +41,3 @@ async def handle_approval(req: ApprovalRequest) -> ApprovalResponse:
         grouped_diffs=summary["grouped_diffs"],
         kpi_deltas=summary["kpi_deltas"],
     )
-

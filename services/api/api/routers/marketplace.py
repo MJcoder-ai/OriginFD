@@ -1,6 +1,7 @@
 """
 Marketplace endpoints - placeholder for future implementation.
 """
+
 from fastapi import APIRouter
 
 router = APIRouter()
@@ -12,5 +13,5 @@ async def marketplace_root():
     return {
         "message": "Marketplace API coming soon",
         "version": "0.1.0",
-        "features": ["component_catalog", "supplier_network", "rfq_system"]
+        "features": ["component_catalog", "supplier_network", "rfq_system"],
     }

@@ -74,7 +74,7 @@ export function SystemDiagram({
     const componentsByType: Record<string, ComponentInstance[]> = {};
     instances.forEach((component) => {
       // Use component_id prefix as type or fallback to "unknown"
-      const componentType = component.component_id?.split(':')[0] || 'unknown';
+      const componentType = component.component_id?.split(":")[0] || "unknown";
       if (!componentsByType[componentType]) {
         componentsByType[componentType] = [];
       }
@@ -201,7 +201,7 @@ export function SystemDiagram({
 
   const getComponentName = (id: string) => {
     const component = instances.find((c) => c.id === id);
-    const componentType = component?.component_id?.split(':')[0] || 'unknown';
+    const componentType = component?.component_id?.split(":")[0] || "unknown";
     return (
       componentType
         .replace("_", " ")
@@ -224,7 +224,6 @@ export function SystemDiagram({
     return "";
   };
 
-
   if (compact) {
     // Show welcome state if no components
     if (!instances.length || positions.length === 0) {
@@ -232,22 +231,29 @@ export function SystemDiagram({
         <div className={`${className} relative w-full h-full`}>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Grid3x3 className="w-8 h-8 text-blue-500" />
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Grid3x3 className="w-8 h-8 text-blue-500" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Canvas Ready
+                </h3>
+                <p className="text-sm text-gray-600 mb-4 max-w-sm">
+                  Your single line diagram canvas is ready. Components will
+                  appear here when you add them to your project.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                  <span>Use</span>
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+                    Components
+                  </kbd>
+                  <span>or</span>
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+                    Models
+                  </kbd>
+                  <span>to get started</span>
+                </div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Canvas Ready</h3>
-              <p className="text-sm text-gray-600 mb-4 max-w-sm">
-                Your single line diagram canvas is ready. Components will appear here when you add them to your project.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-                <span>Use</span>
-                <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Components</kbd>
-                <span>or</span>
-                <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Models</kbd>
-                <span>to get started</span>
-              </div>
-            </div>
             </div>
           </div>
         </div>
@@ -263,12 +269,13 @@ export function SystemDiagram({
             height="100%"
             viewBox="0 0 800 600"
             className="border border-gray-200 rounded bg-white"
-            style={{ minHeight: '400px' }}
+            style={{ minHeight: "400px" }}
           >
             {/* Render compact version without header */}
             {connections
               .filter((connection) => {
-                const connectionLayer = (connection as ConnectionWithLayer).layer;
+                const connectionLayer = (connection as ConnectionWithLayer)
+                  .layer;
                 return connectionLayer ? layers[connectionLayer] : true;
               })
               .map((connection) => {

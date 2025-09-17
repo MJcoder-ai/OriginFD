@@ -10,33 +10,41 @@
  * 4. Updates the existing API client with new methods
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+const fs = require("fs").promises;
+const path = require("path");
+const { exec } = require("child_process");
+const { promisify } = require("util");
 
 const execAsync = promisify(exec);
 
 // Configuration
 const CONFIG = {
   // API endpoints
-  apiUrl: process.env.API_URL || 'http://localhost:8000',
-  openApiPath: '/openapi.json',
+  apiUrl: process.env.API_URL || "http://localhost:8000",
+  openApiPath: "/openapi.json",
 
   // Generation paths
-  outputDir: path.join(__dirname, '..', 'generated', 'api-client'),
-  currentClientPath: path.join(__dirname, '..', 'packages', 'ts', 'http-client', 'src', 'index.ts'),
-  tempSchemaPath: path.join(__dirname, '..', 'temp', 'openapi.json'),
+  outputDir: path.join(__dirname, "..", "generated", "api-client"),
+  currentClientPath: path.join(
+    __dirname,
+    "..",
+    "packages",
+    "ts",
+    "http-client",
+    "src",
+    "index.ts",
+  ),
+  tempSchemaPath: path.join(__dirname, "..", "temp", "openapi.json"),
 
   // Generator settings
-  generatorName: 'typescript-axios',
-  packageName: '@originfd/http-client-generated',
+  generatorName: "typescript-axios",
+  packageName: "@originfd/http-client-generated",
 
   // Validation patterns
   methodPatterns: [
-    /async\s+(\w+)\s*\(/g,  // Match async method definitions
-    /\.\s*(\w+)\s*\(/g      // Match method calls
-  ]
+    /async\s+(\w+)\s*\(/g, // Match async method definitions
+    /\.\s*(\w+)\s*\(/g, // Match method calls
+  ],
 };
 
 /**
@@ -46,14 +54,14 @@ async function ensureDirectories() {
   const dirs = [
     path.dirname(CONFIG.outputDir),
     path.dirname(CONFIG.tempSchemaPath),
-    CONFIG.outputDir
+    CONFIG.outputDir,
   ];
 
   for (const dir of dirs) {
     try {
       await fs.mkdir(dir, { recursive: true });
     } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
+      if (error.code !== "EEXIST") throw error;
     }
   }
 }
@@ -68,11 +76,13 @@ async function checkApiServer() {
     if (!response.ok) {
       throw new Error(`API server responded with ${response.status}`);
     }
-    console.log('✅ API server is running');
+    console.log("✅ API server is running");
     return true;
   } catch (error) {
     console.error(`❌ API server not accessible: ${error.message}`);
-    console.log('💡 Make sure the API server is running with: cd services/api && python main.py');
+    console.log(
+      "💡 Make sure the API server is running with: cd services/api && python main.py",
+    );
     return false;
   }
 }
@@ -82,11 +92,13 @@ async function checkApiServer() {
  */
 async function fetchOpenApiSchema() {
   try {
-    console.log('📥 Fetching OpenAPI schema...');
+    console.log("📥 Fetching OpenAPI schema...");
     const response = await fetch(`${CONFIG.apiUrl}${CONFIG.openApiPath}`);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch OpenAPI schema: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch OpenAPI schema: ${response.status} ${response.statusText}`,
+      );
     }
 
     const schema = await response.json();
@@ -107,12 +119,12 @@ async function fetchOpenApiSchema() {
  */
 async function ensureOpenApiGenerator() {
   try {
-    await execAsync('npx openapi-generator-cli version');
-    console.log('✅ openapi-generator-cli is available');
+    await execAsync("npx openapi-generator-cli version");
+    console.log("✅ openapi-generator-cli is available");
   } catch (error) {
-    console.log('📦 Installing openapi-generator-cli...');
-    await execAsync('npm install -g @openapitools/openapi-generator-cli');
-    console.log('✅ openapi-generator-cli installed');
+    console.log("📦 Installing openapi-generator-cli...");
+    await execAsync("npm install -g @openapitools/openapi-generator-cli");
+    console.log("✅ openapi-generator-cli installed");
   }
 }
 
@@ -121,31 +133,31 @@ async function ensureOpenApiGenerator() {
  */
 async function generateClient() {
   try {
-    console.log('🔨 Generating TypeScript client...');
+    console.log("🔨 Generating TypeScript client...");
 
     const command = [
-      'npx openapi-generator-cli generate',
+      "npx openapi-generator-cli generate",
       `-i ${CONFIG.tempSchemaPath}`,
       `-g ${CONFIG.generatorName}`,
       `-o ${CONFIG.outputDir}`,
       `--package-name=${CONFIG.packageName}`,
-      '--additional-properties=',
+      "--additional-properties=",
       [
-        'supportsES6=true',
-        'typescriptThreePlus=true',
-        'withInterfaces=true',
-        'apiPackage=api',
-        'modelPackage=models'
-      ].join(',')
-    ].join(' ');
+        "supportsES6=true",
+        "typescriptThreePlus=true",
+        "withInterfaces=true",
+        "apiPackage=api",
+        "modelPackage=models",
+      ].join(","),
+    ].join(" ");
 
     const { stdout, stderr } = await execAsync(command);
 
-    if (stderr && !stderr.includes('WARN')) {
-      console.warn('⚠️ Generator warnings:', stderr);
+    if (stderr && !stderr.includes("WARN")) {
+      console.warn("⚠️ Generator warnings:", stderr);
     }
 
-    console.log('✅ TypeScript client generated successfully');
+    console.log("✅ TypeScript client generated successfully");
     return CONFIG.outputDir;
   } catch (error) {
     console.error(`❌ Failed to generate client: ${error.message}`);
@@ -158,7 +170,7 @@ async function generateClient() {
  */
 async function analyzeExistingClient() {
   try {
-    const clientContent = await fs.readFile(CONFIG.currentClientPath, 'utf8');
+    const clientContent = await fs.readFile(CONFIG.currentClientPath, "utf8");
 
     const methods = new Set();
 
@@ -187,19 +199,19 @@ async function analyzeExistingClient() {
  */
 async function validateGeneratedClient(existingMethods) {
   try {
-    console.log('🔍 Validating generated client...');
+    console.log("🔍 Validating generated client...");
 
     // Read the generated API file
-    const apiFiles = await fs.readdir(path.join(CONFIG.outputDir, 'api'));
-    const generatedApiFile = apiFiles.find(file => file.endsWith('.ts'));
+    const apiFiles = await fs.readdir(path.join(CONFIG.outputDir, "api"));
+    const generatedApiFile = apiFiles.find((file) => file.endsWith(".ts"));
 
     if (!generatedApiFile) {
-      throw new Error('No generated API file found');
+      throw new Error("No generated API file found");
     }
 
     const generatedContent = await fs.readFile(
-      path.join(CONFIG.outputDir, 'api', generatedApiFile),
-      'utf8'
+      path.join(CONFIG.outputDir, "api", generatedApiFile),
+      "utf8",
     );
 
     // Extract generated methods
@@ -210,25 +222,40 @@ async function validateGeneratedClient(existingMethods) {
     }
 
     // Check coverage
-    const missingMethods = existingMethods.filter(method =>
-      !generatedMethods.has(method) &&
-      !['constructor', 'request', 'get', 'post', 'put', 'patch', 'delete'].includes(method)
+    const missingMethods = existingMethods.filter(
+      (method) =>
+        !generatedMethods.has(method) &&
+        ![
+          "constructor",
+          "request",
+          "get",
+          "post",
+          "put",
+          "patch",
+          "delete",
+        ].includes(method),
     );
 
     if (missingMethods.length > 0) {
-      console.warn(`⚠️ Missing methods in generated client: ${missingMethods.join(', ')}`);
+      console.warn(
+        `⚠️ Missing methods in generated client: ${missingMethods.join(", ")}`,
+      );
     } else {
-      console.log('✅ Generated client covers all existing methods');
+      console.log("✅ Generated client covers all existing methods");
     }
 
     return {
       generated: Array.from(generatedMethods),
       missing: missingMethods,
-      coverage: ((existingMethods.length - missingMethods.length) / existingMethods.length * 100).toFixed(1)
+      coverage: (
+        ((existingMethods.length - missingMethods.length) /
+          existingMethods.length) *
+        100
+      ).toFixed(1),
     };
   } catch (error) {
     console.error(`❌ Validation failed: ${error.message}`);
-    return { generated: [], missing: [], coverage: '0' };
+    return { generated: [], missing: [], coverage: "0" };
   }
 }
 
@@ -240,29 +267,31 @@ async function createReport(schema, validation) {
     timestamp: new Date().toISOString(),
     api: {
       url: CONFIG.apiUrl,
-      version: schema.info?.version || 'unknown',
-      title: schema.info?.title || 'OriginFD API'
+      version: schema.info?.version || "unknown",
+      title: schema.info?.title || "OriginFD API",
     },
     generation: {
       outputDir: CONFIG.outputDir,
       generatorName: CONFIG.generatorName,
-      packageName: CONFIG.packageName
+      packageName: CONFIG.packageName,
     },
     validation: {
-      coverage: validation.coverage + '%',
+      coverage: validation.coverage + "%",
       generatedMethods: validation.generated.length,
       missingMethods: validation.missing.length,
-      missing: validation.missing
+      missing: validation.missing,
     },
-    endpoints: Object.keys(schema.paths || {}).length
+    endpoints: Object.keys(schema.paths || {}).length,
   };
 
-  const reportPath = path.join(CONFIG.outputDir, 'generation-report.json');
+  const reportPath = path.join(CONFIG.outputDir, "generation-report.json");
   await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
 
-  console.log('📋 Generation report saved to:', reportPath);
+  console.log("📋 Generation report saved to:", reportPath);
   console.log(`📊 Client coverage: ${validation.coverage}%`);
-  console.log(`🔗 Generated ${validation.generated.length} methods from ${report.endpoints} endpoints`);
+  console.log(
+    `🔗 Generated ${validation.generated.length} methods from ${report.endpoints} endpoints`,
+  );
 
   return report;
 }
@@ -272,7 +301,7 @@ async function createReport(schema, validation) {
  */
 async function main() {
   try {
-    console.log('🚀 Starting OpenAPI client generation...\n');
+    console.log("🚀 Starting OpenAPI client generation...\n");
 
     // Setup
     await ensureDirectories();
@@ -301,13 +330,12 @@ async function main() {
     // Create report
     await createReport(schema, validation);
 
-    console.log('\n✅ OpenAPI client generation completed successfully!');
+    console.log("\n✅ OpenAPI client generation completed successfully!");
     console.log(`📁 Generated client available at: ${CONFIG.outputDir}`);
-    console.log('💡 Next steps:');
-    console.log('   1. Review the generated client');
-    console.log('   2. Update your existing client with new methods');
-    console.log('   3. Run tests to ensure compatibility');
-
+    console.log("💡 Next steps:");
+    console.log("   1. Review the generated client");
+    console.log("   2. Update your existing client with new methods");
+    console.log("   3. Run tests to ensure compatibility");
   } catch (error) {
     console.error(`\n❌ Generation failed: ${error.message}`);
     process.exit(1);
@@ -322,8 +350,8 @@ async function main() {
 }
 
 // Add fetch polyfill for Node.js
-if (typeof globalThis.fetch === 'undefined') {
-  const { fetch } = require('node-fetch');
+if (typeof globalThis.fetch === "undefined") {
+  const { fetch } = require("node-fetch");
   globalThis.fetch = fetch;
 }
 
@@ -334,5 +362,5 @@ if (require.main === module) {
 
 module.exports = {
   generateClient: main,
-  CONFIG
+  CONFIG,
 };

@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api-client'
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 import {
   Card,
   CardHeader,
@@ -13,57 +13,66 @@ import {
   Dialog,
   DialogTrigger,
   DialogContent,
-} from '@originfd/ui'
-import { Copy, Check } from 'lucide-react'
+} from "@originfd/ui";
+import { Copy, Check } from "lucide-react";
 
 interface PlannerTraceProps {
-  runId: string
+  runId: string;
 }
 
 interface PlannerTraceStep {
-  id: string
-  tool: string
-  params: Record<string, any>
-  cached?: boolean
-  psu_cost?: number
-  latency_ms?: number
-  evidence?: string[]
-  patch?: any
+  id: string;
+  tool: string;
+  params: Record<string, any>;
+  cached?: boolean;
+  psu_cost?: number;
+  latency_ms?: number;
+  evidence?: string[];
+  patch?: any;
 }
 
 interface PlannerTraceData {
-  run_id: string
-  steps: PlannerTraceStep[]
+  run_id: string;
+  steps: PlannerTraceStep[];
 }
 
 export function PlannerTrace({ runId }: PlannerTraceProps) {
   const { data, isLoading, error } = useQuery<PlannerTraceData>({
-    queryKey: ['planner-trace', runId],
+    queryKey: ["planner-trace", runId],
     queryFn: () => apiClient.getPlannerTrace(runId),
     enabled: !!runId,
-  })
+  });
 
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const copyRunId = async () => {
     try {
-      await navigator.clipboard.writeText(runId)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(runId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (e) {
-      console.error('Failed to copy run id', e)
+      console.error("Failed to copy run id", e);
     }
-  }
+  };
 
-  if (isLoading) return <div>Loading trace...</div>
-  if (error || !data) return <div>Failed to load trace.</div>
+  if (isLoading) return <div>Loading trace...</div>;
+  if (error || !data) return <div>Failed to load trace.</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-xl font-semibold">Run {data.run_id}</h2>
-        <Button variant="ghost" size="icon" onClick={copyRunId} aria-label="Copy run id">
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={copyRunId}
+          aria-label="Copy run id"
+        >
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </Button>
       </div>
       <ol className="relative border-l pl-4">
@@ -103,7 +112,10 @@ export function PlannerTrace({ runId }: PlannerTraceProps) {
                   {step.patch && step.patch.length > 0 && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="link" className="p-0 h-auto text-xs font-normal">
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto text-xs font-normal"
+                        >
                           view diff
                         </Button>
                       </DialogTrigger>
@@ -121,7 +133,7 @@ export function PlannerTrace({ runId }: PlannerTraceProps) {
         ))}
       </ol>
     </div>
-  )
+  );
 }
 
-export default PlannerTrace
+export default PlannerTrace;

@@ -2,24 +2,27 @@
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm 8+
 - Git
 
 ## Quick Start
 
 1. **Clone repository**
+
    ```bash
    git clone <repository-url>
    cd OriginFD
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Start development server**
+
    ```bash
    cd apps/web
    pnpm dev
@@ -36,7 +39,7 @@ OriginFD/
 ├── packages/
 │   └── ts/                  # TypeScript packages
 │       ├── types-odl/       # ODL-SD types (buildable)
-│       ├── http-client/     # API client (buildable)  
+│       ├── http-client/     # API client (buildable)
 │       └── ui/              # UI components (WIP)
 └── docs/                    # Project documentation
 ```
@@ -59,7 +62,7 @@ The web app can proxy API requests when `NEXT_PUBLIC_API_URL` is defined, but du
 ## Status
 
 ✅ Next.js 14 web application with authentication
-✅ Dashboard with project management UI  
+✅ Dashboard with project management UI
 ✅ TypeScript packages for types and API client
-⚠️  UI package requires additional component implementation
-⚠️  Backend services not yet implemented
+⚠️ UI package requires additional component implementation
+⚠️ Backend services not yet implemented

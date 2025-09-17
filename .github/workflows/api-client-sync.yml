@@ -4,28 +4,28 @@ on:
   # Trigger on API changes
   push:
     paths:
-      - 'services/api/**'
-      - '!services/api/README.md'
+      - "services/api/**"
+      - "!services/api/README.md"
   pull_request:
     paths:
-      - 'services/api/**'
-      - '!services/api/README.md'
+      - "services/api/**"
+      - "!services/api/README.md"
 
   # Allow manual trigger
   workflow_dispatch:
     inputs:
       force_generation:
-        description: 'Force client regeneration even if no changes detected'
+        description: "Force client regeneration even if no changes detected"
         required: false
-        default: 'false'
+        default: "false"
         type: choice
         options:
-          - 'true'
-          - 'false'
+          - "true"
+          - "false"
 
   # Weekly sync to catch any drift
   schedule:
-    - cron: '0 2 * * 1'  # Monday at 2 AM UTC
+    - cron: "0 2 * * 1" # Monday at 2 AM UTC
 
 jobs:
   detect-api-changes:
@@ -77,14 +77,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install Python dependencies
         run: |
@@ -259,8 +259,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci

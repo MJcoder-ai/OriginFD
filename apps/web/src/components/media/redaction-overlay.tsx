@@ -1,79 +1,85 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import { Button } from '@originfd/ui'
+import * as React from "react";
+import { Button } from "@originfd/ui";
 
-export type DocType = 'sld' | 'wiring' | 'fault'
+export type DocType = "sld" | "wiring" | "fault";
 
 interface RedactionBox {
-  x: number
-  y: number
-  width: number
-  height: number
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 interface RedactionOverlayProps {
-  src: string
-  type: 'image' | 'video'
-  docType?: DocType
+  src: string;
+  type: "image" | "video";
+  docType?: DocType;
 }
 
-export default function RedactionOverlay({ src, type, docType = 'sld' }: RedactionOverlayProps) {
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const [redactions, setRedactions] = React.useState<RedactionBox[]>([])
-  const [drawing, setDrawing] = React.useState(false)
-  const [start, setStart] = React.useState<{ x: number; y: number } | null>(null)
-  const [tempBox, setTempBox] = React.useState<RedactionBox | null>(null)
+export default function RedactionOverlay({
+  src,
+  type,
+  docType = "sld",
+}: RedactionOverlayProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [redactions, setRedactions] = React.useState<RedactionBox[]>([]);
+  const [drawing, setDrawing] = React.useState(false);
+  const [start, setStart] = React.useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const [tempBox, setTempBox] = React.useState<RedactionBox | null>(null);
 
   const getRelativePos = (e: React.MouseEvent) => {
-    const rect = containerRef.current!.getBoundingClientRect()
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  }
+    const rect = containerRef.current!.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!containerRef.current) return
-    const pos = getRelativePos(e)
-    setStart(pos)
-    setTempBox({ x: pos.x, y: pos.y, width: 0, height: 0 })
-    setDrawing(true)
-  }
+    if (!containerRef.current) return;
+    const pos = getRelativePos(e);
+    setStart(pos);
+    setTempBox({ x: pos.x, y: pos.y, width: 0, height: 0 });
+    setDrawing(true);
+  };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!drawing || !start) return
-    const pos = getRelativePos(e)
+    if (!drawing || !start) return;
+    const pos = getRelativePos(e);
     setTempBox({
       x: Math.min(pos.x, start.x),
       y: Math.min(pos.y, start.y),
       width: Math.abs(pos.x - start.x),
       height: Math.abs(pos.y - start.y),
-    })
-  }
+    });
+  };
 
   const handleMouseUp = () => {
     if (drawing && tempBox) {
-      setRedactions(prev => [...prev, tempBox])
+      setRedactions((prev) => [...prev, tempBox]);
     }
-    setDrawing(false)
-    setStart(null)
-    setTempBox(null)
-  }
+    setDrawing(false);
+    setStart(null);
+    setTempBox(null);
+  };
 
   const saveRedactions = async () => {
     try {
-      await fetch('/api/media/redaction', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/media/redaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           original_uri: src,
           redacted_uri: `${src}#redacted`,
           doc_type: docType,
           boxes: redactions,
         }),
-      })
+      });
     } catch (err) {
-      console.error('Failed to save redactions', err)
+      console.error("Failed to save redactions", err);
     }
-  }
+  };
 
   return (
     <div className="space-y-2">
@@ -93,7 +99,7 @@ export default function RedactionOverlay({ src, type, docType = 'sld' }: Redacti
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       >
-        {type === 'image' ? (
+        {type === "image" ? (
           <img
             src={src}
             alt="media"
@@ -134,6 +140,5 @@ export default function RedactionOverlay({ src, type, docType = 'sld' }: Redacti
         <Button onClick={saveRedactions}>Save Redactions</Button>
       )}
     </div>
-  )
+  );
 }
-
