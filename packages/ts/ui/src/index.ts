@@ -3,7 +3,7 @@
  * Shared components based on shadcn/ui and Radix UI primitives
  */
 
-// Base components (only export existing ones)
+export * from "./components/ui/responsive-table";
 export * from './components/ui/button'
 export * from './components/ui/card'
 export * from './components/ui/avatar'
@@ -21,7 +21,7 @@ export * from './components/ui/table'
 export * from './components/ui/progress'
 
 // Utilities
-export { cn } from './lib/utils'
+export { cn } from "./lib/utils";
 
 // TODO: Add remaining components as they are implemented
 // export * from './components/ui/sheet'
