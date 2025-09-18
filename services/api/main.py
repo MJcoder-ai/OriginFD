@@ -12,7 +12,7 @@ import uvicorn
 # Temporarily disable commerce router due to import issues
 from api.routers import alarms, approvals, health, projects
 from core.config import get_settings
-from core.database import engine
+from core.database import get_engine
 from core.logging_config import setup_logging
 from core.performance import compression_middleware, db_monitor, health_monitor
 from fastapi import FastAPI, HTTPException, Request
@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
 
     # Warm up database connection
     try:
-        with engine.connect() as conn:
+        with get_engine().connect() as conn:
             from sqlalchemy import text
 
             conn.execute(text("SELECT 1"))

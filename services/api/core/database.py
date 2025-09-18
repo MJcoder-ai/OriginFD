@@ -5,8 +5,9 @@ Database connection and session management with production-grade connection pool
 import logging
 import random
 import time
-from typing import Generator
+from typing import Annotated, Generator
 
+from fastapi import Depends
 from sqlalchemy import MetaData, create_engine, event, text
 from sqlalchemy.exc import DisconnectionError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
@@ -55,51 +56,57 @@ def create_database_engine():
         except (OperationalError, DisconnectionError) as e:
             if attempt == max_retries - 1:
                 logger.error(
-                    f"Failed to create database engine after {max_retries} attempts: {e}"
+                    f"Failed to create database engine after "
+                    f"{max_retries} attempts: {e}"
                 )
                 raise
 
             # Exponential backoff with jitter
             delay = settings.DATABASE_RETRY_DELAY * (2**attempt) + random.uniform(0, 1)
             logger.warning(
-                f"Database connection attempt {attempt + 1} failed, retrying in {delay:.2f}s: {e}"
+                f"Database connection attempt {attempt + 1} failed, "
+                f"retrying in {delay:.2f}s: {e}"
             )
             time.sleep(delay)
 
 
-# Create database engine with retry logic
-engine = create_database_engine()
+# Create database engine with retry logic (lazy initialization)
+engine = None
 
 
-# Add connection event listeners for monitoring
-@event.listens_for(engine, "connect")
-def receive_connect(dbapi_connection, connection_record):
-    """Log successful database connections."""
-    logger.debug("Database connection established")
+def get_engine():
+    """Get or create database engine with lazy initialization."""
+    global engine
+    if engine is None:
+        engine = create_database_engine()
+        # Add connection event listeners for monitoring
+
+        @event.listens_for(engine, "connect")
+        def receive_connect(dbapi_connection, connection_record):
+            """Log successful database connections."""
+            logger.debug("Database connection established")
+
+        @event.listens_for(engine, "checkout")
+        def receive_checkout(dbapi_connection, connection_record, connection_proxy):
+            """Log connection checkouts for monitoring."""
+            logger.debug("Database connection checked out from pool")
+
+    return engine
 
 
-@event.listens_for(engine, "checkout")
-def receive_checkout(dbapi_connection, connection_record, connection_proxy):
-    """Log connection pool checkouts."""
-    logger.debug(
-        f"Connection checked out from pool. Pool size: {engine.pool.size()}, Checked out: {engine.pool.checkedout()}"
-    )
+# Create sessionmaker (will be initialized when engine is created)
+SessionLocal = None
 
 
-@event.listens_for(engine, "checkin")
-def receive_checkin(dbapi_connection, connection_record):
-    """Log connection pool checkins."""
-    logger.debug("Connection returned to pool")
+def get_session_local():
+    """Get or create SessionLocal with lazy initialization."""
+    global SessionLocal
+    if SessionLocal is None:
+        SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=get_engine()
+        )
+    return SessionLocal
 
-
-@event.listens_for(engine, "invalidate")
-def receive_invalidate(dbapi_connection, connection_record, exception):
-    """Log connection invalidations."""
-    logger.warning(f"Database connection invalidated: {exception}")
-
-
-# Create sessionmaker
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create base class for models
 Base = declarative_base()
@@ -113,7 +120,8 @@ def get_db() -> Generator[Session, None, None]:
     Create database session with proper cleanup.
     Use as FastAPI dependency.
     """
-    db = SessionLocal()
+    session_local = get_session_local()
+    db = session_local()
     try:
         yield db
     except Exception as e:
@@ -155,10 +163,6 @@ async def check_database_connection() -> bool:
 
 
 # Type hint for dependency injection
-from typing import Annotated
-
-from fastapi import Depends
-
 SessionDep = Annotated[Session, Depends(get_db)]
 
 

@@ -381,6 +381,7 @@ steps:
           --region=${_REGION} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
+          --set-cloudsql-instances="originfd:us-central1:originfd-postgres-dev" \
           --task-timeout="10m" \
           --parallelism=1 \
           --max-retries=3 \
