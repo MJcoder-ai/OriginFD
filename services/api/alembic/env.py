@@ -74,24 +74,18 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             # Enable PostgreSQL extensions if using PostgreSQL
             from sqlalchemy import text
 
             if connection.dialect.name == "postgresql":
-                connection.execute(
-                    text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-                )
+                connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
 
                 # Enable Row Level Security on tables that need it
                 connection.execute(
-                    text(
-                        "ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY"
-                    )
+                    text("ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY")
                 )
                 connection.execute(
                     text(
@@ -106,9 +100,7 @@ def run_migrations_online() -> None:
                     )
                 )
                 connection.execute(
-                    text(
-                        "ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY"
-                    )
+                    text("ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY")
                 )
 
             context.run_migrations()

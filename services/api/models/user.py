@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import Boolean, Column, String
 from sqlalchemy.orm import relationship
 
-from .base import Base, UUIDMixin, TimestampMixin
+from .base import Base, TimestampMixin, UUIDMixin
 
 
 class User(Base, UUIDMixin, TimestampMixin):
