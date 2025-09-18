@@ -154,18 +154,35 @@ steps:
         DB_HOST=$$(gcloud sql instances describe ${_POSTGRES_INSTANCE} --format="value(ipAddresses[0].ipAddress)")
         DB_PASSWORD=$$(openssl rand -base64 32)
         DATABASE_URL="postgresql://originfd-user:$$DB_PASSWORD@$$DB_HOST:5432/originfd"
-        echo -n "$$DATABASE_URL" | gcloud secrets create database-url --data-file=- || echo "Database URL secret already exists"
+
+        # Create or update database URL secret
+        if gcloud secrets describe database-url >/dev/null 2>&1; then
+          echo "Updating existing database URL secret..."
+          echo -n "$$DATABASE_URL" | gcloud secrets versions add database-url --data-file=-
+        else
+          echo "Creating new database URL secret..."
+          echo -n "$$DATABASE_URL" | gcloud secrets create database-url --data-file=-
+        fi
 
         # Update the user password to match what we store in the secret
+        echo "Setting database user password..."
         gcloud sql users set-password originfd-user \
           --instance=${_POSTGRES_INSTANCE} \
-          --password=$$DB_PASSWORD || echo "Password already set"
+          --password=$$DB_PASSWORD
 
         # Get Redis connection string
         REDIS_HOST=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(host)")
         REDIS_PORT=$$(gcloud redis instances describe ${_REDIS_INSTANCE} --region=${_REGION} --format="value(port)")
         REDIS_URL="redis://$$REDIS_HOST:$$REDIS_PORT/0"
-        echo -n "$$REDIS_URL" | gcloud secrets create redis-url --data-file=- || echo "Redis URL secret already exists"
+
+        # Create or update Redis URL secret
+        if gcloud secrets describe redis-url >/dev/null 2>&1; then
+          echo "Updating existing Redis URL secret..."
+          echo -n "$$REDIS_URL" | gcloud secrets versions add redis-url --data-file=-
+        else
+          echo "Creating new Redis URL secret..."
+          echo -n "$$REDIS_URL" | gcloud secrets create redis-url --data-file=-
+        fi
 
   # Step 2: Validate Dependencies Before Building
   - name: 'python:3.11-slim'

@@ -74,7 +74,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
-        <link rel="stylesheet" href="/styles.css" />
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"

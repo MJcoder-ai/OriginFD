@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Button } from "@originfd/ui";
 
 export type DocType = "sld" | "wiring" | "fault";
@@ -100,9 +101,11 @@ export default function RedactionOverlay({
         onMouseUp={handleMouseUp}
       >
         {type === "image" ? (
-          <img
+          <Image
             src={src}
             alt="media"
+            width={400}
+            height={300}
             className="w-[400px] h-[300px] object-cover select-none pointer-events-none"
           />
         ) : (

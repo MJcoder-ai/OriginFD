@@ -31,7 +31,9 @@ class User(Base, UUIDMixin, TimestampMixin):
 
     def update_last_login(self) -> None:
         """Update last login timestamp."""
-        self.updated_at = datetime.utcnow()
+        # The updated_at field is automatically updated by SQLAlchemy onupdate
+        # This method is for manual timestamp updates if needed
+        pass
 
 
 class UserSchema(BaseModel):

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Force this route to be dynamic since it uses request headers
+export const dynamic = 'force-dynamic';
+
 // Mock user data for authentication
 const MOCK_USER = {
   id: "user-1",

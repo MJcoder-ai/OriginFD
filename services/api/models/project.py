@@ -40,6 +40,7 @@ class ProjectStatus(str, Enum):
 
 class Project(Base, UUIDMixin, TimestampMixin):
     """Database model for projects."""
+    __allow_unmapped__ = True
 
     __tablename__ = "projects"
 
@@ -84,12 +85,15 @@ class Project(Base, UUIDMixin, TimestampMixin):
         if not self.tags:
             return []
         try:
-            return json.loads(self.tags)
+            # Convert Column value to string before parsing
+            tags_str = str(self.tags) if self.tags else "[]"
+            result = json.loads(tags_str)
+            return result if isinstance(result, list) else []
         except (json.JSONDecodeError, TypeError):
             return []
 
     @tags_list.setter
-    def tags_list(self, value: List[str]):
+    def tags_list(self, value: List[str]) -> None:
         """Set tags as JSON string from list."""
         self.tags = json.dumps(value) if value else "[]"
 
