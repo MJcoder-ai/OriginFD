@@ -14,13 +14,7 @@ from sqlalchemy import engine_from_config, pool
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Import all models to ensure they're registered with Base
-import models.component  # noqa: E402
-import models.document  # noqa: E402
-import models.inventory_record  # noqa: E402
-import models.project  # noqa: E402
-import models.supplier  # noqa: E402
-import models.tenant  # noqa: E402
-import models.user  # noqa: E402
+import models  # noqa: E402, F401
 from core.config import get_settings  # noqa: E402
 from models.base import Base  # noqa: E402
 
@@ -80,31 +74,41 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
 
         with context.begin_transaction():
             # Enable PostgreSQL extensions if using PostgreSQL
             from sqlalchemy import text
 
             if connection.dialect.name == "postgresql":
-                connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+                connection.execute(
+                    text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+                )
 
                 # Enable Row Level Security on tables that need it
                 connection.execute(
-                    text("ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY")
-                )
-                connection.execute(
                     text(
-                        "ALTER TABLE IF EXISTS document_versions ENABLE ROW LEVEL SECURITY"
+                        "ALTER TABLE IF EXISTS documents ENABLE ROW LEVEL SECURITY"
                     )
                 )
                 connection.execute(
                     text(
-                        "ALTER TABLE IF EXISTS document_access ENABLE ROW LEVEL SECURITY"
+                        "ALTER TABLE IF EXISTS document_versions "
+                        "ENABLE ROW LEVEL SECURITY"
                     )
                 )
                 connection.execute(
-                    text("ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY")
+                    text(
+                        "ALTER TABLE IF EXISTS document_access "
+                        "ENABLE ROW LEVEL SECURITY"
+                    )
+                )
+                connection.execute(
+                    text(
+                        "ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY"
+                    )
                 )
 
             context.run_migrations()
