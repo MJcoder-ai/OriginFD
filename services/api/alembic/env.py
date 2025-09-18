@@ -16,8 +16,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 # Import all models to ensure they're registered with Base
 import models.component  # noqa: E402
 import models.document  # noqa: E402
+import models.inventory_record  # noqa: E402
 import models.project  # noqa: E402
-import models.tenant  # noqa: E402, F401
+import models.supplier  # noqa: E402
+import models.tenant  # noqa: E402
+import models.user  # noqa: E402
 from core.config import get_settings  # noqa: E402
 from models.base import Base  # noqa: E402
 
