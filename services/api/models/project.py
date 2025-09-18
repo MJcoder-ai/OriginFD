@@ -9,13 +9,13 @@ from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import Boolean, Column, DateTime
+from sqlalchemy import Boolean, Column
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from .base import Base
+from .base import Base, UUIDMixin, TimestampMixin
 
 
 class ProjectDomain(str, Enum):
@@ -38,12 +38,11 @@ class ProjectStatus(str, Enum):
     COMPLETED = "completed"
 
 
-class Project(Base):
+class Project(Base, UUIDMixin, TimestampMixin):
     """Database model for projects."""
 
     __tablename__ = "projects"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     domain = Column(SqlEnum(ProjectDomain), nullable=False)
@@ -69,15 +68,6 @@ class Project(Base):
     owner = relationship("User", back_populates="projects")
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False,
-    )
 
     def can_edit(self, user_id: str) -> bool:
         """Check if a user can edit this project."""

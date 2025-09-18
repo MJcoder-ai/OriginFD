@@ -2,25 +2,22 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, Column, DateTime, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Column, String
 from sqlalchemy.orm import relationship
 
-from .base import Base
+from .base import Base, UUIDMixin, TimestampMixin
 
 
-class User(Base):
+class User(Base, UUIDMixin, TimestampMixin):
     """Database model for application users."""
 
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=True)
@@ -28,15 +25,6 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
     role = Column(String, default="user")  # Single role for SQLite compatibility
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False,
-    )
 
     # Relationships
     projects = relationship("Project", back_populates="owner")
