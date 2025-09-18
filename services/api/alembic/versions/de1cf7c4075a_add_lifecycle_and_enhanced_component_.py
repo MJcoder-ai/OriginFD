@@ -8,6 +8,7 @@ Create Date: 2025-09-12 06:02:43.388226
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import Text
 
 # revision identifiers, used by Alembic.
 revision = "de1cf7c4075a"
@@ -110,7 +111,7 @@ def upgrade() -> None:
         sa.Column("from_location", sa.String(length=100), nullable=True),
         sa.Column("to_location", sa.String(length=100), nullable=True),
         sa.Column("reference_number", sa.String(length=100), nullable=True),
-        sa.Column("notes", sa.Text(), nullable=True),
+        sa.Column("notes", Text(), nullable=True),
         sa.Column("created_by", sa.String(length=100), nullable=False),
         sa.Column(
             "created_at",

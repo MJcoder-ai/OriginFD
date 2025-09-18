@@ -3,7 +3,6 @@ Alembic environment configuration for OriginFD database migrations.
 """
 
 import logging
-import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -14,15 +13,13 @@ from sqlalchemy import engine_from_config, pool
 # Add the parent directory to Python path to import models
 sys.path.append(str(Path(__file__).parent.parent))
 
-import models.component
-import models.document
-import models.project
-
 # Import all models to ensure they're registered with Base
-import models.tenant
-import models.user
-from core.config import get_settings
-from models.base import Base
+import models.component  # noqa: E402
+import models.document  # noqa: E402
+import models.project  # noqa: E402
+import models.tenant  # noqa: E402, F401
+from core.config import get_settings  # noqa: E402
+from models.base import Base  # noqa: E402
 
 # Alembic Config object
 config = context.config

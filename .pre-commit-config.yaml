@@ -67,6 +67,7 @@ repos:
     hooks:
       - id: bandit
         files: '^services/.*\.py$'
+        exclude: '^services/.*/test_.*\.py$|.*_test\.py$' # Exclude test files
         args: [-r, --skip, B101] # Skip assert_used test
 
   # JavaScript/TypeScript formatting and linting

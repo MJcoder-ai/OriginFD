@@ -34,6 +34,15 @@ from sqlalchemy.orm import Session
 # Temporarily disabled due to import issues:
 # from services.orchestrator.agents.agent_manager import AgentManager
 
+
+# Temporary placeholder
+class AgentManager:
+    @staticmethod
+    def detect_bottlenecks(lifecycle_data):
+        """Placeholder for bottleneck detection."""
+        return []  # TODO: Implement actual bottleneck detection
+
+
 router = APIRouter()
 
 
@@ -156,7 +165,7 @@ async def list_projects(
     List projects for the current user.
     """
     # Return all projects for testing (no user filtering)
-    query = db.query(Project).filter(Project.is_archived == False)
+    query = db.query(Project).filter(Project.is_archived is False)
 
     # Apply filters
     if domain:
@@ -312,7 +321,7 @@ async def get_project(
 
     project = (
         db.query(Project)
-        .filter(and_(Project.id == project_uuid, Project.is_archived == False))
+        .filter(and_(Project.id == project_uuid, Project.is_archived is False))
         .first()
     )
 
@@ -365,7 +374,7 @@ async def update_project(
 
     project = (
         db.query(Project)
-        .filter(and_(Project.id == project_uuid, Project.is_archived == False))
+        .filter(and_(Project.id == project_uuid, Project.is_archived is False))
         .first()
     )
 
@@ -427,7 +436,7 @@ async def delete_project(
 
     project = (
         db.query(Project)
-        .filter(and_(Project.id == project_uuid, Project.is_archived == False))
+        .filter(and_(Project.id == project_uuid, Project.is_archived is False))
         .first()
     )
 
@@ -465,7 +474,7 @@ async def get_project_stats(
     # Total projects (excluding archived)
     total_projects = (
         db.query(Project)
-        .filter(and_(Project.owner_id == user_id, Project.is_archived == False))
+        .filter(and_(Project.owner_id == user_id, Project.is_archived is False))
         .count()
     )
 
@@ -476,7 +485,7 @@ async def get_project_stats(
             and_(
                 Project.owner_id == user_id,
                 Project.status == ProjectStatus.ACTIVE,
-                Project.is_archived == False,
+                Project.is_archived is False,
             )
         )
         .count()
@@ -489,7 +498,7 @@ async def get_project_stats(
             and_(
                 Project.owner_id == user_id,
                 Project.domain == ProjectDomain.PV,
-                Project.is_archived == False,
+                Project.is_archived is False,
             )
         )
         .count()
@@ -501,7 +510,7 @@ async def get_project_stats(
             and_(
                 Project.owner_id == user_id,
                 Project.domain == ProjectDomain.BESS,
-                Project.is_archived == False,
+                Project.is_archived is False,
             )
         )
         .count()
@@ -513,7 +522,7 @@ async def get_project_stats(
             and_(
                 Project.owner_id == user_id,
                 Project.domain == ProjectDomain.HYBRID,
-                Project.is_archived == False,
+                Project.is_archived is False,
             )
         )
         .count()

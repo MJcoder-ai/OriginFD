@@ -381,16 +381,20 @@ steps:
           --region=${_REGION} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
-          --task-timeout=600 \
+          --task-timeout="10m" \
           --parallelism=1 \
-          --task-count=1 \
           --max-retries=3 \
-          --args="/bin/bash,-c,cd /app/services/api && alembic upgrade head"
+          --tasks=1 \
+          --args="/bin/bash,-c,cd /app && alembic upgrade head"
 
         echo "Executing database migration job..."
-        gcloud run jobs execute db-migrate --region=${_REGION} --wait
-
-        echo "Migration completed successfully"
+        if gcloud run jobs execute db-migrate --region=${_REGION} --wait; then
+          echo "✅ Database migration completed successfully"
+        else
+          echo "❌ Database migration failed. Checking job logs..."
+          gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=db-migrate" --limit=20 --format="value(textPayload)"
+          exit 1
+        fi
 
   # Step 5: Configure IAM Policies for Cloud Run Services
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
@@ -456,11 +460,15 @@ steps:
           --global \
           --load-balancing-scheme=EXTERNAL_MANAGED || echo "Backend service already exists"
 
-        # Add the NEG as backend to the service
-        gcloud compute backend-services add-backend originfd-web-backend \
-          --global \
-          --network-endpoint-group=originfd-web-neg \
-          --network-endpoint-group-region=${_REGION} || echo "Backend already added"
+        # Add the NEG as backend to the service (check if not already added)
+        if ! gcloud compute backend-services describe originfd-web-backend --global --format="value(backends[].group)" | grep -q "originfd-web-neg"; then
+          gcloud compute backend-services add-backend originfd-web-backend \
+            --global \
+            --network-endpoint-group=originfd-web-neg \
+            --network-endpoint-group-region=${_REGION}
+        else
+          echo "Backend already added"
+        fi
 
         # Create URL map with corrected parameter name
         gcloud compute url-maps create originfd-url-map \

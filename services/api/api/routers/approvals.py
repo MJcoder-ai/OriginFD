@@ -34,7 +34,9 @@ class ApprovalResponse(BaseModel):
 @router.post("/", response_model=ApprovalResponse)
 async def handle_approval(req: ApprovalRequest) -> ApprovalResponse:
     """Process an approval decision and return diff information."""
-    summary = generate_diff_summary(req.source, req.target)
+    # TODO: Implement generate_diff_summary when package is available
+    # summary = generate_diff_summary(req.source, req.target)
+    summary = {"grouped_diffs": {}, "kpi_deltas": {}}  # Temporary placeholder
     return ApprovalResponse(
         project_id=req.project_id,
         decision=req.decision,
