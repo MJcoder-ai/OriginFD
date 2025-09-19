@@ -45,12 +45,12 @@ class AgentManager:
 router = APIRouter()
 
 
-class models.ProjectCreateRequest(BaseModel):
+class ProjectCreateRequest(BaseModel):
     """Request model for creating a new project."""
 
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
-    domain: models.models.models.ProjectDomain
+    domain: models.ProjectDomain
     scale: models.models.ProjectScale
     location_name: Optional[str] = Field(None, max_length=255)
     latitude: Optional[float] = Field(
@@ -74,7 +74,7 @@ class models.ProjectCreateRequest(BaseModel):
         str_strip_whitespace = True
 
 
-class models.ProjectUpdateRequest(BaseModel):
+class ProjectUpdateRequest(BaseModel):
     """Request model for updating a project."""
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -99,15 +99,15 @@ class models.ProjectUpdateRequest(BaseModel):
         str_strip_whitespace = True
 
 
-class models.ProjectResponse(BaseModel):
+class ProjectResponse(BaseModel):
     """Response model for project data."""
 
     id: str
     name: str
     description: Optional[str]
-    domain: models.models.models.ProjectDomain
+    domain: models.ProjectDomain
     scale: models.models.ProjectScale
-    status: models.models.models.ProjectStatus
+    status: models.ProjectStatus
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
@@ -122,14 +122,14 @@ class models.ProjectResponse(BaseModel):
         from_attributes = True
 
 
-class models.ProjectSummaryResponse(BaseModel):
+class ProjectSummaryResponse(BaseModel):
     """Lightweight project summary for listings."""
 
     id: str
     name: str
-    domain: models.models.models.ProjectDomain
+    domain: models.ProjectDomain
     scale: models.models.ProjectScale
-    status: models.models.models.ProjectStatus
+    status: models.ProjectStatus
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
@@ -141,7 +141,7 @@ class models.ProjectSummaryResponse(BaseModel):
         from_attributes = True
 
 
-class models.ProjectListResponse(BaseModel):
+class ProjectListResponse(BaseModel):
     """Response model for project listings."""
 
     projects: List[models.ProjectSummaryResponse]

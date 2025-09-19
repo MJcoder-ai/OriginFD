@@ -18,8 +18,8 @@ async def test_component_models():
     print("Testing component models...")
 
     # Test component status enum
-    assert models.models.ComponentStatusEnum.DRAFT == "draft"
-    assert models.models.ComponentStatusEnum.OPERATIONAL == "operational"
+    assert models.ComponentStatusEnum.DRAFT == "draft"
+    assert models.ComponentStatusEnum.OPERATIONAL == "operational"
     print("✅ models.Component status enum works")
 
     # Test component model creation (without database)
@@ -29,7 +29,7 @@ async def test_component_models():
         "part_number": "COMP",
         "rating_w": 100,
         "name": "TEST_COMP_100W",
-        "status": models.models.ComponentStatusEnum.DRAFT,
+        "status": models.ComponentStatusEnum.DRAFT,
         "category": "generation",
         "subcategory": "pv_module",
     }
@@ -56,18 +56,16 @@ async def test_ai_tools():
     print("Testing AI tools...")
 
     try:
-        from tools.component_tools import (
-            models.ComponentClassificationTool,
-            models.ComponentDeduplicationTool,
-            models.ComponentRecommendationTool,
-            ParseDatasheetTool,
-        )
+        from tools.component_tools import ParseDatasheetTool
+        from tools.component_tools import ComponentClassificationTool
+        from tools.component_tools import ComponentDeduplicationTool
+        from tools.component_tools import ComponentRecommendationTool
 
         # Test tool instantiation
         parse_tool = ParseDatasheetTool()
-        dedupe_tool = models.ComponentDeduplicationTool()
-        classify_tool = models.ComponentClassificationTool()
-        recommend_tool = models.ComponentRecommendationTool()
+        dedupe_tool = ComponentDeduplicationTool()
+        classify_tool = ComponentClassificationTool()
+        recommend_tool = ComponentRecommendationTool()
 
         # Test metadata
         assert parse_tool.metadata.name == "parse_component_datasheet"

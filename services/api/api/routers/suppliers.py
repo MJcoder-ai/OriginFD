@@ -6,14 +6,25 @@ Handles supplier onboarding, management, and component sourcing.
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
+import models
 from core.auth import get_current_user
 from core.database import SessionDep
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-import models
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import and_, func, or_
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
+from pydantic import BaseModel
+from pydantic import EmailStr
+from pydantic import Field
+from sqlalchemy import and_
+from sqlalchemy import func
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)

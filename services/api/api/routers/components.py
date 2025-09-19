@@ -6,21 +6,31 @@ Implements ODL-SD v4.1 Component Management lifecycle.
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
+import models
 from api.routers.auth import get_current_user
 from core.database import SessionDep
-from core.performance import (
-    cached_response,
-    invalidate_component_cache,
-    monitor_performance,
-    performance_metrics,
-    rate_limit,
-)
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-import models
-from pydantic import BaseModel, Field
-from sqlalchemy import and_, func, or_
+from core.performance import cached_response
+from core.performance import invalidate_component_cache
+from core.performance import monitor_performance
+from core.performance import performance_metrics
+from core.performance import rate_limit
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import File
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import UploadFile
+from fastapi import status
+from pydantic import BaseModel
+from pydantic import Field
+from sqlalchemy import and_
+from sqlalchemy import func
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -281,7 +291,8 @@ async def list_components(
     List components with filtering and pagination.
     """
     # Use eager loading to prevent N+1 queries when accessing relationships
-    from sqlalchemy.orm import joinedload, selectinload
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy.orm import selectinload
 
     query = (
         db.query(models.Component)

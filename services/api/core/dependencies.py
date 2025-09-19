@@ -4,12 +4,16 @@ FastAPI dependency functions for authentication and caching
 
 import json
 from functools import lru_cache
-from typing import Annotated, Optional
+from typing import Annotated
+from typing import Optional
 
-import redis
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import models
+import redis
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
+from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
 from .auth import verify_token

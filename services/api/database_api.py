@@ -3,16 +3,26 @@
 OriginFD API with Real Database Integration
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List
+from typing import Optional
 from uuid import uuid4
 
-import uvicorn
-from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_token_pair
-from core.database import SessionDep, get_db, init_database
-from core.dependencies import Adminmodels.User, Currentmodels.User, Engineermodels.User
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
 import models
+import uvicorn
+from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES
+from core.auth import authenticate_user
+from core.auth import create_token_pair
+from core.database import SessionDep
+from core.database import get_db
+from core.database import init_database
+from core.dependencies import AdminUser
+from core.dependencies import CurrentUser
+from core.dependencies import EngineerUser
+from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -55,7 +65,7 @@ class TokenResponse(BaseModel):
     expires_in: int
 
 
-class models.UserResponse(BaseModel):
+class UserResponse(BaseModel):
     id: str
     email: str
     full_name: Optional[str] = None
@@ -63,7 +73,7 @@ class models.UserResponse(BaseModel):
     roles: list[str] = ["user"]
 
 
-class models.ProjectCreateRequest(BaseModel):
+class ProjectCreateRequest(BaseModel):
     project_name: str
     description: Optional[str] = None
     domain: str
@@ -71,7 +81,7 @@ class models.ProjectCreateRequest(BaseModel):
     location: Optional[str] = None
 
 
-class models.ProjectResponse(BaseModel):
+class ProjectResponse(BaseModel):
     id: str
     project_name: str
     description: Optional[str]
@@ -218,7 +228,7 @@ async def list_projects(
                 ),
                 "content_hash": f"hash-{project.id}",
                 "is_active": project.status
-                not in [models.models.ProjectStatus.CANCELLED, models.models.ProjectStatus.DECOMMISSIONED],
+                not in [models.ProjectStatus.CANCELLED, models.ProjectStatus.DECOMMISSIONED],
                 "created_at": project.created_at.isoformat() + "Z",
                 "updated_at": project.updated_at.isoformat() + "Z",
             }
@@ -255,7 +265,7 @@ async def get_project(project_id: str, current_user: Currentmodels.User, db: Ses
         "current_version": int(project.version.split(".")[0]) if project.version else 1,
         "content_hash": f"hash-{project.id}",
         "is_active": project.status
-        not in [models.models.ProjectStatus.CANCELLED, models.models.ProjectStatus.DECOMMISSIONED],
+        not in [models.ProjectStatus.CANCELLED, models.ProjectStatus.DECOMMISSIONED],
         "created_at": project.created_at.isoformat() + "Z",
         "updated_at": project.updated_at.isoformat() + "Z",
     }
@@ -274,9 +284,9 @@ async def create_project(
             name=project_data.project_name,
             description=project_data.description,
             owner_id=user_id,
-            domain=models.models.ProjectDomain(project_data.domain),
-            scale=models.models.ProjectScale(project_data.scale),
-            status=models.models.ProjectStatus.DRAFT,
+            domain=models.ProjectDomain(project_data.domain),
+            scale=models.ProjectScale(project_data.scale),
+            status=models.ProjectStatus.DRAFT,
             location_name=project_data.location,
         )
 
@@ -387,9 +397,9 @@ async def get_admin_stats(admin_user: Adminmodels.User, db: SessionDep):
         .filter(
             models.Project.status.in_(
                 [
-                    models.models.ProjectStatus.ACTIVE,
-                    models.models.ProjectStatus.UNDER_REVIEW,
-                    models.models.ProjectStatus.APPROVED,
+                    models.ProjectStatus.ACTIVE,
+                    models.ProjectStatus.UNDER_REVIEW,
+                    models.ProjectStatus.APPROVED,
                 ]
             )
         )
