@@ -4,7 +4,7 @@ Database models for ODL-SD documents.
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
@@ -40,7 +40,7 @@ class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
     is_active = Column(Boolean, nullable=False, default=True)
     is_locked = Column(Boolean, nullable=False, default=False)
     locked_by = Column(UUID(as_uuid=True), nullable=True)
-    locked_at = Column("locked_at", nullable=True)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     versions = relationship("DocumentVersion", back_populates="document")
@@ -109,7 +109,7 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )  # {"read": true, "write": false, "approve": false}
 
     # Access constraints
-    expires_at = Column("expires_at", nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
 
     # Granted by

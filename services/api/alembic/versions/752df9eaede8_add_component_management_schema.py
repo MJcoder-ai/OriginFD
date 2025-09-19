@@ -34,7 +34,7 @@ def upgrade() -> None:
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("is_locked", sa.Boolean(), nullable=False),
         sa.Column("locked_by", sa.UUID(), nullable=True),
-        sa.Column("locked_at", sa.NullType(), nullable=True),
+        sa.Column("locked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column(
             "created_at",
@@ -166,7 +166,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.UUID(), nullable=True),
         sa.Column("role", sa.String(length=100), nullable=True),
         sa.Column("permissions", postgresql.JSONB(astext_type=Text()), nullable=False),
-        sa.Column("expires_at", sa.NullType(), nullable=True),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("granted_by", sa.UUID(), nullable=False),
         sa.Column("grant_reason", sa.Text(), nullable=True),
