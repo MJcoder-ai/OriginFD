@@ -11,14 +11,7 @@ from typing import Any, Dict, List, Optional
 from core.auth import get_current_user
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from models.component import (
-    RFQ,
-    POStatusEnum,
-    PurchaseOrder,
-    RFQStatusEnum,
-    Supplier,
-    SupplierStatusEnum,
-)
+import models
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
@@ -54,7 +47,7 @@ class SupplierUpdateRequest(BaseModel):
     contact: Optional[Dict[str, Any]] = None
     capabilities: Optional[Dict[str, Any]] = None
     certifications: Optional[Dict[str, Any]] = None
-    status: Optional[SupplierStatusEnum] = None
+    status: Optional[models.SupplierStatusEnum] = None
 
 
 class SupplierResponse(BaseModel):
@@ -136,11 +129,11 @@ async def create_supplier(
 
         # Check for duplicate names
         existing = (
-            db.query(Supplier)
+            db.query(models.Supplier)
             .filter(
                 and_(
-                    Supplier.tenant_id == current_user["tenant_id"],
-                    Supplier.name == request.name,
+                    models.Supplier.tenant_id == current_user["tenant_id"],
+                    models.Supplier.name == request.name,
                 )
             )
             .first()
@@ -160,13 +153,13 @@ async def create_supplier(
             )
 
         # Create supplier
-        supplier = Supplier(
+        supplier = models.Supplier(
             tenant_id=uuid.UUID(current_user["tenant_id"]),
             supplier_id=supplier_id,
             name=request.name,
             gln=request.gln,
             contact=request.contact,
-            status=SupplierStatusEnum.DRAFT,
+            status=models.SupplierStatusEnum.DRAFT,
             capabilities=request.capabilities or {},
             certifications=request.certifications or {},
             created_by=uuid.UUID(current_user["id"]),
@@ -211,38 +204,38 @@ async def list_suppliers(
     current_user: dict = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[SupplierStatusEnum] = None,
+    status: Optional[models.SupplierStatusEnum] = None,
     search: Optional[str] = None,
     capabilities: Optional[str] = None,
 ):
     """
     List suppliers with filtering and pagination.
     """
-    query = db.query(Supplier).filter(Supplier.tenant_id == current_user["tenant_id"])
+    query = db.query(models.Supplier).filter(models.Supplier.tenant_id == current_user["tenant_id"])
 
     # Apply filters
     if status:
-        query = query.filter(Supplier.status == status)
+        query = query.filter(models.Supplier.status == status)
 
     if search:
         search_term = f"%{search}%"
         query = query.filter(
             or_(
-                Supplier.name.ilike(search_term),
-                Supplier.supplier_id.ilike(search_term),
+                models.Supplier.name.ilike(search_term),
+                models.Supplier.supplier_id.ilike(search_term),
             )
         )
 
     if capabilities:
         # Search in capabilities JSON
-        query = query.filter(Supplier.capabilities.op("?")(capabilities))
+        query = query.filter(models.Supplier.capabilities.op("?")(capabilities))
 
     # Get total count
     total = query.count()
 
     # Apply pagination and ordering
     suppliers = (
-        query.order_by(Supplier.updated_at.desc())
+        query.order_by(models.Supplier.updated_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -291,11 +284,11 @@ async def get_supplier(
         )
 
     supplier = (
-        db.query(Supplier)
+        db.query(models.Supplier)
         .filter(
             and_(
-                Supplier.id == supplier_uuid,
-                Supplier.tenant_id == current_user["tenant_id"],
+                models.Supplier.id == supplier_uuid,
+                models.Supplier.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -341,11 +334,11 @@ async def update_supplier(
         )
 
     supplier = (
-        db.query(Supplier)
+        db.query(models.Supplier)
         .filter(
             and_(
-                Supplier.id == supplier_uuid,
-                Supplier.tenant_id == current_user["tenant_id"],
+                models.Supplier.id == supplier_uuid,
+                models.Supplier.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -359,7 +352,7 @@ async def update_supplier(
     # Update fields
     update_data = request.dict(exclude_unset=True)
     for field, value in update_data.items():
-        if field == "status" and value == SupplierStatusEnum.APPROVED:
+        if field == "status" and value == models.SupplierStatusEnum.APPROVED:
             # Set approval timestamp and user
             supplier.approved_at = datetime.utcnow()
             supplier.approved_by = uuid.UUID(current_user["id"])
@@ -407,11 +400,11 @@ async def delete_supplier(
         )
 
     supplier = (
-        db.query(Supplier)
+        db.query(models.Supplier)
         .filter(
             and_(
-                Supplier.id == supplier_uuid,
-                Supplier.tenant_id == current_user["tenant_id"],
+                models.Supplier.id == supplier_uuid,
+                models.Supplier.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -423,7 +416,7 @@ async def delete_supplier(
         )
 
     # Deactivate instead of hard delete
-    supplier.status = SupplierStatusEnum.INACTIVE
+    supplier.status = models.SupplierStatusEnum.INACTIVE
     supplier.updated_at = datetime.utcnow()
 
     db.commit()
@@ -452,10 +445,10 @@ async def create_rfq(
         rfq_id = f"RFQ-{uuid.uuid4().hex[:8].upper()}"
 
         # Create RFQ
-        rfq = RFQ(
+        rfq = models.RFQ(
             tenant_id=uuid.UUID(current_user["tenant_id"]),
             rfq_id=rfq_id,
-            status=RFQStatusEnum.DRAFT,
+            status=models.RFQStatusEnum.DRAFT,
             round=1,
             deadline=request.deadline,
             lines=request.lines,
@@ -499,20 +492,20 @@ async def create_rfq(
 async def list_rfqs(
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
-    status: Optional[RFQStatusEnum] = None,
+    status: Optional[models.RFQStatusEnum] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
     """
     List RFQs with filtering and pagination.
     """
-    query = db.query(RFQ).filter(RFQ.tenant_id == current_user["tenant_id"])
+    query = db.query(models.RFQ).filter(models.RFQ.tenant_id == current_user["tenant_id"])
 
     if status:
-        query = query.filter(RFQ.status == status)
+        query = query.filter(models.RFQ.status == status)
 
     rfqs = (
-        query.order_by(RFQ.updated_at.desc())
+        query.order_by(models.RFQ.updated_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -555,11 +548,11 @@ async def approve_supplier(
         )
 
     supplier = (
-        db.query(Supplier)
+        db.query(models.Supplier)
         .filter(
             and_(
-                Supplier.id == supplier_uuid,
-                Supplier.tenant_id == current_user["tenant_id"],
+                models.Supplier.id == supplier_uuid,
+                models.Supplier.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -570,14 +563,14 @@ async def approve_supplier(
             status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found"
         )
 
-    if supplier.status == SupplierStatusEnum.APPROVED:
+    if supplier.status == models.SupplierStatusEnum.APPROVED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Supplier is already approved",
         )
 
     # Approve supplier
-    supplier.status = SupplierStatusEnum.APPROVED
+    supplier.status = models.SupplierStatusEnum.APPROVED
     supplier.approved_at = datetime.utcnow()
     supplier.approved_by = uuid.UUID(current_user["id"])
     supplier.updated_at = datetime.utcnow()
@@ -601,15 +594,15 @@ async def get_supplier_stats(
     tenant_id = current_user["tenant_id"]
 
     # Total suppliers
-    total_suppliers = db.query(Supplier).filter(Supplier.tenant_id == tenant_id).count()
+    total_suppliers = db.query(models.Supplier).filter(models.Supplier.tenant_id == tenant_id).count()
 
     # Approved suppliers
     approved_suppliers = (
-        db.query(Supplier)
+        db.query(models.Supplier)
         .filter(
             and_(
-                Supplier.tenant_id == tenant_id,
-                Supplier.status == SupplierStatusEnum.APPROVED,
+                models.Supplier.tenant_id == tenant_id,
+                models.Supplier.status == models.SupplierStatusEnum.APPROVED,
             )
         )
         .count()
@@ -617,11 +610,11 @@ async def get_supplier_stats(
 
     # Draft suppliers
     draft_suppliers = (
-        db.query(Supplier)
+        db.query(models.Supplier)
         .filter(
             and_(
-                Supplier.tenant_id == tenant_id,
-                Supplier.status == SupplierStatusEnum.DRAFT,
+                models.Supplier.tenant_id == tenant_id,
+                models.Supplier.status == models.SupplierStatusEnum.DRAFT,
             )
         )
         .count()
@@ -629,15 +622,15 @@ async def get_supplier_stats(
 
     # Active RFQs
     active_rfqs = (
-        db.query(RFQ)
+        db.query(models.RFQ)
         .filter(
             and_(
-                RFQ.tenant_id == tenant_id,
-                RFQ.status.in_(
+                models.RFQ.tenant_id == tenant_id,
+                models.RFQ.status.in_(
                     [
-                        RFQStatusEnum.ISSUED,
-                        RFQStatusEnum.BIDDING,
-                        RFQStatusEnum.EVALUATING,
+                        models.RFQStatusEnum.ISSUED,
+                        models.RFQStatusEnum.BIDDING,
+                        models.RFQStatusEnum.EVALUATING,
                     ]
                 ),
             )

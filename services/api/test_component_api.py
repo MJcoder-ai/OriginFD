@@ -10,9 +10,7 @@ from pathlib import Path
 # Add the API directory to the path
 sys.path.append(str(Path(__file__).parent))
 
-from models.component import Component, ComponentManagement, ComponentStatusEnum
-from models.tenant import Tenant
-from models.user import User
+import models
 
 
 async def test_component_models():
@@ -20,9 +18,9 @@ async def test_component_models():
     print("Testing component models...")
 
     # Test component status enum
-    assert ComponentStatusEnum.DRAFT == "draft"
-    assert ComponentStatusEnum.OPERATIONAL == "operational"
-    print("✅ Component status enum works")
+    assert models.models.ComponentStatusEnum.DRAFT == "draft"
+    assert models.models.ComponentStatusEnum.OPERATIONAL == "operational"
+    print("✅ models.Component status enum works")
 
     # Test component model creation (without database)
     component_data = {
@@ -31,12 +29,12 @@ async def test_component_models():
         "part_number": "COMP",
         "rating_w": 100,
         "name": "TEST_COMP_100W",
-        "status": ComponentStatusEnum.DRAFT,
+        "status": models.models.ComponentStatusEnum.DRAFT,
         "category": "generation",
         "subcategory": "pv_module",
     }
 
-    print("✅ Component model structure is valid")
+    print("✅ models.Component model structure is valid")
 
     # Test component management model
     management_data = {
@@ -48,7 +46,7 @@ async def test_component_models():
         "audit": [],
     }
 
-    print("✅ Component management model structure is valid")
+    print("✅ models.Component management model structure is valid")
 
     print("All component model tests passed! 🎉")
 
@@ -59,17 +57,17 @@ async def test_ai_tools():
 
     try:
         from tools.component_tools import (
-            ComponentClassificationTool,
-            ComponentDeduplicationTool,
-            ComponentRecommendationTool,
+            models.ComponentClassificationTool,
+            models.ComponentDeduplicationTool,
+            models.ComponentRecommendationTool,
             ParseDatasheetTool,
         )
 
         # Test tool instantiation
         parse_tool = ParseDatasheetTool()
-        dedupe_tool = ComponentDeduplicationTool()
-        classify_tool = ComponentClassificationTool()
-        recommend_tool = ComponentRecommendationTool()
+        dedupe_tool = models.ComponentDeduplicationTool()
+        classify_tool = models.ComponentClassificationTool()
+        recommend_tool = models.ComponentRecommendationTool()
 
         # Test metadata
         assert parse_tool.metadata.name == "parse_component_datasheet"
@@ -106,14 +104,14 @@ async def test_ai_tools():
 
 async def main():
     """Run all tests."""
-    print("🧪 Starting Component Management Implementation Tests\n")
+    print("🧪 Starting models.Component Management Implementation Tests\n")
 
     try:
         await test_component_models()
         print()
         await test_ai_tools()
         print()
-        print("🎉 All tests passed! Component management implementation is working.")
+        print("🎉 All tests passed! models.Component management implementation is working.")
 
     except Exception as e:
         print(f"❌ Test failed: {e}")

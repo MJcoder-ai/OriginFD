@@ -9,11 +9,10 @@ from uuid import uuid4
 import uvicorn
 from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_token_pair
 from core.database import SessionDep, get_db, init_database
-from core.dependencies import AdminUser, CurrentUser, EngineerUser
+from core.dependencies import Adminmodels.User, Currentmodels.User, Engineermodels.User
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from models.project import Project, ProjectDomain, ProjectScale, ProjectStatus
-from models.user import User
+import models
 from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -56,7 +55,7 @@ class TokenResponse(BaseModel):
     expires_in: int
 
 
-class UserResponse(BaseModel):
+class models.UserResponse(BaseModel):
     id: str
     email: str
     full_name: Optional[str] = None
@@ -64,7 +63,7 @@ class UserResponse(BaseModel):
     roles: list[str] = ["user"]
 
 
-class ProjectCreateRequest(BaseModel):
+class models.ProjectCreateRequest(BaseModel):
     project_name: str
     description: Optional[str] = None
     domain: str
@@ -72,7 +71,7 @@ class ProjectCreateRequest(BaseModel):
     location: Optional[str] = None
 
 
-class ProjectResponse(BaseModel):
+class models.ProjectResponse(BaseModel):
     id: str
     project_name: str
     description: Optional[str]
@@ -126,7 +125,7 @@ async def health(db: SessionDep):
 async def login(login_request: LoginRequest, db: SessionDep):
     """Login with email and password"""
     # Get user from database
-    user = db.query(User).filter(User.email == login_request.email).first()
+    user = db.query(models.User).filter(models.User.email == login_request.email).first()
 
     if not user:
         raise HTTPException(
@@ -167,10 +166,10 @@ async def login(login_request: LoginRequest, db: SessionDep):
     )
 
 
-@app.get("/auth/me", response_model=UserResponse)
-async def get_current_user_endpoint(current_user: CurrentUser):
+@app.get("/auth/me", response_model=models.UserResponse)
+async def get_current_user_endpoint(current_user: Currentmodels.User):
     """Get current user information"""
-    return UserResponse(
+    return models.UserResponse(
         id=str(current_user["id"]),
         email=current_user["email"],
         full_name=current_user.get("full_name"),
@@ -180,26 +179,26 @@ async def get_current_user_endpoint(current_user: CurrentUser):
 
 
 @app.post("/auth/logout")
-async def logout(current_user: CurrentUser):
+async def logout(current_user: Currentmodels.User):
     """Logout current user"""
     # In a real implementation, you'd invalidate the token in the database
     return {"message": "Successfully logged out"}
 
 
-# Project endpoints
+# models.Project endpoints
 @app.get("/projects")
 async def list_projects(
-    current_user: CurrentUser, db: SessionDep, skip: int = 0, limit: int = 20
+    current_user: Currentmodels.User, db: SessionDep, skip: int = 0, limit: int = 20
 ):
     """List user's projects"""
     user_id = current_user["id"]
 
     # Get projects owned by the user (later we'll add shared projects)
     projects = (
-        db.query(Project)
-        .filter(Project.owner_id == user_id)
-        .filter(Project.is_archived == False)
-        .order_by(desc(Project.updated_at))
+        db.query(models.Project)
+        .filter(models.Project.owner_id == user_id)
+        .filter(models.Project.is_archived == False)
+        .order_by(desc(models.Project.updated_at))
         .offset(skip)
         .limit(limit)
         .all()
@@ -219,7 +218,7 @@ async def list_projects(
                 ),
                 "content_hash": f"hash-{project.id}",
                 "is_active": project.status
-                not in [ProjectStatus.CANCELLED, ProjectStatus.DECOMMISSIONED],
+                not in [models.models.ProjectStatus.CANCELLED, models.models.ProjectStatus.DECOMMISSIONED],
                 "created_at": project.created_at.isoformat() + "Z",
                 "updated_at": project.updated_at.isoformat() + "Z",
             }
@@ -229,16 +228,16 @@ async def list_projects(
 
 
 @app.get("/projects/{project_id}")
-async def get_project(project_id: str, current_user: CurrentUser, db: SessionDep):
+async def get_project(project_id: str, current_user: Currentmodels.User, db: SessionDep):
     """Get specific project"""
     user_id = current_user["id"]
 
     # Get project and verify access
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
 
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="models.Project not found"
         )
 
     # Check if user has access (owner or team member)
@@ -256,28 +255,28 @@ async def get_project(project_id: str, current_user: CurrentUser, db: SessionDep
         "current_version": int(project.version.split(".")[0]) if project.version else 1,
         "content_hash": f"hash-{project.id}",
         "is_active": project.status
-        not in [ProjectStatus.CANCELLED, ProjectStatus.DECOMMISSIONED],
+        not in [models.models.ProjectStatus.CANCELLED, models.models.ProjectStatus.DECOMMISSIONED],
         "created_at": project.created_at.isoformat() + "Z",
         "updated_at": project.updated_at.isoformat() + "Z",
     }
 
 
-@app.post("/projects", response_model=ProjectResponse)
+@app.post("/projects", response_model=models.ProjectResponse)
 async def create_project(
-    project_data: ProjectCreateRequest, current_user: EngineerUser, db: SessionDep
+    project_data: models.ProjectCreateRequest, current_user: Engineermodels.User, db: SessionDep
 ):
     """Create new project (requires engineer role)"""
     user_id = current_user["id"]
 
     try:
         # Create new project
-        new_project = Project(
+        new_project = models.Project(
             name=project_data.project_name,
             description=project_data.description,
             owner_id=user_id,
-            domain=ProjectDomain(project_data.domain),
-            scale=ProjectScale(project_data.scale),
-            status=ProjectStatus.DRAFT,
+            domain=models.models.ProjectDomain(project_data.domain),
+            scale=models.models.ProjectScale(project_data.scale),
+            status=models.models.ProjectStatus.DRAFT,
             location_name=project_data.location,
         )
 
@@ -285,7 +284,7 @@ async def create_project(
         db.commit()
         db.refresh(new_project)
 
-        return ProjectResponse(
+        return models.ProjectResponse(
             id=str(new_project.id),
             project_name=new_project.name,
             description=new_project.description,
@@ -307,12 +306,12 @@ async def create_project(
 
 
 @app.get("/documents/{document_id}")
-async def get_document(document_id: str, current_user: CurrentUser, db: SessionDep):
+async def get_document(document_id: str, current_user: Currentmodels.User, db: SessionDep):
     """Get ODL-SD document"""
     user_id = current_user["id"]
 
     # Get project and verify access
-    project = db.query(Project).filter(Project.id == document_id).first()
+    project = db.query(models.Project).filter(models.Project.id == document_id).first()
 
     if not project:
         raise HTTPException(
@@ -362,7 +361,7 @@ scenario_audit_log: List[ScenarioAudit] = []
 
 
 @app.post("/scenarios", response_model=ScenarioAudit)
-async def store_scenario_audit(scenario: ScenarioAudit, current_user: CurrentUser):
+async def store_scenario_audit(scenario: ScenarioAudit, current_user: Currentmodels.User):
     record = ScenarioAudit(
         id=scenario.id or str(uuid4()),
         project_id=scenario.project_id,
@@ -378,19 +377,19 @@ async def store_scenario_audit(scenario: ScenarioAudit, current_user: CurrentUse
 
 # Admin endpoints
 @app.get("/admin/stats")
-async def get_admin_stats(admin_user: AdminUser, db: SessionDep):
+async def get_admin_stats(admin_user: Adminmodels.User, db: SessionDep):
     """Get admin statistics"""
-    total_users = db.query(User).count()
-    active_users = db.query(User).filter(User.is_active == True).count()
-    total_projects = db.query(Project).count()
+    total_users = db.query(models.User).count()
+    active_users = db.query(models.User).filter(models.User.is_active == True).count()
+    total_projects = db.query(models.Project).count()
     active_projects = (
-        db.query(Project)
+        db.query(models.Project)
         .filter(
-            Project.status.in_(
+            models.Project.status.in_(
                 [
-                    ProjectStatus.ACTIVE,
-                    ProjectStatus.UNDER_REVIEW,
-                    ProjectStatus.APPROVED,
+                    models.models.ProjectStatus.ACTIVE,
+                    models.models.ProjectStatus.UNDER_REVIEW,
+                    models.models.ProjectStatus.APPROVED,
                 ]
             )
         )
@@ -415,7 +414,7 @@ if __name__ == "__main__":
     print(f"API docs at: http://localhost:{port}/docs")
     print("Demo credentials:")
     print("  Admin: admin@originfd.com / admin")
-    print("  User:  user@originfd.com / password")
+    print("  models.User:  user@originfd.com / password")
 
     uvicorn.run(
         "database_api:app", host="0.0.0.0", port=port, reload=True, log_level="info"

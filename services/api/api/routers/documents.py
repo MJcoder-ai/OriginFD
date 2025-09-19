@@ -11,7 +11,7 @@ from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 # from core.rbac import guard_patch, has_document_access  # TODO: Implement RBAC
-from models.document import Document, DocumentVersion
+import models
 from odl_sd.schemas import OdlSdDocument
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -112,7 +112,7 @@ async def create_document(
             )
 
         # Create database record
-        document = Document(
+        document = models.Document(
             tenant_id=uuid.UUID(current_user["tenant_id"]),  # From JWT
             project_name=request.project_name,
             portfolio_id=(
@@ -130,7 +130,7 @@ async def create_document(
         db.refresh(document)
 
         # Create initial version record
-        version = DocumentVersion(
+        version = models.DocumentVersion(
             tenant_id=document.tenant_id,
             document_id=document.id,
             version_number=1,
@@ -178,10 +178,10 @@ async def get_document(
 
     # Get document
     document = (
-        db.query(Document)
+        db.query(models.Document)
         .filter(
-            Document.id == doc_uuid,
-            Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
+            models.Document.id == doc_uuid,
+            models.Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
         )
         .first()
     )
@@ -201,11 +201,11 @@ async def get_document(
     else:
         # Return specific version
         doc_version = (
-            db.query(DocumentVersion)
+            db.query(models.DocumentVersion)
             .filter(
-                DocumentVersion.document_id == doc_uuid,
-                DocumentVersion.version_number == version,
-                DocumentVersion.tenant_id == uuid.UUID(current_user["tenant_id"]),
+                models.DocumentVersion.document_id == doc_uuid,
+                models.DocumentVersion.version_number == version,
+                models.DocumentVersion.tenant_id == uuid.UUID(current_user["tenant_id"]),
             )
             .first()
         )
@@ -238,10 +238,10 @@ async def apply_document_patch(
 
     # Get current document with row lock
     document = (
-        db.query(Document)
+        db.query(models.Document)
         .filter(
-            Document.id == doc_uuid,
-            Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
+            models.Document.id == doc_uuid,
+            models.Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
         )
         .with_for_update()
         .first()
@@ -311,7 +311,7 @@ async def apply_document_patch(
         document.updated_at = datetime.utcnow()
 
         # Create version record
-        version = DocumentVersion(
+        version = models.DocumentVersion(
             tenant_id=document.tenant_id,
             document_id=document.id,
             version_number=new_version,
@@ -369,10 +369,10 @@ async def get_document_versions(
 
     # Check document exists and user has access
     document = (
-        db.query(Document)
+        db.query(models.Document)
         .filter(
-            Document.id == doc_uuid,
-            Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
+            models.Document.id == doc_uuid,
+            models.Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
         )
         .first()
     )
@@ -384,12 +384,12 @@ async def get_document_versions(
 
     # Get versions
     versions = (
-        db.query(DocumentVersion)
+        db.query(models.DocumentVersion)
         .filter(
-            DocumentVersion.document_id == doc_uuid,
-            DocumentVersion.tenant_id == uuid.UUID(current_user["tenant_id"]),
+            models.DocumentVersion.document_id == doc_uuid,
+            models.DocumentVersion.tenant_id == uuid.UUID(current_user["tenant_id"]),
         )
-        .order_by(DocumentVersion.version_number.desc())
+        .order_by(models.DocumentVersion.version_number.desc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -425,10 +425,10 @@ async def get_document_audit_trail(
         )
 
     document = (
-        db.query(Document)
+        db.query(models.Document)
         .filter(
-            Document.id == doc_uuid,
-            Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
+            models.Document.id == doc_uuid,
+            models.Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
         )
         .first()
     )

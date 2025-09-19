@@ -11,8 +11,7 @@ from typing import Any, Dict, List, Optional
 from core.auth import get_current_user
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.component import Component, ComponentManagement
-from models.document import Document, DocumentVersion
+import models
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -101,11 +100,11 @@ async def bind_component_to_document(
     try:
         # Validate component exists and user has access
         component = (
-            db.query(Component)
+            db.query(models.Component)
             .filter(
                 and_(
-                    Component.id == uuid.UUID(request.component_id),
-                    Component.tenant_id == current_user["tenant_id"],
+                    models.Component.id == uuid.UUID(request.component_id),
+                    models.Component.tenant_id == current_user["tenant_id"],
                 )
             )
             .first()
@@ -118,11 +117,11 @@ async def bind_component_to_document(
 
         # Validate document exists and user has access
         document = (
-            db.query(Document)
+            db.query(models.Document)
             .filter(
                 and_(
-                    Document.id == uuid.UUID(request.document_id),
-                    Document.tenant_id == current_user["tenant_id"],
+                    models.Document.id == uuid.UUID(request.document_id),
+                    models.Document.tenant_id == current_user["tenant_id"],
                 )
             )
             .first()
@@ -135,9 +134,9 @@ async def bind_component_to_document(
 
         # Get current document content
         current_version = (
-            db.query(DocumentVersion)
-            .filter(DocumentVersion.document_id == document.id)
-            .order_by(DocumentVersion.version_number.desc())
+            db.query(models.DocumentVersion)
+            .filter(models.DocumentVersion.document_id == document.id)
+            .order_by(models.DocumentVersion.version_number.desc())
             .first()
         )
 
@@ -148,7 +147,7 @@ async def bind_component_to_document(
             )
 
         # Parse ODL-SD document
-        odl_document = OdlDocument.model_validate(current_version.content)
+        odl_document = Odlmodels.Document.model_validate(current_version.content)
 
         # Create component reference based on binding type
         component_ref = create_component_reference(
@@ -164,10 +163,10 @@ async def bind_component_to_document(
         updated_content = apply_patch(current_version.content, patch_ops)
 
         # Validate updated document
-        updated_odl = OdlDocument.model_validate(updated_content)
+        updated_odl = Odlmodels.Document.model_validate(updated_content)
 
         # Create new document version
-        new_version = DocumentVersion(
+        new_version = models.DocumentVersion(
             document_id=document.id,
             version_number=current_version.version_number + 1,
             content=updated_content,
@@ -248,11 +247,11 @@ async def add_components_to_project(
     try:
         # Get project document
         document = (
-            db.query(Document)
+            db.query(models.Document)
             .filter(
                 and_(
-                    Document.id == uuid.UUID(request.project_document_id),
-                    Document.tenant_id == current_user["tenant_id"],
+                    models.Document.id == uuid.UUID(request.project_document_id),
+                    models.Document.tenant_id == current_user["tenant_id"],
                 )
             )
             .first()
@@ -266,14 +265,14 @@ async def add_components_to_project(
 
         # Get current version
         current_version = (
-            db.query(DocumentVersion)
-            .filter(DocumentVersion.document_id == document.id)
-            .order_by(DocumentVersion.version_number.desc())
+            db.query(models.DocumentVersion)
+            .filter(models.DocumentVersion.document_id == document.id)
+            .order_by(models.DocumentVersion.version_number.desc())
             .first()
         )
 
         # Parse ODL-SD document
-        odl_document = OdlDocument.model_validate(current_version.content)
+        odl_document = Odlmodels.Document.model_validate(current_version.content)
 
         # Ensure libraries.components exists
         if not hasattr(odl_document, "libraries") or not odl_document.libraries:
@@ -292,11 +291,11 @@ async def add_components_to_project(
 
             # Get component from database
             component = (
-                db.query(Component)
+                db.query(models.Component)
                 .filter(
                     and_(
-                        Component.id == uuid.UUID(component_id),
-                        Component.tenant_id == current_user["tenant_id"],
+                        models.Component.id == uuid.UUID(component_id),
+                        models.Component.tenant_id == current_user["tenant_id"],
                     )
                 )
                 .first()
@@ -313,7 +312,7 @@ async def add_components_to_project(
 
         # Create new document version
         new_content = odl_document.model_dump()
-        new_version = DocumentVersion(
+        new_version = models.DocumentVersion(
             document_id=document.id,
             version_number=current_version.version_number + 1,
             content=new_content,
@@ -361,11 +360,11 @@ async def update_component_specifications(
     """
     try:
         component = (
-            db.query(Component)
+            db.query(models.Component)
             .filter(
                 and_(
-                    Component.id == uuid.UUID(component_id),
-                    Component.tenant_id == current_user["tenant_id"],
+                    models.Component.id == uuid.UUID(component_id),
+                    models.Component.tenant_id == current_user["tenant_id"],
                 )
             )
             .first()
@@ -393,8 +392,8 @@ async def update_component_specifications(
 
             try:
                 document = (
-                    db.query(Document)
-                    .filter(Document.id == uuid.UUID(document_id))
+                    db.query(models.Document)
+                    .filter(models.Document.id == uuid.UUID(document_id))
                     .first()
                 )
 
@@ -403,14 +402,14 @@ async def update_component_specifications(
 
                 # Get current version
                 current_version = (
-                    db.query(DocumentVersion)
-                    .filter(DocumentVersion.document_id == document.id)
-                    .order_by(DocumentVersion.version_number.desc())
+                    db.query(models.DocumentVersion)
+                    .filter(models.DocumentVersion.document_id == document.id)
+                    .order_by(models.DocumentVersion.version_number.desc())
                     .first()
                 )
 
                 # Parse and update document
-                odl_document = OdlDocument.model_validate(current_version.content)
+                odl_document = Odlmodels.Document.model_validate(current_version.content)
 
                 # Update component specifications in document
                 updated = update_component_specs_in_document(
@@ -422,7 +421,7 @@ async def update_component_specifications(
 
                 if updated:
                     # Create new version
-                    new_version = DocumentVersion(
+                    new_version = models.DocumentVersion(
                         document_id=document.id,
                         version_number=current_version.version_number + 1,
                         content=odl_document.model_dump(),
@@ -480,11 +479,11 @@ async def get_component_bindings(
     """
     try:
         component = (
-            db.query(Component)
+            db.query(models.Component)
             .filter(
                 and_(
-                    Component.id == uuid.UUID(component_id),
-                    Component.tenant_id == current_user["tenant_id"],
+                    models.Component.id == uuid.UUID(component_id),
+                    models.Component.tenant_id == current_user["tenant_id"],
                 )
             )
             .first()
@@ -530,7 +529,7 @@ async def get_component_bindings(
 
 
 def create_component_reference(
-    component: Component, binding_type: str, metadata: Optional[Dict[str, Any]]
+    component: models.Component, binding_type: str, metadata: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
     """Create a component reference for ODL-SD document."""
     base_ref = {
@@ -613,7 +612,7 @@ def create_component_binding_patch(
 
 
 def create_odl_component_instance(
-    component: Component, instance_data: Dict[str, Any]
+    component: models.Component, instance_data: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Create ODL-SD component instance from component and instance data."""
     instance = {

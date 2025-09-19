@@ -168,10 +168,10 @@ SessionDep = Annotated[Session, Depends(get_db)]
 
 def create_tables():
     """Create all database tables"""
-    from models.base import Base
+    import models
 
     logger.info("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
+    models.Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully!")
 
 
@@ -180,18 +180,17 @@ def init_database():
     create_tables()
 
     # Import models to ensure they're registered
-    from models.project import Project
-    from models.user import User
+    import models
 
     # Create initial users
     db = SessionLocal()
     try:
         # Check if admin user already exists
-        admin_user = db.query(User).filter(User.email == "admin@originfd.com").first()
+        admin_user = db.query(models.User).filter(models.User.email == "admin@originfd.com").first()
         if not admin_user:
             from core.auth import get_password_hash
 
-            admin_user = User(
+            admin_user = models.User(
                 email="admin@originfd.com",
                 hashed_password=get_password_hash("admin"),
                 full_name="Admin User",
@@ -202,7 +201,7 @@ def init_database():
             )
             db.add(admin_user)
 
-            regular_user = User(
+            regular_user = models.User(
                 email="user@originfd.com",
                 hashed_password=get_password_hash("password"),
                 full_name="Regular User",
@@ -217,36 +216,34 @@ def init_database():
             logger.info("Initial users created!")
 
             # Create sample projects
-            from models.project import ProjectDomain, ProjectScale, ProjectStatus
-
             sample_projects = [
-                Project(
+                models.Project(
                     name="Solar Farm Arizona Phase 1",
                     description="Large-scale solar PV installation in Arizona",
                     owner_id=admin_user.id,
-                    domain=ProjectDomain.PV,
-                    scale=ProjectScale.UTILITY,
-                    status=ProjectStatus.ACTIVE,
+                    domain=models.ProjectDomain.PV,
+                    scale=models.ProjectScale.UTILITY,
+                    status=models.ProjectStatus.ACTIVE,
                     location_name="Arizona, USA",
                     total_capacity_kw=500000.0,
                 ),
-                Project(
+                models.Project(
                     name="Commercial BESS Installation",
                     description="Battery energy storage system for commercial building",
                     owner_id=admin_user.id,
-                    domain=ProjectDomain.BESS,
-                    scale=ProjectScale.COMMERCIAL,
-                    status=ProjectStatus.DRAFT,
+                    domain=models.ProjectDomain.BESS,
+                    scale=models.ProjectScale.COMMERCIAL,
+                    status=models.ProjectStatus.DRAFT,
                     location_name="California, USA",
                     total_capacity_kw=2000.0,
                 ),
-                Project(
+                models.Project(
                     name="Hybrid Microgrid Campus",
                     description="Combined PV + BESS system for university campus",
                     owner_id=regular_user.id,
-                    domain=ProjectDomain.HYBRID,
-                    scale=ProjectScale.INDUSTRIAL,
-                    status=ProjectStatus.UNDER_REVIEW,
+                    domain=models.ProjectDomain.HYBRID,
+                    scale=models.ProjectScale.INDUSTRIAL,
+                    status=models.ProjectStatus.UNDER_REVIEW,
                     location_name="Texas, USA",
                     total_capacity_kw=10000.0,
                 ),

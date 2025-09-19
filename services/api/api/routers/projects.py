@@ -1,5 +1,5 @@
 """
-Project management endpoints.
+models.Project management endpoints.
 """
 
 import logging
@@ -23,10 +23,9 @@ def get_mock_user():
     return {"id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc", "email": "admin@originfd.com"}
 
 
+import models
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from models.project import Project, ProjectDomain, ProjectScale, ProjectStatus
-from models.user import User
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -46,13 +45,13 @@ class AgentManager:
 router = APIRouter()
 
 
-class ProjectCreateRequest(BaseModel):
+class models.ProjectCreateRequest(BaseModel):
     """Request model for creating a new project."""
 
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
-    domain: ProjectDomain
-    scale: ProjectScale
+    domain: models.models.models.ProjectDomain
+    scale: models.models.ProjectScale
     location_name: Optional[str] = Field(None, max_length=255)
     latitude: Optional[float] = Field(
         None, ge=-90, le=90, description="Latitude must be between -90 and 90 degrees"
@@ -75,12 +74,12 @@ class ProjectCreateRequest(BaseModel):
         str_strip_whitespace = True
 
 
-class ProjectUpdateRequest(BaseModel):
+class models.ProjectUpdateRequest(BaseModel):
     """Request model for updating a project."""
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
-    status: Optional[ProjectStatus] = None
+    status: Optional[models.models.ProjectStatus] = None
     location_name: Optional[str] = Field(None, max_length=255)
     latitude: Optional[float] = Field(
         None, ge=-90, le=90, description="Latitude must be between -90 and 90 degrees"
@@ -100,15 +99,15 @@ class ProjectUpdateRequest(BaseModel):
         str_strip_whitespace = True
 
 
-class ProjectResponse(BaseModel):
+class models.ProjectResponse(BaseModel):
     """Response model for project data."""
 
     id: str
     name: str
     description: Optional[str]
-    domain: ProjectDomain
-    scale: ProjectScale
-    status: ProjectStatus
+    domain: models.models.models.ProjectDomain
+    scale: models.models.ProjectScale
+    status: models.models.models.ProjectStatus
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
@@ -123,14 +122,14 @@ class ProjectResponse(BaseModel):
         from_attributes = True
 
 
-class ProjectSummaryResponse(BaseModel):
+class models.ProjectSummaryResponse(BaseModel):
     """Lightweight project summary for listings."""
 
     id: str
     name: str
-    domain: ProjectDomain
-    scale: ProjectScale
-    status: ProjectStatus
+    domain: models.models.models.ProjectDomain
+    scale: models.models.ProjectScale
+    status: models.models.models.ProjectStatus
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
@@ -142,45 +141,45 @@ class ProjectSummaryResponse(BaseModel):
         from_attributes = True
 
 
-class ProjectListResponse(BaseModel):
+class models.ProjectListResponse(BaseModel):
     """Response model for project listings."""
 
-    projects: List[ProjectSummaryResponse]
+    projects: List[models.ProjectSummaryResponse]
     total: int
     page: int
     page_size: int
 
 
-@router.get("/", response_model=ProjectListResponse)
+@router.get("/", response_model=models.ProjectListResponse)
 async def list_projects(
     db: Session = Depends(SessionDep),
     # Temporarily disabled for testing: current_user: dict = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    domain: Optional[ProjectDomain] = None,
-    status: Optional[ProjectStatus] = None,
+    domain: Optional[models.models.ProjectDomain] = None,
+    status: Optional[models.models.ProjectStatus] = None,
     search: Optional[str] = None,
 ):
     """
     List projects for the current user.
     """
     # Return all projects for testing (no user filtering)
-    query = db.query(Project).filter(Project.is_archived is False)
+    query = db.query(models.Project).filter(models.Project.is_archived is False)
 
     # Apply filters
     if domain:
-        query = query.filter(Project.domain == domain)
+        query = query.filter(models.Project.domain == domain)
 
     if status:
-        query = query.filter(Project.status == status)
+        query = query.filter(models.Project.status == status)
 
     if search:
         search_term = f"%{search}%"
         query = query.filter(
             or_(
-                Project.name.ilike(search_term),
-                Project.description.ilike(search_term),
-                Project.location_name.ilike(search_term),
+                models.Project.name.ilike(search_term),
+                models.Project.description.ilike(search_term),
+                models.Project.location_name.ilike(search_term),
             )
         )
 
@@ -189,7 +188,7 @@ async def list_projects(
 
     # Apply pagination
     projects = (
-        query.order_by(Project.updated_at.desc())
+        query.order_by(models.Project.updated_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -199,7 +198,7 @@ async def list_projects(
     project_summaries = []
     for project in projects:
         project_summaries.append(
-            ProjectSummaryResponse(
+            models.ProjectSummaryResponse(
                 id=str(project.id),
                 name=project.name,
                 domain=project.domain,
@@ -214,14 +213,14 @@ async def list_projects(
             )
         )
 
-    return ProjectListResponse(
+    return models.ProjectListResponse(
         projects=project_summaries, total=total, page=page, page_size=page_size
     )
 
 
-@router.post("/", response_model=ProjectResponse)
+@router.post("/", response_model=models.ProjectResponse)
 async def create_project(
-    project_data: ProjectCreateRequest,
+    project_data: models.ProjectCreateRequest,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
 ):
@@ -229,7 +228,7 @@ async def create_project(
     Create a new project.
     """
     # Create new project
-    project = Project(
+    project = models.Project(
         name=project_data.name,
         description=project_data.description,
         domain=project_data.domain,
@@ -241,7 +240,7 @@ async def create_project(
         total_capacity_kw=project_data.total_capacity_kw,
         tags=project_data.tags,
         owner_id=current_user["id"],
-        status=ProjectStatus.DRAFT,
+        status=models.models.ProjectStatus.DRAFT,
     )
 
     db.add(project)
@@ -284,7 +283,7 @@ async def create_project(
             "Failed to submit project initialization task: %s", e
         )
 
-    return ProjectResponse(
+    return models.ProjectResponse(
         id=str(project.id),
         name=project.name,
         description=project.description,
@@ -303,7 +302,7 @@ async def create_project(
     )
 
 
-@router.get("/{project_id}", response_model=ProjectResponse)
+@router.get("/{project_id}", response_model=models.ProjectResponse)
 async def get_project(
     project_id: str,
     db: Session = Depends(SessionDep),
@@ -320,15 +319,15 @@ async def get_project(
         )
 
     project = (
-        db.query(Project)
-        .filter(and_(Project.id == project_uuid, Project.is_archived is False))
+        db.query(models.Project)
+        .filter(and_(models.Project.id == project_uuid, models.Project.is_archived is False))
         .first()
     )
 
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or archived",
+            detail="models.Project not found or archived",
         )
 
     # Check if user has access to this project
@@ -337,7 +336,7 @@ async def get_project(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
-    return ProjectResponse(
+    return models.ProjectResponse(
         id=str(project.id),
         name=project.name,
         description=project.description,
@@ -355,10 +354,10 @@ async def get_project(
     )
 
 
-@router.patch("/{project_id}", response_model=ProjectResponse)
+@router.patch("/{project_id}", response_model=models.ProjectResponse)
 async def update_project(
     project_id: str,
-    project_data: ProjectUpdateRequest,
+    project_data: models.ProjectUpdateRequest,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
 ):
@@ -373,15 +372,15 @@ async def update_project(
         )
 
     project = (
-        db.query(Project)
-        .filter(and_(Project.id == project_uuid, Project.is_archived is False))
+        db.query(models.Project)
+        .filter(and_(models.Project.id == project_uuid, models.Project.is_archived is False))
         .first()
     )
 
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or archived",
+            detail="models.Project not found or archived",
         )
 
     # Check if user has edit access
@@ -400,7 +399,7 @@ async def update_project(
     db.commit()
     db.refresh(project)
 
-    return ProjectResponse(
+    return models.ProjectResponse(
         id=str(project.id),
         name=project.name,
         description=project.description,
@@ -435,15 +434,15 @@ async def delete_project(
         )
 
     project = (
-        db.query(Project)
-        .filter(and_(Project.id == project_uuid, Project.is_archived is False))
+        db.query(models.Project)
+        .filter(and_(models.Project.id == project_uuid, models.Project.is_archived is False))
         .first()
     )
 
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or already archived",
+            detail="models.Project not found or already archived",
         )
 
     # Check if user has delete access (only owner for now)
@@ -459,7 +458,7 @@ async def delete_project(
 
     db.commit()
 
-    return {"message": "Project archived successfully"}
+    return {"message": "models.Project archived successfully"}
 
 
 @router.get("/stats/summary")
@@ -473,56 +472,56 @@ async def get_project_stats(
 
     # Total projects (excluding archived)
     total_projects = (
-        db.query(Project)
-        .filter(and_(Project.owner_id == user_id, Project.is_archived is False))
+        db.query(models.Project)
+        .filter(and_(models.Project.owner_id == user_id, models.Project.is_archived is False))
         .count()
     )
 
     # Active projects (excluding archived)
     active_projects = (
-        db.query(Project)
+        db.query(models.Project)
         .filter(
             and_(
-                Project.owner_id == user_id,
-                Project.status == ProjectStatus.ACTIVE,
-                Project.is_archived is False,
+                models.Project.owner_id == user_id,
+                models.Project.status == models.models.ProjectStatus.ACTIVE,
+                models.Project.is_archived is False,
             )
         )
         .count()
     )
 
-    # Projects by domain (excluding archived)
+    # models.Projects by domain (excluding archived)
     pv_projects = (
-        db.query(Project)
+        db.query(models.Project)
         .filter(
             and_(
-                Project.owner_id == user_id,
-                Project.domain == ProjectDomain.PV,
-                Project.is_archived is False,
+                models.Project.owner_id == user_id,
+                models.Project.domain == models.models.ProjectDomain.PV,
+                models.Project.is_archived is False,
             )
         )
         .count()
     )
 
     bess_projects = (
-        db.query(Project)
+        db.query(models.Project)
         .filter(
             and_(
-                Project.owner_id == user_id,
-                Project.domain == ProjectDomain.BESS,
-                Project.is_archived is False,
+                models.Project.owner_id == user_id,
+                models.Project.domain == models.models.ProjectDomain.BESS,
+                models.Project.is_archived is False,
             )
         )
         .count()
     )
 
     hybrid_projects = (
-        db.query(Project)
+        db.query(models.Project)
         .filter(
             and_(
-                Project.owner_id == user_id,
-                Project.domain == ProjectDomain.HYBRID,
-                Project.is_archived is False,
+                models.Project.owner_id == user_id,
+                models.Project.domain == models.models.ProjectDomain.HYBRID,
+                models.Project.is_archived is False,
             )
         )
         .count()

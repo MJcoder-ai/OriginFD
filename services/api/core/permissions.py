@@ -297,38 +297,38 @@ class PermissionChecker:
         tenant_id = UUID(user["tenant_id"])
 
         if resource_type == ResourceType.PROJECT:
-            from models.project import Project
+            import models
 
-            query = self.db.query(Project).filter(
-                and_(Project.id == resource_id_uuid, Project.tenant_id == tenant_id)
+            query = self.db.query(models.Project).filter(
+                and_(models.Project.id == resource_id_uuid, models.Project.tenant_id == tenant_id)
             )
 
             if require_ownership:
-                query = query.filter(Project.owner_id == user_id)
+                query = query.filter(models.Project.owner_id == user_id)
 
             resource = query.first()
 
         elif resource_type == ResourceType.COMPONENT:
-            from models.component import Component
+            import models
 
-            query = self.db.query(Component).filter(
-                and_(Component.id == resource_id_uuid, Component.tenant_id == tenant_id)
+            query = self.db.query(models.Component).filter(
+                and_(models.Component.id == resource_id_uuid, models.Component.tenant_id == tenant_id)
             )
 
             if require_ownership:
-                query = query.filter(Component.created_by == user_id)
+                query = query.filter(models.Component.created_by == user_id)
 
             resource = query.first()
 
         elif resource_type == ResourceType.DOCUMENT:
-            from models.document import Document
+            import models
 
-            query = self.db.query(Document).filter(
-                and_(Document.id == resource_id_uuid, Document.tenant_id == tenant_id)
+            query = self.db.query(models.Document).filter(
+                and_(models.Document.id == resource_id_uuid, models.Document.tenant_id == tenant_id)
             )
 
             if require_ownership:
-                query = query.filter(Document.created_by == user_id)
+                query = query.filter(models.Document.created_by == user_id)
 
             resource = query.first()
 

@@ -16,7 +16,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 # Import all models to ensure they're registered with Base
 import models  # noqa: E402, F401
 from core.config import get_settings  # noqa: E402
-from models.base import Base  # noqa: E402
+
+# Get Base from the models module to avoid direct import
+Base = models.Base
 
 # Alembic Config object
 config = context.config

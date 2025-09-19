@@ -7,11 +7,11 @@ from typing import Optional
 
 import bcrypt
 import jwt
+import models
 from core.config import get_settings
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from models.user import User
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
@@ -142,7 +142,7 @@ async def login(login_request: LoginRequest, db: Session = Depends(SessionDep)):
     Authenticate user and return JWT tokens.
     """
     # Get user from database
-    user = db.query(User).filter(User.email == login_request.email).first()
+    user = db.query(models.User).filter(models.User.email == login_request.email).first()
 
     # Check if user exists and password is correct
     if not user or not verify_password(login_request.password, user.hashed_password):

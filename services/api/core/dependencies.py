@@ -9,7 +9,7 @@ from typing import Annotated, Optional
 import redis
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from models.user import User
+import models
 from sqlalchemy.orm import Session
 
 from .auth import verify_token
@@ -41,7 +41,7 @@ async def get_current_user_from_token(
         )
 
     # Get user from database
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"

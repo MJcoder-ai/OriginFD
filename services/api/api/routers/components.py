@@ -18,17 +18,7 @@ from core.performance import (
     rate_limit,
 )
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from models.component import (
-    Component,
-    ComponentManagement,
-    ComponentStatusEnum,
-    InventoryRecord,
-    MediaAsset,
-    MediaAssetTypeEnum,
-    MediaScopeEnum,
-    Supplier,
-    SupplierStatusEnum,
-)
+import models
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
@@ -114,7 +104,7 @@ class ComponentListResponse(BaseModel):
 class ComponentStatusTransitionRequest(BaseModel):
     """Request model for status transitions."""
 
-    new_status: ComponentStatusEnum
+    new_status: models.ComponentStatusEnum
     comment: Optional[str] = None
 
 
@@ -169,8 +159,8 @@ async def create_component(
 
         # Check for duplicates
         existing = (
-            db.query(Component)
-            .filter(or_(Component.component_id == component_id, Component.name == name))
+            db.query(models.Component)
+            .filter(or_(models.Component.component_id == component_id, models.Component.name == name))
             .first()
         )
 
@@ -181,14 +171,14 @@ async def create_component(
             )
 
         # Create component
-        component = Component(
+        component = models.Component(
             tenant_id=uuid.UUID(current_user["tenant_id"]),
             component_id=component_id,
             brand=request.brand,
             part_number=request.part_number,
             rating_w=request.rating_w,
             name=name,
-            status=ComponentStatusEnum.DRAFT,
+            status=models.ComponentStatusEnum.DRAFT,
             category=request.category,
             subcategory=request.subcategory,
             domain=request.domain,
@@ -206,7 +196,7 @@ async def create_component(
         db.flush()  # Get the component ID
 
         # Create component management record
-        management = ComponentManagement(
+        management = models.ComponentManagement(
             component_id=component.id,
             version="1.0",
             tracking_policy={"level": "quantity"},  # Default tracking
@@ -280,7 +270,7 @@ async def list_components(
     current_user: dict = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[ComponentStatusEnum] = None,
+    status: Optional[models.ComponentStatusEnum] = None,
     category: Optional[str] = None,
     domain: Optional[str] = None,
     brand: Optional[str] = None,
@@ -294,54 +284,54 @@ async def list_components(
     from sqlalchemy.orm import joinedload, selectinload
 
     query = (
-        db.query(Component)
+        db.query(models.Component)
         .options(
             # Eager load commonly accessed relationships to prevent N+1 queries
-            joinedload(Component.supplier),
-            selectinload(Component.inventory_records),
+            joinedload(models.Component.supplier),
+            selectinload(models.Component.inventory_records),
             # Add more relationships as they're defined in the model
         )
-        .filter(Component.tenant_id == current_user["tenant_id"])
+        .filter(models.Component.tenant_id == current_user["tenant_id"])
     )
 
     # Apply filters
     if status:
-        query = query.filter(Component.status == status)
+        query = query.filter(models.Component.status == status)
 
     if category:
-        query = query.filter(Component.category == category)
+        query = query.filter(models.Component.category == category)
 
     if domain:
-        query = query.filter(Component.domain == domain)
+        query = query.filter(models.Component.domain == domain)
 
     if brand:
-        query = query.filter(Component.brand.ilike(f"%{brand}%"))
+        query = query.filter(models.Component.brand.ilike(f"%{brand}%"))
 
     if active_only:
         active_states = [
-            ComponentStatusEnum.APPROVED,
-            ComponentStatusEnum.AVAILABLE,
-            ComponentStatusEnum.RFQ_OPEN,
-            ComponentStatusEnum.RFQ_AWARDED,
-            ComponentStatusEnum.PURCHASING,
-            ComponentStatusEnum.ORDERED,
-            ComponentStatusEnum.SHIPPED,
-            ComponentStatusEnum.RECEIVED,
-            ComponentStatusEnum.INSTALLED,
-            ComponentStatusEnum.COMMISSIONED,
-            ComponentStatusEnum.OPERATIONAL,
-            ComponentStatusEnum.WARRANTY_ACTIVE,
+            models.ComponentStatusEnum.APPROVED,
+            models.ComponentStatusEnum.AVAILABLE,
+            models.ComponentStatusEnum.RFQ_OPEN,
+            models.ComponentStatusEnum.RFQ_AWARDED,
+            models.ComponentStatusEnum.PURCHASING,
+            models.ComponentStatusEnum.ORDERED,
+            models.ComponentStatusEnum.SHIPPED,
+            models.ComponentStatusEnum.RECEIVED,
+            models.ComponentStatusEnum.INSTALLED,
+            models.ComponentStatusEnum.COMMISSIONED,
+            models.ComponentStatusEnum.OPERATIONAL,
+            models.ComponentStatusEnum.WARRANTY_ACTIVE,
         ]
-        query = query.filter(Component.status.in_([s.value for s in active_states]))
+        query = query.filter(models.Component.status.in_([s.value for s in active_states]))
 
     if search:
         search_term = f"%{search}%"
         query = query.filter(
             or_(
-                Component.name.ilike(search_term),
-                Component.brand.ilike(search_term),
-                Component.part_number.ilike(search_term),
-                Component.component_id.ilike(search_term),
+                models.Component.name.ilike(search_term),
+                models.Component.brand.ilike(search_term),
+                models.Component.part_number.ilike(search_term),
+                models.Component.component_id.ilike(search_term),
             )
         )
 
@@ -350,7 +340,7 @@ async def list_components(
 
     # Apply pagination and ordering
     components = (
-        query.order_by(Component.updated_at.desc())
+        query.order_by(models.Component.updated_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -408,11 +398,11 @@ async def get_component(
         )
 
     component = (
-        db.query(Component)
+        db.query(models.Component)
         .filter(
             and_(
-                Component.id == component_uuid,
-                Component.tenant_id == current_user["tenant_id"],
+                models.Component.id == component_uuid,
+                models.Component.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -464,11 +454,11 @@ async def update_component(
         )
 
     component = (
-        db.query(Component)
+        db.query(models.Component)
         .filter(
             and_(
-                Component.id == component_uuid,
-                Component.tenant_id == current_user["tenant_id"],
+                models.Component.id == component_uuid,
+                models.Component.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -555,11 +545,11 @@ async def delete_component(
         )
 
     component = (
-        db.query(Component)
+        db.query(models.Component)
         .filter(
             and_(
-                Component.id == component_uuid,
-                Component.tenant_id == current_user["tenant_id"],
+                models.Component.id == component_uuid,
+                models.Component.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -571,7 +561,7 @@ async def delete_component(
         )
 
     # Archive instead of hard delete
-    component.status = ComponentStatusEnum.ARCHIVED
+    component.status = models.ComponentStatusEnum.ARCHIVED
     component.updated_by = uuid.UUID(current_user["id"])
     component.updated_at = datetime.utcnow()
 
@@ -609,11 +599,11 @@ async def transition_component_status(
         )
 
     component = (
-        db.query(Component)
+        db.query(models.Component)
         .filter(
             and_(
-                Component.id == component_uuid,
-                Component.tenant_id == current_user["tenant_id"],
+                models.Component.id == component_uuid,
+                models.Component.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -685,7 +675,7 @@ async def list_component_media(
     component_id: str,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
-    asset_type: Optional[MediaAssetTypeEnum] = None,
+    asset_type: Optional[models.MediaAssetTypeEnum] = None,
 ):
     """
     List media assets for a component.
@@ -700,11 +690,11 @@ async def list_component_media(
 
     # Verify component exists and user has access
     component = (
-        db.query(Component)
+        db.query(models.Component)
         .filter(
             and_(
-                Component.id == component_uuid,
-                Component.tenant_id == current_user["tenant_id"],
+                models.Component.id == component_uuid,
+                models.Component.tenant_id == current_user["tenant_id"],
             )
         )
         .first()
@@ -715,12 +705,12 @@ async def list_component_media(
             status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
 
-    query = db.query(MediaAsset).filter(MediaAsset.component_id == component_uuid)
+    query = db.query(models.MediaAsset).filter(models.MediaAsset.component_id == component_uuid)
 
     if asset_type:
-        query = query.filter(MediaAsset.type == asset_type.value)
+        query = query.filter(models.MediaAsset.type == asset_type.value)
 
-    media_assets = query.order_by(MediaAsset.created_at.desc()).all()
+    media_assets = query.order_by(models.MediaAsset.created_at.desc()).all()
 
     return [
         MediaAssetResponse(
@@ -745,8 +735,8 @@ async def list_component_media(
 async def upload_component_media(
     component_id: str,
     file: UploadFile = File(...),
-    asset_type: MediaAssetTypeEnum = MediaAssetTypeEnum.COMPONENT_PHOTO_HERO,
-    scope: MediaScopeEnum = MediaScopeEnum.COMPONENT_GENERIC,
+    asset_type: models.MediaAssetTypeEnum = models.MediaAssetTypeEnum.COMPONENT_PHOTO_HERO,
+    scope: models.MediaScopeEnum = models.MediaScopeEnum.COMPONENT_GENERIC,
     alt_text: Optional[str] = None,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
@@ -817,31 +807,31 @@ async def get_component_stats(
 
     # Total components
     total_components = (
-        db.query(Component).filter(Component.tenant_id == tenant_id).count()
+        db.query(models.Component).filter(models.Component.tenant_id == tenant_id).count()
     )
 
     # Active components
     active_states = [
-        ComponentStatusEnum.APPROVED,
-        ComponentStatusEnum.AVAILABLE,
-        ComponentStatusEnum.RFQ_OPEN,
-        ComponentStatusEnum.RFQ_AWARDED,
-        ComponentStatusEnum.PURCHASING,
-        ComponentStatusEnum.ORDERED,
-        ComponentStatusEnum.SHIPPED,
-        ComponentStatusEnum.RECEIVED,
-        ComponentStatusEnum.INSTALLED,
-        ComponentStatusEnum.COMMISSIONED,
-        ComponentStatusEnum.OPERATIONAL,
-        ComponentStatusEnum.WARRANTY_ACTIVE,
+        models.ComponentStatusEnum.APPROVED,
+        models.ComponentStatusEnum.AVAILABLE,
+        models.ComponentStatusEnum.RFQ_OPEN,
+        models.ComponentStatusEnum.RFQ_AWARDED,
+        models.ComponentStatusEnum.PURCHASING,
+        models.ComponentStatusEnum.ORDERED,
+        models.ComponentStatusEnum.SHIPPED,
+        models.ComponentStatusEnum.RECEIVED,
+        models.ComponentStatusEnum.INSTALLED,
+        models.ComponentStatusEnum.COMMISSIONED,
+        models.ComponentStatusEnum.OPERATIONAL,
+        models.ComponentStatusEnum.WARRANTY_ACTIVE,
     ]
 
     active_components = (
-        db.query(Component)
+        db.query(models.Component)
         .filter(
             and_(
-                Component.tenant_id == tenant_id,
-                Component.status.in_([s.value for s in active_states]),
+                models.Component.tenant_id == tenant_id,
+                models.Component.status.in_([s.value for s in active_states]),
             )
         )
         .count()
@@ -852,28 +842,28 @@ async def get_component_stats(
 
     # Single query to get all category stats
     category_stats = (
-        db.query(Component.category, func.count(Component.id).label("count"))
-        .filter(Component.tenant_id == tenant_id)
-        .group_by(Component.category)
+        db.query(models.Component.category, func.count(models.Component.id).label("count"))
+        .filter(models.Component.tenant_id == tenant_id)
+        .group_by(models.Component.category)
         .all()
     )
 
     # Single query to get all domain stats
     domain_stats = (
-        db.query(Component.domain, func.count(Component.id).label("count"))
-        .filter(Component.tenant_id == tenant_id)
-        .group_by(Component.domain)
+        db.query(models.Component.domain, func.count(models.Component.id).label("count"))
+        .filter(models.Component.tenant_id == tenant_id)
+        .group_by(models.Component.domain)
         .all()
     )
 
     return {
         "total_components": total_components,
         "active_components": active_components,
-        "draft_components": db.query(Component)
+        "draft_components": db.query(models.Component)
         .filter(
             and_(
-                Component.tenant_id == tenant_id,
-                Component.status == ComponentStatusEnum.DRAFT,
+                models.Component.tenant_id == tenant_id,
+                models.Component.status == models.ComponentStatusEnum.DRAFT,
             )
         )
         .count(),

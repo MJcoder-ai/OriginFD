@@ -4,7 +4,16 @@ Database models for ODL-SD documents.
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
@@ -22,7 +31,7 @@ class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __table_args__ = (
         Index("ix_documents_tenant_project", "tenant_id", "project_name"),
         Index("ix_documents_domain_scale", "domain", "scale"),
-        {"postgresql_partition_by": "RANGE (created_at)"},  # Monthly partitions
+        # Note: PostgreSQL partitioning will be handled via migration scripts
     )
 
     # Document metadata

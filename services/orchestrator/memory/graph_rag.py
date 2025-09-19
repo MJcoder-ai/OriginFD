@@ -739,7 +739,7 @@ class ODLSDGraphRAG:
     def _generate_cache_key(self, query: GraphQuery) -> str:
         """Generate cache key for query."""
         query_str = f"{query.query_type}:{query.query_text}:{json.dumps(query.filters, sort_keys=True)}"
-        return hashlib.md5(query_str.encode()).hexdigest()
+        return hashlib.md5(query_str.encode(), usedforsecurity=False).hexdigest()
 
     def _initialize_odl_schema(self) -> Dict[str, Any]:
         """Initialize ODL-SD schema knowledge."""
