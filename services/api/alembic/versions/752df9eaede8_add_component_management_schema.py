@@ -47,7 +47,11 @@ def upgrade() -> None:
             sa.Column("domain", sa.String(length=255), nullable=True),
             sa.Column("is_active", sa.Boolean(), nullable=False),
             sa.Column("settings", sa.Text(), nullable=True),
+            sa.Column("plan", sa.String(length=50), nullable=True),
+            sa.Column("max_users", sa.String(length=10), nullable=True),
+            sa.Column("max_projects", sa.String(length=10), nullable=True),
             sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("domain"),
         )
         op.create_index(op.f("ix_tenants_name"), "tenants", ["name"], unique=False)
         op.create_index(op.f("ix_tenants_slug"), "tenants", ["slug"], unique=True)
@@ -129,34 +133,6 @@ def upgrade() -> None:
         ["tenant_id", "project_name"],
         unique=False,
     )
-    op.create_table(
-        "tenants",
-        sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column("slug", sa.String(length=100), nullable=False),
-        sa.Column("domain", sa.String(length=255), nullable=True),
-        sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column("settings", sa.Text(), nullable=True),
-        sa.Column("plan", sa.String(length=50), nullable=True),
-        sa.Column("max_users", sa.String(length=10), nullable=True),
-        sa.Column("max_projects", sa.String(length=10), nullable=True),
-        sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-        ),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("domain"),
-    )
-    op.create_index(op.f("ix_tenants_name"), "tenants", ["name"], unique=False)
-    op.create_index(op.f("ix_tenants_slug"), "tenants", ["slug"], unique=True)
     op.create_table(
         "components",
         sa.Column("component_id", sa.String(length=255), nullable=False),
