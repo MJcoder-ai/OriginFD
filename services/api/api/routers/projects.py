@@ -320,7 +320,9 @@ async def get_project(
 
     project = (
         db.query(models.Project)
-        .filter(and_(models.Project.id == project_uuid, models.Project.is_archived is False))
+        .filter(
+            and_(models.Project.id == project_uuid, models.Project.is_archived is False)
+        )
         .first()
     )
 
@@ -373,7 +375,9 @@ async def update_project(
 
     project = (
         db.query(models.Project)
-        .filter(and_(models.Project.id == project_uuid, models.Project.is_archived is False))
+        .filter(
+            and_(models.Project.id == project_uuid, models.Project.is_archived is False)
+        )
         .first()
     )
 
@@ -435,7 +439,9 @@ async def delete_project(
 
     project = (
         db.query(models.Project)
-        .filter(and_(models.Project.id == project_uuid, models.Project.is_archived is False))
+        .filter(
+            and_(models.Project.id == project_uuid, models.Project.is_archived is False)
+        )
         .first()
     )
 
@@ -473,7 +479,11 @@ async def get_project_stats(
     # Total projects (excluding archived)
     total_projects = (
         db.query(models.Project)
-        .filter(and_(models.Project.owner_id == user_id, models.Project.is_archived is False))
+        .filter(
+            and_(
+                models.Project.owner_id == user_id, models.Project.is_archived is False
+            )
+        )
         .count()
     )
 

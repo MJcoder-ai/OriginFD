@@ -6,31 +6,21 @@ Implements ODL-SD v4.1 Component Management lifecycle.
 import logging
 import uuid
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import models
 from api.routers.auth import get_current_user
 from core.database import SessionDep
-from core.performance import cached_response
-from core.performance import invalidate_component_cache
-from core.performance import monitor_performance
-from core.performance import performance_metrics
-from core.performance import rate_limit
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import File
-from fastapi import HTTPException
-from fastapi import Query
-from fastapi import UploadFile
-from fastapi import status
-from pydantic import BaseModel
-from pydantic import Field
-from sqlalchemy import and_
-from sqlalchemy import func
-from sqlalchemy import or_
+from core.performance import (
+    cached_response,
+    invalidate_component_cache,
+    monitor_performance,
+    performance_metrics,
+    rate_limit,
+)
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -170,7 +160,12 @@ async def create_component(
         # Check for duplicates
         existing = (
             db.query(models.Component)
-            .filter(or_(models.Component.component_id == component_id, models.Component.name == name))
+            .filter(
+                or_(
+                    models.Component.component_id == component_id,
+                    models.Component.name == name,
+                )
+            )
             .first()
         )
 
@@ -291,8 +286,7 @@ async def list_components(
     List components with filtering and pagination.
     """
     # Use eager loading to prevent N+1 queries when accessing relationships
-    from sqlalchemy.orm import joinedload
-    from sqlalchemy.orm import selectinload
+    from sqlalchemy.orm import joinedload, selectinload
 
     query = (
         db.query(models.Component)
@@ -333,7 +327,9 @@ async def list_components(
             models.ComponentStatusEnum.OPERATIONAL,
             models.ComponentStatusEnum.WARRANTY_ACTIVE,
         ]
-        query = query.filter(models.Component.status.in_([s.value for s in active_states]))
+        query = query.filter(
+            models.Component.status.in_([s.value for s in active_states])
+        )
 
     if search:
         search_term = f"%{search}%"
@@ -716,7 +712,9 @@ async def list_component_media(
             status_code=status.HTTP_404_NOT_FOUND, detail="Component not found"
         )
 
-    query = db.query(models.MediaAsset).filter(models.MediaAsset.component_id == component_uuid)
+    query = db.query(models.MediaAsset).filter(
+        models.MediaAsset.component_id == component_uuid
+    )
 
     if asset_type:
         query = query.filter(models.MediaAsset.type == asset_type.value)
@@ -818,7 +816,9 @@ async def get_component_stats(
 
     # Total components
     total_components = (
-        db.query(models.Component).filter(models.Component.tenant_id == tenant_id).count()
+        db.query(models.Component)
+        .filter(models.Component.tenant_id == tenant_id)
+        .count()
     )
 
     # Active components
@@ -853,7 +853,9 @@ async def get_component_stats(
 
     # Single query to get all category stats
     category_stats = (
-        db.query(models.Component.category, func.count(models.Component.id).label("count"))
+        db.query(
+            models.Component.category, func.count(models.Component.id).label("count")
+        )
         .filter(models.Component.tenant_id == tenant_id)
         .group_by(models.Component.category)
         .all()
@@ -861,7 +863,9 @@ async def get_component_stats(
 
     # Single query to get all domain stats
     domain_stats = (
-        db.query(models.Component.domain, func.count(models.Component.id).label("count"))
+        db.query(
+            models.Component.domain, func.count(models.Component.id).label("count")
+        )
         .filter(models.Component.tenant_id == tenant_id)
         .group_by(models.Component.domain)
         .all()

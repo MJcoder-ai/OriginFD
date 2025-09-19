@@ -300,7 +300,10 @@ class PermissionChecker:
             import models
 
             query = self.db.query(models.Project).filter(
-                and_(models.Project.id == resource_id_uuid, models.Project.tenant_id == tenant_id)
+                and_(
+                    models.Project.id == resource_id_uuid,
+                    models.Project.tenant_id == tenant_id,
+                )
             )
 
             if require_ownership:
@@ -312,7 +315,10 @@ class PermissionChecker:
             import models
 
             query = self.db.query(models.Component).filter(
-                and_(models.Component.id == resource_id_uuid, models.Component.tenant_id == tenant_id)
+                and_(
+                    models.Component.id == resource_id_uuid,
+                    models.Component.tenant_id == tenant_id,
+                )
             )
 
             if require_ownership:
@@ -324,7 +330,10 @@ class PermissionChecker:
             import models
 
             query = self.db.query(models.Document).filter(
-                and_(models.Document.id == resource_id_uuid, models.Document.tenant_id == tenant_id)
+                and_(
+                    models.Document.id == resource_id_uuid,
+                    models.Document.tenant_id == tenant_id,
+                )
             )
 
             if require_ownership:

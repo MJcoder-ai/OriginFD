@@ -204,7 +204,8 @@ async def get_document(
             .filter(
                 models.DocumentVersion.document_id == doc_uuid,
                 models.DocumentVersion.version_number == version,
-                models.DocumentVersion.tenant_id == uuid.UUID(current_user["tenant_id"]),
+                models.DocumentVersion.tenant_id
+                == uuid.UUID(current_user["tenant_id"]),
             )
             .first()
         )

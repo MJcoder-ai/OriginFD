@@ -6,25 +6,14 @@ Handles supplier onboarding, management, and component sourcing.
 import logging
 import uuid
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import models
 from core.auth import get_current_user
 from core.database import SessionDep
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import Query
-from fastapi import status
-from pydantic import BaseModel
-from pydantic import EmailStr
-from pydantic import Field
-from sqlalchemy import and_
-from sqlalchemy import func
-from sqlalchemy import or_
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -222,7 +211,9 @@ async def list_suppliers(
     """
     List suppliers with filtering and pagination.
     """
-    query = db.query(models.Supplier).filter(models.Supplier.tenant_id == current_user["tenant_id"])
+    query = db.query(models.Supplier).filter(
+        models.Supplier.tenant_id == current_user["tenant_id"]
+    )
 
     # Apply filters
     if status:
@@ -510,7 +501,9 @@ async def list_rfqs(
     """
     List RFQs with filtering and pagination.
     """
-    query = db.query(models.RFQ).filter(models.RFQ.tenant_id == current_user["tenant_id"])
+    query = db.query(models.RFQ).filter(
+        models.RFQ.tenant_id == current_user["tenant_id"]
+    )
 
     if status:
         query = query.filter(models.RFQ.status == status)
@@ -605,7 +598,9 @@ async def get_supplier_stats(
     tenant_id = current_user["tenant_id"]
 
     # Total suppliers
-    total_suppliers = db.query(models.Supplier).filter(models.Supplier.tenant_id == tenant_id).count()
+    total_suppliers = (
+        db.query(models.Supplier).filter(models.Supplier.tenant_id == tenant_id).count()
+    )
 
     # Approved suppliers
     approved_suppliers = (

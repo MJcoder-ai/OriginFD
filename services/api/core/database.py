@@ -186,7 +186,11 @@ def init_database():
     db = SessionLocal()
     try:
         # Check if admin user already exists
-        admin_user = db.query(models.User).filter(models.User.email == "admin@originfd.com").first()
+        admin_user = (
+            db.query(models.User)
+            .filter(models.User.email == "admin@originfd.com")
+            .first()
+        )
         if not admin_user:
             from core.auth import get_password_hash
 

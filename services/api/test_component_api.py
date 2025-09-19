@@ -111,7 +111,9 @@ async def main():
         print()
         await test_ai_tools()
         print()
-        print("🎉 All tests passed! models.Component management implementation is working.")
+        print(
+            "🎉 All tests passed! models.Component management implementation is working."
+        )
 
     except Exception as e:
         print(f"❌ Test failed: {e}")

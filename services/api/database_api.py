@@ -125,7 +125,9 @@ async def health(db: SessionDep):
 async def login(login_request: LoginRequest, db: SessionDep):
     """Login with email and password"""
     # Get user from database
-    user = db.query(models.User).filter(models.User.email == login_request.email).first()
+    user = (
+        db.query(models.User).filter(models.User.email == login_request.email).first()
+    )
 
     if not user:
         raise HTTPException(
@@ -166,10 +168,10 @@ async def login(login_request: LoginRequest, db: SessionDep):
     )
 
 
-@app.get("/auth/me", response_model=models.UserResponse)
-async def get_current_user_endpoint(current_user: Currentmodels.User):
+@app.get("/auth/me", response_model=UserResponse)
+async def get_current_user_endpoint(current_user: CurrentUser):
     """Get current user information"""
-    return models.UserResponse(
+    return UserResponse(
         id=str(current_user["id"]),
         email=current_user["email"],
         full_name=current_user.get("full_name"),
@@ -179,7 +181,7 @@ async def get_current_user_endpoint(current_user: Currentmodels.User):
 
 
 @app.post("/auth/logout")
-async def logout(current_user: Currentmodels.User):
+async def logout(current_user: CurrentUser):
     """Logout current user"""
     # In a real implementation, you'd invalidate the token in the database
     return {"message": "Successfully logged out"}
@@ -188,7 +190,7 @@ async def logout(current_user: Currentmodels.User):
 # models.Project endpoints
 @app.get("/projects")
 async def list_projects(
-    current_user: Currentmodels.User, db: SessionDep, skip: int = 0, limit: int = 20
+    current_user: CurrentUser, db: SessionDep, skip: int = 0, limit: int = 20
 ):
     """List user's projects"""
     user_id = current_user["id"]
@@ -218,7 +220,10 @@ async def list_projects(
                 ),
                 "content_hash": f"hash-{project.id}",
                 "is_active": project.status
-                not in [models.ProjectStatus.CANCELLED, models.ProjectStatus.DECOMMISSIONED],
+                not in [
+                    models.ProjectStatus.CANCELLED,
+                    models.ProjectStatus.DECOMMISSIONED,
+                ],
                 "created_at": project.created_at.isoformat() + "Z",
                 "updated_at": project.updated_at.isoformat() + "Z",
             }
@@ -228,7 +233,7 @@ async def list_projects(
 
 
 @app.get("/projects/{project_id}")
-async def get_project(project_id: str, current_user: Currentmodels.User, db: SessionDep):
+async def get_project(project_id: str, current_user: CurrentUser, db: SessionDep):
     """Get specific project"""
     user_id = current_user["id"]
 
@@ -261,9 +266,11 @@ async def get_project(project_id: str, current_user: Currentmodels.User, db: Ses
     }
 
 
-@app.post("/projects", response_model=models.ProjectResponse)
+@app.post("/projects", response_model=ProjectResponse)
 async def create_project(
-    project_data: models.ProjectCreateRequest, current_user: Engineermodels.User, db: SessionDep
+    project_data: ProjectCreateRequest,
+    current_user: EngineerUser,
+    db: SessionDep,
 ):
     """Create new project (requires engineer role)"""
     user_id = current_user["id"]
@@ -284,7 +291,7 @@ async def create_project(
         db.commit()
         db.refresh(new_project)
 
-        return models.ProjectResponse(
+        return ProjectResponse(
             id=str(new_project.id),
             project_name=new_project.name,
             description=new_project.description,
@@ -306,7 +313,7 @@ async def create_project(
 
 
 @app.get("/documents/{document_id}")
-async def get_document(document_id: str, current_user: Currentmodels.User, db: SessionDep):
+async def get_document(document_id: str, current_user: CurrentUser, db: SessionDep):
     """Get ODL-SD document"""
     user_id = current_user["id"]
 
@@ -361,7 +368,7 @@ scenario_audit_log: List[ScenarioAudit] = []
 
 
 @app.post("/scenarios", response_model=ScenarioAudit)
-async def store_scenario_audit(scenario: ScenarioAudit, current_user: Currentmodels.User):
+async def store_scenario_audit(scenario: ScenarioAudit, current_user: CurrentUser):
     record = ScenarioAudit(
         id=scenario.id or str(uuid4()),
         project_id=scenario.project_id,
@@ -377,7 +384,7 @@ async def store_scenario_audit(scenario: ScenarioAudit, current_user: Currentmod
 
 # Admin endpoints
 @app.get("/admin/stats")
-async def get_admin_stats(admin_user: Adminmodels.User, db: SessionDep):
+async def get_admin_stats(admin_user: AdminUser, db: SessionDep):
     """Get admin statistics"""
     total_users = db.query(models.User).count()
     active_users = db.query(models.User).filter(models.User.is_active == True).count()

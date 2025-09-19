@@ -40,6 +40,7 @@ class ProjectStatus(str, Enum):
 
 class Project(Base, UUIDMixin, TimestampMixin):
     """Database model for projects."""
+
     __allow_unmapped__ = True
 
     __tablename__ = "projects"

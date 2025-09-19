@@ -13,10 +13,10 @@ from core.auth import get_current_user
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from packages.py.odl_sd_patch.patch import apply_patch, create_patch
+from packages.py.odl_sd_patch.patch import apply_patch
 from packages.py.odl_sd_schema.document import OdlDocument
 
 logger = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ async def bind_component_to_document(
             )
 
         # Parse ODL-SD document
-        odl_document = Odlmodels.Document.model_validate(current_version.content)
+        odl_document = OdlDocument.model_validate(current_version.content)
 
         # Create component reference based on binding type
         component_ref = create_component_reference(
@@ -163,7 +163,7 @@ async def bind_component_to_document(
         updated_content = apply_patch(current_version.content, patch_ops)
 
         # Validate updated document
-        updated_odl = Odlmodels.Document.model_validate(updated_content)
+        updated_odl = OdlDocument.model_validate(updated_content)
 
         # Create new document version
         new_version = models.DocumentVersion(
@@ -272,7 +272,7 @@ async def add_components_to_project(
         )
 
         # Parse ODL-SD document
-        odl_document = Odlmodels.Document.model_validate(current_version.content)
+        odl_document = OdlDocument.model_validate(current_version.content)
 
         # Ensure libraries.components exists
         if not hasattr(odl_document, "libraries") or not odl_document.libraries:
@@ -409,7 +409,7 @@ async def update_component_specifications(
                 )
 
                 # Parse and update document
-                odl_document = Odlmodels.Document.model_validate(current_version.content)
+                odl_document = OdlDocument.model_validate(current_version.content)
 
                 # Update component specifications in document
                 updated = update_component_specs_in_document(

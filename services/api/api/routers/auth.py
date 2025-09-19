@@ -142,7 +142,9 @@ async def login(login_request: LoginRequest, db: Session = Depends(SessionDep)):
     Authenticate user and return JWT tokens.
     """
     # Get user from database
-    user = db.query(models.User).filter(models.User.email == login_request.email).first()
+    user = (
+        db.query(models.User).filter(models.User.email == login_request.email).first()
+    )
 
     # Check if user exists and password is correct
     if not user or not verify_password(login_request.password, user.hashed_password):
