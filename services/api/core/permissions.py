@@ -11,7 +11,7 @@ from uuid import UUID
 from api.routers.auth import get_current_user
 from core.database import get_db
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
