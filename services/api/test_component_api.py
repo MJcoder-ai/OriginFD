@@ -56,10 +56,12 @@ async def test_ai_tools():
     print("Testing AI tools...")
 
     try:
-        from tools.component_tools import ParseDatasheetTool
-        from tools.component_tools import ComponentClassificationTool
-        from tools.component_tools import ComponentDeduplicationTool
-        from tools.component_tools import ComponentRecommendationTool
+        from tools.component_tools import (
+            ComponentClassificationTool,
+            ComponentDeduplicationTool,
+            ComponentRecommendationTool,
+            ParseDatasheetTool,
+        )
 
         # Test tool instantiation
         parse_tool = ParseDatasheetTool()

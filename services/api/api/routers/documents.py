@@ -4,23 +4,15 @@ ODL-SD document management endpoints with JSON-Patch support.
 
 import uuid
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 # from core.rbac import guard_patch, has_document_access  # TODO: Implement RBAC
 import models
 from core.auth import get_current_user
 from core.database import SessionDep
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import Query
-from fastapi import status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from odl_sd.schemas import OdlSdDocument
-from pydantic import BaseModel
-from pydantic import Field
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 # from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError

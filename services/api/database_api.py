@@ -3,25 +3,15 @@
 OriginFD API with Real Database Integration
 """
 from datetime import datetime
-from typing import List
-from typing import Optional
+from typing import List, Optional
 from uuid import uuid4
 
 import models
 import uvicorn
-from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES
-from core.auth import authenticate_user
-from core.auth import create_token_pair
-from core.database import SessionDep
-from core.database import get_db
-from core.database import init_database
-from core.dependencies import AdminUser
-from core.dependencies import CurrentUser
-from core.dependencies import EngineerUser
-from fastapi import Depends
-from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import status
+from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_token_pair
+from core.database import SessionDep, get_db, init_database
+from core.dependencies import AdminUser, CurrentUser, EngineerUser
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import desc

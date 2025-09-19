@@ -6,26 +6,17 @@ Handles component bindings, project integration, and document updates.
 import logging
 import uuid
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import models
 from core.auth import get_current_user
 from core.database import SessionDep
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
-from pydantic import BaseModel
-from pydantic import Field
-from sqlalchemy import and_
-from sqlalchemy import or_
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from packages.py.odl_sd_patch.patch import apply_patch
-from packages.py.odl_sd_patch.patch import create_patch
+from packages.py.odl_sd_patch.patch import apply_patch, create_patch
 from packages.py.odl_sd_schema.document import OdlDocument
 
 logger = logging.getLogger(__name__)

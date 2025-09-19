@@ -50,7 +50,6 @@ def upgrade() -> None:
         ),
         sa.Column("tenant_id", sa.UUID(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        postgresql_partition_by="RANGE (created_at)",
     )
     op.create_index(
         "ix_documents_domain_scale", "documents", ["domain", "scale"], unique=False
