@@ -304,7 +304,7 @@ steps:
       - '-c'
       - |
         gcloud run deploy api \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$SHORT_SHA \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$$SHORT_SHA \
           --region=${_REGION} \
           --platform=managed \
           --no-allow-unauthenticated \
@@ -325,7 +325,7 @@ steps:
       - '-c'
       - |
         gcloud run deploy orchestrator \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$SHORT_SHA \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$$SHORT_SHA \
           --region=${_REGION} \
           --platform=managed \
           --no-allow-unauthenticated \
@@ -346,7 +346,7 @@ steps:
       - '-c'
       - |
         gcloud run deploy workers \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$SHORT_SHA \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$$SHORT_SHA \
           --region=${_REGION} \
           --platform=managed \
           --no-allow-unauthenticated \
@@ -370,7 +370,7 @@ steps:
         API_URL=$$(gcloud run services describe api --region=${_REGION} --format="value(status.url)")
 
         gcloud run deploy web \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$SHORT_SHA \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$$SHORT_SHA \
           --region=${_REGION} \
           --platform=managed \
           --allow-unauthenticated \
@@ -394,7 +394,7 @@ steps:
 
         echo "Creating migration job..."
         gcloud run jobs create db-migrate \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$SHORT_SHA \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$$SHORT_SHA \
           --region=${_REGION} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
