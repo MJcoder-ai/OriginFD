@@ -739,20 +739,7 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_shipments_waybill"), "shipments", ["waybill"], unique=False
     )
-    op.alter_column(
-        "user_sessions",
-        "id",
-        existing_type=sa.NUMERIC(),
-        type_=sa.UUID(),
-        existing_nullable=False,
-    )
-    op.alter_column(
-        "user_sessions",
-        "user_id",
-        existing_type=sa.NUMERIC(),
-        type_=sa.UUID(),
-        existing_nullable=False,
-    )
+    # Note: user_sessions table operations removed - table does not exist in codebase
     op.alter_column(
         "users",
         "id",
@@ -772,20 +759,7 @@ def downgrade() -> None:
         type_=sa.NUMERIC(),
         existing_nullable=False,
     )
-    op.alter_column(
-        "user_sessions",
-        "user_id",
-        existing_type=sa.UUID(),
-        type_=sa.NUMERIC(),
-        existing_nullable=False,
-    )
-    op.alter_column(
-        "user_sessions",
-        "id",
-        existing_type=sa.UUID(),
-        type_=sa.NUMERIC(),
-        existing_nullable=False,
-    )
+    # Note: user_sessions table operations removed - table does not exist in codebase
     op.drop_index(op.f("ix_shipments_waybill"), table_name="shipments")
     op.drop_index(op.f("ix_shipments_tenant_id"), table_name="shipments")
     op.drop_index(op.f("ix_shipments_status"), table_name="shipments")
