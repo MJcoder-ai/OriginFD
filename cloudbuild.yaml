@@ -299,86 +299,124 @@ steps:
   # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-api'
-    entrypoint: 'bash'
+    entrypoint: 'gcloud'
     args:
-      - '-c'
-      - |
-        gcloud run deploy api \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$$COMMIT_SHA \
-          --region=${_REGION} \
-          --platform=managed \
-          --no-allow-unauthenticated \
-          --vpc-connector=${_VPC_CONNECTOR} \
-          --vpc-egress=all-traffic \
-          --memory=512Mi \
-          --cpu=1 \
-          --concurrency=80 \
-          --max-instances=10 \
-          --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
-          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
+      - 'run'
+      - 'deploy'
+      - 'api'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--vpc-connector'
+      - '${_VPC_CONNECTOR}'
+      - '--vpc-egress'
+      - 'all-traffic'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '10'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,DEBUG=false'
+      - '--set-secrets'
+      - 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-orchestrator'
     waitFor: ['deploy-api']
-    entrypoint: 'bash'
+    entrypoint: 'gcloud'
     args:
-      - '-c'
-      - |
-        gcloud run deploy orchestrator \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$$COMMIT_SHA \
-          --region=${_REGION} \
-          --platform=managed \
-          --no-allow-unauthenticated \
-          --vpc-connector=${_VPC_CONNECTOR} \
-          --vpc-egress=all-traffic \
-          --memory=1Gi \
-          --cpu=1 \
-          --concurrency=40 \
-          --max-instances=5 \
-          --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
-          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
+      - 'run'
+      - 'deploy'
+      - 'orchestrator'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--vpc-connector'
+      - '${_VPC_CONNECTOR}'
+      - '--vpc-egress'
+      - 'all-traffic'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--concurrency'
+      - '40'
+      - '--max-instances'
+      - '5'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,DEBUG=false'
+      - '--set-secrets'
+      - 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-workers'
     waitFor: ['deploy-orchestrator']
-    entrypoint: 'bash'
+    entrypoint: 'gcloud'
     args:
-      - '-c'
-      - |
-        gcloud run deploy workers \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$$COMMIT_SHA \
-          --region=${_REGION} \
-          --platform=managed \
-          --no-allow-unauthenticated \
-          --vpc-connector=${_VPC_CONNECTOR} \
-          --vpc-egress=all-traffic \
-          --memory=1Gi \
-          --cpu=2 \
-          --concurrency=20 \
-          --max-instances=10 \
-          --set-env-vars="ENVIRONMENT=production,DEBUG=false" \
-          --set-secrets="DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest"
+      - 'run'
+      - 'deploy'
+      - 'workers'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--vpc-connector'
+      - '${_VPC_CONNECTOR}'
+      - '--vpc-egress'
+      - 'all-traffic'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '2'
+      - '--concurrency'
+      - '20'
+      - '--max-instances'
+      - '10'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,DEBUG=false'
+      - '--set-secrets'
+      - 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-web'
     waitFor: ['deploy-workers']
-    entrypoint: 'bash'
+    entrypoint: 'gcloud'
     args:
-      - '-c'
-      - |
-        # Get API service URL for frontend configuration
-        API_URL=$$(gcloud run services describe api --region=${_REGION} --format="value(status.url)")
-
-        gcloud run deploy web \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$$COMMIT_SHA \
-          --region=${_REGION} \
-          --platform=managed \
-          --allow-unauthenticated \
-          --memory=512Mi \
-          --cpu=1 \
-          --concurrency=100 \
-          --max-instances=20 \
-          --set-env-vars="NEXT_PUBLIC_API_URL=$$API_URL,NODE_ENV=production"
+      - 'run'
+      - 'deploy'
+      - 'web'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--concurrency'
+      - '100'
+      - '--max-instances'
+      - '20'
+      - '--set-env-vars'
+      - 'NEXT_PUBLIC_API_URL=https://api-203727718263.us-central1.run.app,NODE_ENV=production'
 
   # Step 4: Database Migration and Setup
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
@@ -394,7 +432,7 @@ steps:
 
         echo "Creating migration job..."
         gcloud run jobs create db-migrate \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$$COMMIT_SHA \
+          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA \
           --region=${_REGION} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
