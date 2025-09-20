@@ -3,7 +3,7 @@
 import os
 import sys
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 from services.commerce_core import escrow_manager, payout_ledger, psu_meter
