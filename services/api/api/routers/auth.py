@@ -148,27 +148,19 @@ async def login(login_request: LoginRequest, db: Session = Depends(SessionDep)):
 
     # Check if user exists and password is correct
     if not user or not verify_password(login_request.password, user.hashed_password):
-        # Check for demo credentials as fallback
-        if (
-            login_request.email == "admin@originfd.com"
-            and login_request.password == "admin"
-        ):
-            user_data = {
-                "sub": "demo-user",
-                "email": login_request.email,
-                "roles": ["admin", "engineer"],
-            }
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
-            )
-    else:
-        # Check if user is active
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Account is deactivated",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # If we reach here, user exists and password is correct
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is deactivated",
+        )
 
         # Check if account is locked
         if user.is_locked():

@@ -43,7 +43,7 @@ class ResponseCache:
             key_parts.append(f"user:{request.state.user.get('id', 'anonymous')}")
 
         key_string = "|".join(key_parts)
-        return f"api_cache:{hashlib.md5(key_string.encode()).hexdigest()}"
+        return f"api_cache:{hashlib.sha256(key_string.encode()).hexdigest()}"
 
     async def get(self, key: str) -> Optional[Dict[str, Any]]:
         """Get cached response."""
