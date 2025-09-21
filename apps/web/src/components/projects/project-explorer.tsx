@@ -95,15 +95,17 @@ export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
   }
 
   // Filter out legacy projects to avoid duplicates
-  const uniqueProjects = projects.filter(
-    (project: any) => !project.project_name.includes("(Legacy)"),
-  );
+  const uniqueProjects = projects.filter((project: any) => {
+    const label = project.project_name ?? project.name ?? "";
+    return !label.includes("(Legacy)");
+  });
 
   return (
     <div className="space-y-1">
       {uniqueProjects.map((project: any) => {
         const isExpanded = expandedProjects.includes(project.id);
         const DomainIcon = getDomainIcon(project.domain);
+        const projectLabel = project.project_name ?? project.name ?? "Untitled Project";
 
         return (
           <div key={project.id}>
@@ -124,7 +126,7 @@ export function ProjectExplorer({ level = 0 }: ProjectExplorerProps) {
                   )}
                 />
                 <DomainIcon className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{project.project_name}</span>
+                <span className="truncate">{projectLabel}</span>
               </div>
             </div>
 

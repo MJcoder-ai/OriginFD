@@ -5,7 +5,7 @@ models.Project management endpoints.
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import httpx
 
@@ -26,9 +26,13 @@ def get_mock_user():
 import models
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from odl_sd.document_generator import DocumentGenerator
+from pydantic import BaseModel, Field, validator
 from sqlalchemy import and_, or_
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+
+from models.document import DocumentVersion as SADocumentVersion
 
 # Temporarily disabled due to import issues:
 # from services.orchestrator.agents.agent_manager import AgentManager
@@ -42,6 +46,13 @@ class AgentManager:
         return []  # TODO: Implement actual bottleneck detection
 
 
+from models.project import (  # type: ignore  # circular import friendliness
+    ProjectDomain as SAProjectDomain,
+    ProjectScale as SAProjectScale,
+    ProjectStatus as SAProjectStatus,
+)
+
+
 router = APIRouter()
 
 
@@ -50,8 +61,8 @@ class ProjectCreateRequest(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
-    domain: models.ProjectDomain
-    scale: models.models.ProjectScale
+    domain: SAProjectDomain
+    scale: SAProjectScale
     location_name: Optional[str] = Field(None, max_length=255)
     latitude: Optional[float] = Field(
         None, ge=-90, le=90, description="Latitude must be between -90 and 90 degrees"
@@ -73,13 +84,43 @@ class ProjectCreateRequest(BaseModel):
     class Config:
         str_strip_whitespace = True
 
+    @validator("domain", pre=True)
+    def _parse_domain(cls, value: object) -> SAProjectDomain:
+        """Normalize incoming domain strings to enum values."""
+        if isinstance(value, SAProjectDomain):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().upper()
+            try:
+                return SAProjectDomain[normalized]
+            except KeyError as exc:  # pragma: no cover - defensive branch
+                raise ValueError(f"Unsupported domain '{value}'") from exc
+        raise ValueError("Domain must be a string")
+
+    @validator("scale", pre=True)
+    def _parse_scale(cls, value: object) -> SAProjectScale:
+        """Normalize incoming scale strings to enum values."""
+        if isinstance(value, SAProjectScale):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip()
+            for candidate in {normalized, normalized.lower(), normalized.upper()}:
+                try:
+                    return SAProjectScale(candidate.lower())
+                except ValueError:
+                    try:
+                        return SAProjectScale[candidate.upper()]
+                    except (AttributeError, KeyError):
+                        continue
+        raise ValueError("Scale must be a valid project scale value")
+
 
 class ProjectUpdateRequest(BaseModel):
     """Request model for updating a project."""
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
-    status: Optional[models.models.ProjectStatus] = None
+    status: Optional[SAProjectStatus] = None
     location_name: Optional[str] = Field(None, max_length=255)
     latitude: Optional[float] = Field(
         None, ge=-90, le=90, description="Latitude must be between -90 and 90 degrees"
@@ -105,9 +146,9 @@ class ProjectResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
-    domain: models.ProjectDomain
-    scale: models.models.ProjectScale
-    status: models.ProjectStatus
+    domain: SAProjectDomain
+    scale: SAProjectScale
+    status: SAProjectStatus
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
@@ -117,6 +158,8 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     initialization_task_id: Optional[str] = None
+    document_id: Optional[str] = None
+    document_hash: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -127,9 +170,9 @@ class ProjectSummaryResponse(BaseModel):
 
     id: str
     name: str
-    domain: models.ProjectDomain
-    scale: models.models.ProjectScale
-    status: models.ProjectStatus
+    domain: SAProjectDomain
+    scale: SAProjectScale
+    status: SAProjectStatus
     display_status: str
     completion_percentage: int
     location_name: Optional[str]
@@ -144,20 +187,40 @@ class ProjectSummaryResponse(BaseModel):
 class ProjectListResponse(BaseModel):
     """Response model for project listings."""
 
-    projects: List[models.ProjectSummaryResponse]
+    projects: List[ProjectSummaryResponse]
     total: int
     page: int
     page_size: int
 
 
-@router.get("/", response_model=models.ProjectListResponse)
+def _get_project_document_metadata(
+    db: Session, project_id: uuid.UUID, tenant_id: Optional[uuid.UUID] = None
+) -> Tuple[Optional[str], Optional[str]]:
+    """Return the latest document identifier/hash for a project if available."""
+
+    document_query = db.query(models.Document).filter(
+        models.Document.portfolio_id == project_id
+    )
+
+    if tenant_id:
+        document_query = document_query.filter(models.Document.tenant_id == tenant_id)
+
+    document = document_query.order_by(models.Document.created_at.desc()).first()
+
+    if not document:
+        return None, None
+
+    return str(document.id), document.content_hash
+
+
+@router.get("/", response_model=ProjectListResponse)
 async def list_projects(
     db: Session = Depends(SessionDep),
     # Temporarily disabled for testing: current_user: dict = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    domain: Optional[models.models.ProjectDomain] = None,
-    status: Optional[models.models.ProjectStatus] = None,
+    domain: Optional[SAProjectDomain] = None,
+    status: Optional[SAProjectStatus] = None,
     search: Optional[str] = None,
 ):
     """
@@ -195,10 +258,10 @@ async def list_projects(
     )
 
     # Convert to response models
-    project_summaries = []
+    project_summaries: List[ProjectSummaryResponse] = []
     for project in projects:
         project_summaries.append(
-            models.ProjectSummaryResponse(
+            ProjectSummaryResponse(
                 id=str(project.id),
                 name=project.name,
                 domain=project.domain,
@@ -213,21 +276,75 @@ async def list_projects(
             )
         )
 
-    return models.ProjectListResponse(
+    return ProjectListResponse(
         projects=project_summaries, total=total, page=page, page_size=page_size
     )
 
 
-@router.post("/", response_model=models.ProjectResponse)
+@router.post("/", response_model=ProjectResponse)
 async def create_project(
-    project_data: models.ProjectCreateRequest,
+    project_data: ProjectCreateRequest,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
 ):
     """
     Create a new project.
     """
-    # Create new project
+    try:
+        owner_uuid = uuid.UUID(str(current_user.get("id")))
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user identifier for project owner",
+        )
+
+    tenant_uuid: Optional[uuid.UUID] = None
+    tenant_id_value = current_user.get("tenant_id")
+    if tenant_id_value:
+        try:
+            tenant_uuid = uuid.UUID(str(tenant_id_value))
+        except (TypeError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid tenant identifier",
+            )
+    else:
+        tenant_record = db.query(models.Tenant).first()
+        if tenant_record:
+            tenant_uuid = tenant_record.id
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tenant context is required to create a project",
+            )
+
+    # Generate initial ODL-SD document for the project
+    try:
+        odl_document = DocumentGenerator.create_project_document(
+            project_name=project_data.name,
+            domain=project_data.domain.value,
+            scale=project_data.scale.name,
+            description=project_data.description,
+            location=project_data.location_name,
+            capacity_kw=project_data.total_capacity_kw,
+            user_id=str(owner_uuid),
+        )
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to generate project document: {exc}",
+        )
+
+    is_valid, validation_errors = odl_document.validate_document()
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="; ".join(validation_errors) or "Generated document failed validation",
+        )
+
+    document_payload = odl_document.to_dict()
+    document_hash = odl_document.meta.versioning.content_hash
+
     project = models.Project(
         name=project_data.name,
         description=project_data.description,
@@ -238,14 +355,54 @@ async def create_project(
         longitude=project_data.longitude,
         country_code=project_data.country_code,
         total_capacity_kw=project_data.total_capacity_kw,
-        tags=project_data.tags,
-        owner_id=current_user["id"],
-        status=models.models.ProjectStatus.DRAFT,
+        owner_id=owner_uuid,
+        status=SAProjectStatus.DRAFT,
+    )
+    project.tags_list = project_data.tags
+
+    document = models.Document(
+        tenant_id=tenant_uuid,
+        project_name=project_data.name,
+        portfolio_id=project.id,  # temporary placeholder until flush assigns ID
+        domain=project_data.domain.value,
+        scale=project_data.scale.name,
+        current_version=1,
+        content_hash=document_hash,
+        document_data=document_payload,
     )
 
-    db.add(project)
-    db.commit()
+    try:
+        db.add(project)
+        db.flush()  # Ensure project ID is available for document linkage
+
+        document.portfolio_id = project.id
+        db.add(document)
+        db.flush()
+
+        document_version = SADocumentVersion(
+            tenant_id=tenant_uuid,
+            document_id=document.id,
+            version_number=1,
+            content_hash=document_hash,
+            change_summary="Initial project document",
+            created_by=owner_uuid,
+            document_data=document_payload,
+        )
+        db.add(document_version)
+
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logging.getLogger(__name__).exception(
+            "Failed to persist project/document records: %s", exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create project",
+        )
+
     db.refresh(project)
+    db.refresh(document)
 
     # Submit initialization task to AI orchestrator
     settings = get_settings()
@@ -256,16 +413,8 @@ async def create_project(
         "context": {
             "project_id": str(project.id),
             "project_name": project.name,
-            "domain": (
-                project.domain.value
-                if hasattr(project.domain, "value")
-                else project.domain
-            ),
-            "scale": (
-                project.scale.value
-                if hasattr(project.scale, "value")
-                else project.scale
-            ),
+            "domain": project.domain.value,
+            "scale": project.scale.name,
         },
         "tenant_id": current_user.get("tenant_id"),
         "user_id": current_user.get("id"),
@@ -283,7 +432,7 @@ async def create_project(
             "Failed to submit project initialization task: %s", e
         )
 
-    return models.ProjectResponse(
+    return ProjectResponse(
         id=str(project.id),
         name=project.name,
         description=project.description,
@@ -294,15 +443,17 @@ async def create_project(
         completion_percentage=project.completion_percentage,
         location_name=project.location_name,
         total_capacity_kw=project.total_capacity_kw,
-        tags=project.tags or [],
+        tags=project.tags_list,
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
         initialization_task_id=task_id,
+        document_id=str(document.id),
+        document_hash=document_hash,
     )
 
 
-@router.get("/{project_id}", response_model=models.ProjectResponse)
+@router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: str,
     db: Session = Depends(SessionDep),
@@ -338,7 +489,20 @@ async def get_project(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
-    return models.ProjectResponse(
+    try:
+        tenant_uuid = (
+            uuid.UUID(str(current_user.get("tenant_id")))
+            if current_user.get("tenant_id")
+            else None
+        )
+    except (TypeError, ValueError):
+        tenant_uuid = None
+
+    document_id, document_hash = _get_project_document_metadata(
+        db, project.id, tenant_uuid
+    )
+
+    return ProjectResponse(
         id=str(project.id),
         name=project.name,
         description=project.description,
@@ -349,17 +513,19 @@ async def get_project(
         completion_percentage=project.completion_percentage,
         location_name=project.location_name,
         total_capacity_kw=project.total_capacity_kw,
-        tags=project.tags or [],
+        tags=project.tags_list,
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
+        document_id=document_id,
+        document_hash=document_hash,
     )
 
 
-@router.patch("/{project_id}", response_model=models.ProjectResponse)
+@router.patch("/{project_id}", response_model=ProjectResponse)
 async def update_project(
     project_id: str,
-    project_data: models.ProjectUpdateRequest,
+    project_data: ProjectUpdateRequest,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
 ):
@@ -395,6 +561,10 @@ async def update_project(
 
     # Update fields
     update_data = project_data.dict(exclude_unset=True)
+
+    if "tags" in update_data:
+        project.tags_list = update_data.pop("tags") or []
+
     for field, value in update_data.items():
         setattr(project, field, value)
 
@@ -403,7 +573,20 @@ async def update_project(
     db.commit()
     db.refresh(project)
 
-    return models.ProjectResponse(
+    try:
+        tenant_uuid = (
+            uuid.UUID(str(current_user.get("tenant_id")))
+            if current_user.get("tenant_id")
+            else None
+        )
+    except (TypeError, ValueError):
+        tenant_uuid = None
+
+    document_id, document_hash = _get_project_document_metadata(
+        db, project.id, tenant_uuid
+    )
+
+    return ProjectResponse(
         id=str(project.id),
         name=project.name,
         description=project.description,
@@ -414,10 +597,12 @@ async def update_project(
         completion_percentage=project.completion_percentage,
         location_name=project.location_name,
         total_capacity_kw=project.total_capacity_kw,
-        tags=project.tags or [],
+        tags=project.tags_list,
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
+        document_id=document_id,
+        document_hash=document_hash,
     )
 
 

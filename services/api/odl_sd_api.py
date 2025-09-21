@@ -441,65 +441,6 @@ async def get_project(project_id: str, db: Session = Depends(get_db)):
     }
 
 
-@app.post("/projects", response_model=ProjectResponse)
-async def create_project(request: ProjectCreateRequest, db: Session = Depends(get_db)):
-    """Create new project with ODL-SD document generation"""
-    # For simplicity, use first user as owner
-    first_user = db.query(User).first()
-    if not first_user:
-        raise HTTPException(status_code=400, detail="No users found")
-
-    # Generate ODL-SD document
-    odl_doc = DocumentGenerator.create_project_document(
-        project_name=request.project_name,
-        domain=request.domain,
-        scale=request.scale,
-        description=request.description,
-        location=request.location,
-        capacity_kw=request.capacity_kw,
-        user_id=first_user.id,
-    )
-
-    # Validate the generated document
-    is_valid, errors = odl_doc.validate_document()
-    if not is_valid:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Generated ODL-SD document is invalid: {'; '.join(errors)}",
-        )
-
-    new_project = Project(
-        name=request.project_name,
-        description=request.description,
-        owner_id=first_user.id,
-        domain=request.domain,
-        scale=request.scale,
-        location_name=request.location,
-        total_capacity_kw=str(request.capacity_kw) if request.capacity_kw else None,
-        odl_document=json.dumps(odl_doc.to_dict(), indent=2),
-        document_hash=odl_doc.meta.versioning.content_hash,
-    )
-
-    db.add(new_project)
-    db.commit()
-    db.refresh(new_project)
-
-    return ProjectResponse(
-        id=new_project.id,
-        project_name=new_project.name,
-        description=new_project.description,
-        domain=new_project.domain,
-        scale=new_project.scale,
-        current_version=1,
-        content_hash=(
-            new_project.document_hash[:8] if new_project.document_hash else "no-hash"
-        ),
-        is_active=True,
-        created_at=new_project.created_at.isoformat() + "Z",
-        updated_at=new_project.updated_at.isoformat() + "Z",
-    )
-
-
 @app.get("/documents/{document_id}")
 async def get_document(document_id: str, db: Session = Depends(get_db)):
     """Get full ODL-SD document"""
