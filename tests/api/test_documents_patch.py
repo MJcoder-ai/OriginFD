@@ -194,6 +194,8 @@ def test_patch_document_success(test_client):
     document = test_client.document
     fake_session = test_client.fake_session
 
+    original_hash = document.content_hash
+
     payload = {
         "doc_id": str(document.id),
         "doc_version": document.current_version,
@@ -217,6 +219,14 @@ def test_patch_document_success(test_client):
     assert document.current_version == 2
     assert document.document_data["meta"]["project"] == "Updated Project"
     assert document.document_data["audit"], "Audit trail should record the patch"
+
+    # Content hash should be updated and tracked in version history
+    assert document.content_hash != original_hash
+    version_record = next(
+        obj for obj in fake_session.added_objects if isinstance(obj, models.DocumentVersion)
+    )
+    assert version_record.previous_hash == original_hash
+    assert version_record.previous_hash != document.content_hash
 
     # Database session interactions should commit without rollback
     assert fake_session.committed is True
