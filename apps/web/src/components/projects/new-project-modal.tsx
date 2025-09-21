@@ -37,7 +37,7 @@ import {
   Textarea,
 } from "@originfd/ui";
 import { apiClient } from "@/lib/api-client";
-import type { DocumentCreateRequest, Domain, Scale } from "@/lib/api-client";
+import type { Domain, ProjectCreateRequest, Scale } from "@/lib/api-client";
 
 const newProjectSchema = z.object({
   project_name: z
@@ -163,60 +163,16 @@ export function NewProjectModal({
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: NewProjectFormData) => {
-      // Create a basic ODL document structure
-      const documentData = {
-        $schema: "https://odl-sd.org/schemas/v4.1/document.json",
-        schema_version: "4.1",
-        meta: {
-          project: data.project_name,
-          domain: data.domain,
-          scale: data.scale,
-          units: {
-            system: "SI" as const,
-            currency: "USD",
-            coordinate_system: "EPSG:4326",
-          },
-          timestamps: {
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          versioning: {
-            document_version: "4.1.0",
-            content_hash: "initial",
-          },
-        },
-        hierarchy: {
-          type: "PORTFOLIO" as const,
-          id: "portfolio-1",
-          children: [],
-          portfolio: {
-            id: "portfolio-1",
-            name: data.project_name,
-            total_capacity_gw: 0,
-            regions: {},
-          },
-        },
-        libraries: {},
-        instances: [],
-        connections: [],
-        analysis: [],
-        audit: [],
-        data_management: {
-          partitioning_enabled: false,
-          external_refs_enabled: false,
-          streaming_enabled: false,
-          max_document_size_mb: 100,
-        },
-      };
-
-      const request: DocumentCreateRequest = {
-        project_name: data.project_name,
+      const request: ProjectCreateRequest = {
+        name: data.project_name,
+        description: data.description || undefined,
         domain: data.domain,
         scale: data.scale,
-        document_data: documentData,
+        location_name: data.location || undefined,
+        tags: [],
       };
 
-      return apiClient.createDocument(request);
+      return apiClient.createProject(request);
     },
     onSuccess: (data) => {
       toast.success("Project created successfully!");

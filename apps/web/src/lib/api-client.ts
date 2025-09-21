@@ -11,6 +11,41 @@ export type Scale =
   | "UTILITY"
   | "HYPERSCALE";
 
+export type ProjectStatus = "draft" | "active" | "under_review" | "completed";
+
+export interface ProjectCreateRequest {
+  name: string;
+  description?: string;
+  domain: Domain;
+  scale: Scale;
+  location_name?: string;
+  latitude?: number;
+  longitude?: number;
+  country_code?: string;
+  total_capacity_kw?: number;
+  tags?: string[];
+}
+
+export interface ProjectResponse {
+  id: string;
+  name: string;
+  description?: string | null;
+  domain: Domain;
+  scale: Scale;
+  status: ProjectStatus;
+  display_status: string;
+  completion_percentage: number;
+  location_name?: string | null;
+  total_capacity_kw?: number | null;
+  tags: string[];
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+  initialization_task_id?: string | null;
+  document_id?: string | null;
+  document_hash?: string | null;
+}
+
 export interface DocumentCreateRequest {
   project_name: string;
   portfolio_id?: string;
@@ -149,6 +184,13 @@ export class OriginFDClient {
     request: DocumentCreateRequest,
   ): Promise<DocumentResponse> {
     return this.request("odl/", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  async createProject(request: ProjectCreateRequest): Promise<ProjectResponse> {
+    return this.request("projects/", {
       method: "POST",
       body: JSON.stringify(request),
     });
