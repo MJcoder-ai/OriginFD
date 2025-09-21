@@ -279,6 +279,7 @@ async def apply_document_patch(
 
         # Update database
         new_version = document.current_version + 1
+        old_hash = document.content_hash
         new_hash = odl_doc.meta.versioning.content_hash
 
         # Update document record
@@ -293,7 +294,7 @@ async def apply_document_patch(
             document_id=document.id,
             version_number=new_version,
             content_hash=new_hash,
-            previous_hash=document.content_hash,
+            previous_hash=old_hash,
             change_summary=request.change_summary,
             patch_operations=request.patch,
             evidence_uris=request.evidence,
