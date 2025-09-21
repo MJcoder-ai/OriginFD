@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from packages.py.odl_sd_patch.patch import apply_patch
+from packages.py.odl_sd_patch.patch import apply_patch, calculate_content_hash
 from packages.py.odl_sd_schema.document import OdlDocument
 
 logger = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ async def bind_component_to_document(
             )
 
         # Parse ODL-SD document
-        odl_document = OdlDocument.model_validate(current_version.content)
+        odl_document = OdlDocument.model_validate(current_version.document_data)
 
         # Create component reference based on binding type
         component_ref = create_component_reference(
@@ -160,25 +160,39 @@ async def bind_component_to_document(
         )
 
         # Apply patches to document
-        updated_content = apply_patch(current_version.content, patch_ops)
+        updated_content = apply_patch(current_version.document_data, patch_ops)
 
         # Validate updated document
         updated_odl = OdlDocument.model_validate(updated_content)
 
+        # Calculate new content hash and update versioning metadata
+        new_hash = calculate_content_hash(updated_content)
+        previous_hash = current_version.content_hash
+        versioning_meta = updated_content.setdefault("meta", {}).setdefault(
+            "versioning", {}
+        )
+        versioning_meta["previous_hash"] = previous_hash
+        versioning_meta["content_hash"] = new_hash
+
         # Create new document version
         new_version = models.DocumentVersion(
+            tenant_id=document.tenant_id,
             document_id=document.id,
             version_number=current_version.version_number + 1,
-            content=updated_content,
-            content_hash=f"hash-{uuid.uuid4().hex[:16]}",  # TODO: Implement proper hashing
+            content_hash=new_hash,
+            previous_hash=previous_hash,
             change_summary=f"Added component binding: {component.name}",
             created_by=uuid.UUID(current_user["id"]),
+            patch_operations=patch_ops,
+            document_data=updated_content,
         )
 
         db.add(new_version)
 
         # Update document current version
         document.current_version = new_version.version_number
+        document.content_hash = new_hash
+        document.document_data = updated_content
         document.updated_at = datetime.utcnow()
 
         # Update component management with binding info
@@ -272,7 +286,7 @@ async def add_components_to_project(
         )
 
         # Parse ODL-SD document
-        odl_document = OdlDocument.model_validate(current_version.content)
+        odl_document = OdlDocument.model_validate(current_version.document_data)
 
         # Ensure libraries.components exists
         if not hasattr(odl_document, "libraries") or not odl_document.libraries:
@@ -312,19 +326,30 @@ async def add_components_to_project(
 
         # Create new document version
         new_content = odl_document.model_dump()
+        previous_hash = current_version.content_hash
+        versioning_meta = new_content.setdefault("meta", {}).setdefault(
+            "versioning", {}
+        )
+        versioning_meta["previous_hash"] = previous_hash
+        new_hash = calculate_content_hash(new_content)
+        versioning_meta["content_hash"] = new_hash
         new_version = models.DocumentVersion(
+            tenant_id=document.tenant_id,
             document_id=document.id,
             version_number=current_version.version_number + 1,
-            content=new_content,
-            content_hash=f"hash-{uuid.uuid4().hex[:16]}",
+            content_hash=new_hash,
+            previous_hash=previous_hash,
             change_summary=f"Added {len(components_added)} components: {', '.join(components_added)}",
             created_by=uuid.UUID(current_user["id"]),
+            document_data=new_content,
         )
 
         db.add(new_version)
 
         # Update document
         document.current_version = new_version.version_number
+        document.content_hash = new_hash
+        document.document_data = new_content
         document.updated_at = datetime.utcnow()
 
         db.commit()
@@ -409,7 +434,9 @@ async def update_component_specifications(
                 )
 
                 # Parse and update document
-                odl_document = OdlDocument.model_validate(current_version.content)
+                odl_document = OdlDocument.model_validate(
+                    current_version.document_data
+                )
 
                 # Update component specifications in document
                 updated = update_component_specs_in_document(
@@ -421,17 +448,30 @@ async def update_component_specifications(
 
                 if updated:
                     # Create new version
+                    new_content = odl_document.model_dump()
+                    previous_hash = current_version.content_hash
+                    versioning_meta = new_content.setdefault("meta", {}).setdefault(
+                        "versioning", {}
+                    )
+                    versioning_meta["previous_hash"] = previous_hash
+                    new_hash = calculate_content_hash(new_content)
+                    versioning_meta["content_hash"] = new_hash
+
                     new_version = models.DocumentVersion(
+                        tenant_id=document.tenant_id,
                         document_id=document.id,
                         version_number=current_version.version_number + 1,
-                        content=odl_document.model_dump(),
-                        content_hash=f"hash-{uuid.uuid4().hex[:16]}",
+                        content_hash=new_hash,
+                        previous_hash=previous_hash,
                         change_summary=f"Updated specifications for component {component.name}",
                         created_by=uuid.UUID(current_user["id"]),
+                        document_data=new_content,
                     )
 
                     db.add(new_version)
                     document.current_version = new_version.version_number
+                    document.content_hash = new_hash
+                    document.document_data = new_content
                     document.updated_at = datetime.utcnow()
 
                     updated_documents.append(document.project_name)
