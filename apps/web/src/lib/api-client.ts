@@ -454,10 +454,16 @@ export class OriginFDClient {
 // Default client instance
 // Use real backend API instead of mock endpoints
 // Use environment variable for API base URL in production
-const API_BASE_URL =
-  typeof window !== "undefined"
-    ? (window as any).__ORIGINFD_API_BASE__ || "http://localhost:8000"
-    : process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = (() => {
+  const browserBase =
+    typeof window !== "undefined"
+      ? (window as any).__ORIGINFD_API_BASE__
+      : undefined;
+
+  const envBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  return browserBase || envBase || "/api/bridge";
+})();
 
 export const apiClient = new OriginFDClient(API_BASE_URL);
 
