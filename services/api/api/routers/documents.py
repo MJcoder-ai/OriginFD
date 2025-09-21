@@ -15,30 +15,7 @@ from odl_sd.schemas import OdlSdDocument
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-# from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
-# TODO: Check if this module exists
-
-
-# Temporary placeholder implementations
-class PatchValidationError(Exception):
-    """Placeholder for patch validation error."""
-
-    pass
-
-
-def apply_patch(
-    document: Dict[str, Any], patch: List[Dict[str, Any]]
-) -> Dict[str, Any]:
-    """Placeholder for apply_patch function."""
-    return document  # TODO: Implement actual patch application
-
-
-def inverse_patch(
-    patch: List[Dict[str, Any]], document: Dict[str, Any]
-) -> List[Dict[str, Any]]:
-    """Placeholder for inverse_patch function."""
-    return []  # TODO: Implement actual inverse patch generation
-
+from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
 
 router = APIRouter()
 
