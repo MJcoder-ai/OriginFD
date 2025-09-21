@@ -68,6 +68,11 @@ class Project(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
     owner = relationship("User", back_populates="projects")
+    documents = relationship(
+        "Document",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)
 

@@ -7,7 +7,7 @@ from .base import Base, TenantMixin, TimestampMixin, UUIDMixin
 from .component import Component
 
 # Complex models with multiple dependencies last
-from .document import Document
+from .document import Document, DocumentVersion
 from .inventory_record import InventoryRecord
 from .project import Project
 from .supplier import Supplier
@@ -29,4 +29,5 @@ __all__ = [
     "Supplier",
     "InventoryRecord",
     "Document",
+    "DocumentVersion",
 ]
