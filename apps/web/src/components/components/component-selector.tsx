@@ -220,7 +220,9 @@ const getComplianceDisplay = (
 interface ComponentSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onComponentsSelected: (components: SelectedComponent[]) => void;
+  onComponentsSelected: (
+    components: SelectedComponent[],
+  ) => void | Promise<void>;
   projectDomain?: string;
   projectScale?: string;
   multiSelect?: boolean;
@@ -283,7 +285,21 @@ export function ComponentSelector({
     enabled: open,
   });
 
-  const components = componentsData?.components || [];
+  const components = React.useMemo(() => {
+    const items = componentsData?.components || [];
+    if (!showInventoryOnly) {
+      return items;
+    }
+
+    return items.filter((component: any) => {
+      const stocks =
+        component?.component_management?.inventory?.stocks ?? [];
+      return Array.isArray(stocks) && stocks.some((stock: any) => {
+        const quantity = Number(stock?.on_hand_qty ?? 0);
+        return Number.isFinite(quantity) && quantity > 0;
+      });
+    });
+  }, [componentsData?.components, showInventoryOnly]);
 
   const handleComponentToggle = (component: ComponentResponse) => {
     if (!multiSelect) {
@@ -335,11 +351,15 @@ export function ComponentSelector({
     );
   };
 
-  const handleConfirm = () => {
-    onComponentsSelected(selectedComponents);
-    onOpenChange(false);
-    setSelectedComponents([]);
-    setSearchQuery("");
+  const handleConfirm = async () => {
+    try {
+      await onComponentsSelected(selectedComponents);
+      onOpenChange(false);
+      setSelectedComponents([]);
+      setSearchQuery("");
+    } catch (error) {
+      console.error("Failed to confirm component selection:", error);
+    }
   };
 
   const handleCancel = () => {

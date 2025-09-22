@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -44,6 +44,7 @@ export default function ProjectDetailPage() {
   const projectId = params.id as string;
   const [componentSelectorOpen, setComponentSelectorOpen] =
     React.useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch project metadata
   const {
@@ -693,27 +694,34 @@ export default function ProjectDetailPage() {
         open={componentSelectorOpen}
         onOpenChange={setComponentSelectorOpen}
         onComponentsSelected={async (selectedComponents) => {
+          if (!projectId || selectedComponents.length === 0) {
+            return;
+          }
+
           try {
-            // TODO: Implement API call to add components to project
-            console.log("Adding components to project:", selectedComponents);
+            await apiClient.addComponentsToProject(projectId, {
+              components: selectedComponents.map((selectedComponent) => ({
+                component_id:
+                  selectedComponent.component.component_management
+                    ?.component_identity?.component_id ??
+                  selectedComponent.component.id,
+                quantity: selectedComponent.quantity,
+                placement: selectedComponent.placement,
+                configuration: selectedComponent.configuration,
+                notes: selectedComponent.notes,
+                component: selectedComponent.component,
+              })),
+            });
 
-            // For now, just show success message
-            // In real implementation, this would call the component integration API
-            // await componentIntegrationAPI.addComponentsToProject({
-            //   project_document_id: projectId,
-            //   components: selectedComponents.map(sc => ({
-            //     component_id: sc.component.id,
-            //     quantity: sc.quantity,
-            //     placement: sc.placement,
-            //     configuration: sc.configuration,
-            //     notes: sc.notes
-            //   }))
-            // })
-
-            // Refetch project data to show updated components
-            // refetch()
+            await queryClient.invalidateQueries({
+              queryKey: ["project-document", projectId],
+            });
+            await queryClient.invalidateQueries({
+              queryKey: ["project-documents", projectId],
+            });
           } catch (error) {
             console.error("Failed to add components:", error);
+            throw error;
           }
         }}
         projectDomain={project?.domain}

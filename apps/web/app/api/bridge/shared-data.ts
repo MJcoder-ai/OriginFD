@@ -273,6 +273,61 @@ export function getAllDocuments() {
   return mockDocuments;
 }
 
+export function findPrimaryDocumentForProject(projectId: string) {
+  const direct = mockDocuments.find((doc) => doc.project_id === projectId);
+  if (direct) {
+    return direct;
+  }
+
+  const candidates = [
+    `${projectId}-main`,
+    `${projectId}_main`,
+    projectId,
+  ];
+
+  for (const candidate of candidates) {
+    const match = mockDocuments.find((doc) => doc.id === candidate);
+    if (match) {
+      return match;
+    }
+  }
+
+  return undefined;
+}
+
+export function addComponentsToProjectDocument(
+  projectId: string,
+  components: any[],
+) {
+  const document = findPrimaryDocumentForProject(projectId);
+  if (!document) {
+    return null;
+  }
+
+  if (!document.document_data) {
+    document.document_data = {};
+  }
+
+  const docData = document.document_data as any;
+  if (!Array.isArray(docData.components)) {
+    docData.components = [];
+  }
+
+  docData.components.push(...components);
+
+  document.libraries = {
+    ...(document.libraries || {}),
+    components: docData.components,
+  };
+
+  document.updated_at = new Date().toISOString();
+
+  return {
+    document,
+    components: docData.components,
+  };
+}
+
 // Simple notification store used by API routes
 export let mockNotifications: any[] = [];
 

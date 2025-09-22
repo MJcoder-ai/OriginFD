@@ -1,3 +1,5 @@
+import type { ComponentResponse } from "./types";
+
 /**
  * Temporary API client implementation while fixing workspace packages
  * This will be replaced with proper @originfd/http-client import once module resolution is fixed
@@ -120,6 +122,19 @@ export interface EscrowStatusResponse {
 export interface TransactionsResponse {
   tenant_id: string;
   transactions: any[];
+}
+
+export interface ProjectComponentAddRequest {
+  component_id: string;
+  quantity: number;
+  placement?: {
+    location?: string;
+    coordinates?: { x: number; y: number; z?: number };
+    orientation?: string;
+  };
+  configuration?: Record<string, any>;
+  notes?: string;
+  component?: ComponentResponse;
 }
 
 export class ApiError extends Error {
@@ -312,6 +327,16 @@ export class OriginFDClient {
     return this.request("components", {
       method: "POST",
       body: JSON.stringify(request),
+    });
+  }
+
+  async addComponentsToProject(
+    projectId: string,
+    payload: { components: ProjectComponentAddRequest[] },
+  ): Promise<any> {
+    return this.request(`projects/${projectId}/components/add`, {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
   }
 
