@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import apiClient, { componentAPI } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,
@@ -109,9 +110,25 @@ export default function RFQCreationWizard({
   const { data: components } = useQuery({
     queryKey: ["components-available"],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/components?status=available");
-      if (!response.ok) throw new Error("Failed to fetch components");
-      return response.json();
+      try {
+        const response = await componentAPI.listComponents({
+          status: "available",
+          active_only: true,
+        });
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (Array.isArray(response?.components)) {
+          return response.components;
+        }
+
+        return [];
+      } catch (error) {
+        console.error("Failed to fetch components", error);
+        return [];
+      }
     },
     enabled: !selectedComponent,
   });
@@ -119,17 +136,11 @@ export default function RFQCreationWizard({
   // Create RFQ mutation
   const createRFQMutation = useMutation({
     mutationFn: async (data: RFQFormData) => {
-      const response = await fetch("/api/bridge/rfq", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          requester_id: "current_user",
-          status: "draft",
-        }),
+      return apiClient.post(`suppliers/rfqs`, {
+        ...data,
+        requester_id: "current_user",
+        status: "draft",
       });
-      if (!response.ok) throw new Error("Failed to create RFQ");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rfqs"] });

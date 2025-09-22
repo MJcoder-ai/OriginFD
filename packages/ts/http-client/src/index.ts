@@ -49,18 +49,26 @@ export class OriginFDClient {
 
   constructor(config: ApiClientConfig = {}) {
     const {
-      baseUrl = "/api/bridge",
+      baseUrl,
       orchestratorUrl = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ||
         "http://localhost:8001",
       timeout = 30000,
       headers = {},
     } = config;
 
-    this.baseUrl = baseUrl;
+    const resolvedBaseUrl =
+      baseUrl ??
+      (typeof window !== "undefined"
+        ? (window as any).__ORIGINFD_API_BASE__
+        : undefined) ??
+      process.env.NEXT_PUBLIC_API_URL ??
+      "http://localhost:8000";
+
+    this.baseUrl = resolvedBaseUrl.replace(/\/+$/, "");
     this.orchestratorUrl = orchestratorUrl;
 
     this.api = ky.create({
-      prefixUrl: baseUrl,
+      prefixUrl: this.baseUrl,
       timeout,
       headers: {
         "Content-Type": "application/json",

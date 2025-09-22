@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/api-client";
 import {
   RFQRequest,
   RFQBid,
@@ -126,9 +127,28 @@ export default function SupplierPortal({
   const { data: availableRFQs = [], isLoading: rfqsLoading } = useQuery({
     queryKey: ["supplier-rfqs", "receiving_bids"],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/rfq?status=receiving_bids");
-      if (!response.ok) throw new Error("Failed to fetch RFQs");
-      return response.json();
+      try {
+        const response = await apiClient.get("suppliers/rfqs", {
+          status: "receiving_bids",
+        });
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (Array.isArray(response?.rfqs)) {
+          return response.rfqs;
+        }
+
+        if (Array.isArray(response?.results)) {
+          return response.results;
+        }
+
+        return [];
+      } catch (error) {
+        console.error("Failed to fetch RFQs", error);
+        return [];
+      }
     },
   });
 
@@ -138,49 +158,55 @@ export default function SupplierPortal({
     queryFn: async () => {
       // In real implementation, this would fetch bids by supplier_id
       // For now, we'll filter from available RFQs
-      const allRFQs = await fetch("/api/bridge/rfq").then((r) => r.json());
-      const bids: RFQBid[] = [];
+      try {
+        const allRFQsResponse = await apiClient.get("suppliers/rfqs");
+        const allRFQs = Array.isArray(allRFQsResponse)
+          ? allRFQsResponse
+          : Array.isArray(allRFQsResponse?.rfqs)
+            ? allRFQsResponse.rfqs
+            : Array.isArray(allRFQsResponse?.results)
+              ? allRFQsResponse.results
+              : [];
+        const bids: RFQBid[] = [];
 
-      allRFQs.forEach((rfq: RFQRequest) => {
-        rfq.bids.forEach((bid) => {
-          if (bid.supplier_id === supplierId) {
-            bids.push({
-              ...bid,
-              rfq_title: rfq.title,
-              rfq_status: rfq.status,
-            } as any); // Extended bid type with additional properties
-          }
+        allRFQs.forEach((rfq: RFQRequest) => {
+          rfq.bids.forEach((bid) => {
+            if (bid.supplier_id === supplierId) {
+              bids.push({
+                ...bid,
+                rfq_title: rfq.title,
+                rfq_status: rfq.status,
+              } as any); // Extended bid type with additional properties
+            }
+          });
         });
-      });
 
-      return bids;
+        return bids;
+      } catch (error) {
+        console.error("Failed to fetch supplier bids", error);
+        return [];
+      }
     },
   });
 
   // Submit bid mutation
   const submitBidMutation = useMutation({
     mutationFn: async (data: { rfqId: string; bidData: any }) => {
-      const response = await fetch(`/api/bridge/rfq/${data.rfqId}/bids`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supplier_id: supplierId,
-          supplier_name: supplierName,
-          unit_price: parseFloat(data.bidData.unit_price),
-          total_price: parseFloat(data.bidData.total_price),
-          currency: "USD",
-          delivery_date: data.bidData.delivery_date,
-          delivery_terms: data.bidData.delivery_terms,
-          validity_period_days: data.bidData.validity_period_days,
-          specifications_compliance: getSpecificationCompliance(selectedRFQ),
-          certifications: data.bidData.certifications,
-          sustainability_score: parseFloat(data.bidData.sustainability_score),
-          notes: data.bidData.notes,
-          status: "submitted",
-        }),
+      return apiClient.post(`suppliers/rfqs/${data.rfqId}/bids`, {
+        supplier_id: supplierId,
+        supplier_name: supplierName,
+        unit_price: parseFloat(data.bidData.unit_price),
+        total_price: parseFloat(data.bidData.total_price),
+        currency: "USD",
+        delivery_date: data.bidData.delivery_date,
+        delivery_terms: data.bidData.delivery_terms,
+        validity_period_days: data.bidData.validity_period_days,
+        specifications_compliance: getSpecificationCompliance(selectedRFQ),
+        certifications: data.bidData.certifications,
+        sustainability_score: parseFloat(data.bidData.sustainability_score),
+        notes: data.bidData.notes,
+        status: "submitted",
       });
-      if (!response.ok) throw new Error("Failed to submit bid");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplier-bids"] });

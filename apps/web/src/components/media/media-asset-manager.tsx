@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/api-client";
 import {
   Card,
   CardContent,
@@ -152,31 +153,64 @@ export default function MediaAssetManager({
   } = useQuery({
     queryKey: ["media-assets", componentId, typeFilter],
     queryFn: async () => {
-      let url = "/api/bridge/media";
-      const params = new URLSearchParams();
+      const params: Record<string, string> = { active_only: "true" };
 
-      if (componentId) params.append("component_id", componentId);
-      if (typeFilter !== "all") params.append("type", typeFilter);
-      params.append("active_only", "true");
+      if (typeFilter !== "all") {
+        params.type = typeFilter;
+      }
 
-      if (params.toString()) url += `?${params.toString()}`;
+      try {
+        if (componentId) {
+          const assets = await apiClient.get(
+            `components/${componentId}/media`,
+            params,
+          );
 
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch media assets");
-      return response.json();
+          if (Array.isArray(assets)) {
+            return { assets, statistics: {} };
+          }
+
+          return {
+            assets: Array.isArray(assets?.items) ? assets.items : [],
+            statistics: assets?.statistics ?? {},
+          };
+        }
+
+        const response = await apiClient.get("media/assets", params);
+
+        if (response && typeof response === "object") {
+          return {
+            assets: Array.isArray((response as any).assets)
+              ? (response as any).assets
+              : Array.isArray(response)
+                ? (response as any)
+                : [],
+            statistics: (response as any).statistics ?? {},
+          };
+        }
+
+        if (Array.isArray(response)) {
+          return { assets: response, statistics: {} };
+        }
+
+        return { assets: [], statistics: {} };
+      } catch (err) {
+        console.error("Failed to fetch media assets", err);
+        return { assets: [], statistics: {} };
+      }
     },
   });
 
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (assetData: any) => {
-      const response = await fetch("/api/bridge/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(assetData),
+      if (!assetData.component_id) {
+        throw new Error("component_id is required to upload media assets");
+      }
+
+      return apiClient.post(`components/${assetData.component_id}/media`, {
+        ...assetData,
       });
-      if (!response.ok) throw new Error("Failed to upload asset");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media-assets"] });

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, Button } from "@originfd/ui";
+import apiClient from "@/lib/api-client";
 
 interface AlarmTrend {
   id: string;
@@ -47,11 +48,7 @@ export default function AlarmPanel() {
 
   const createWorkOrder = async (alarmId: string) => {
     try {
-      await fetch("/api/bridge/work-orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alarm_id: alarmId }),
-      });
+      await apiClient.post("alarms/work-orders", { alarm_id: alarmId });
       router.push("/missions");
     } catch (error) {
       console.error("Failed to create work order", error);

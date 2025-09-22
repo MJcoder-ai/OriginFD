@@ -27,7 +27,7 @@ const nextConfig = {
     if (apiUrl) {
       return [
         {
-          source: '/api/bridge/:path*',
+          source: '/api/:path*',
           destination: `${apiUrl}/:path*`,
         },
       ]

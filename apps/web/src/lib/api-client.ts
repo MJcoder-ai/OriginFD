@@ -133,12 +133,13 @@ export class ApiError extends Error {
   }
 }
 
+const DEFAULT_API_BASE_URL = "http://localhost:8000";
+
 const normalizeBaseUrl = (baseUrl: string): string => {
   if (!baseUrl) {
-    return "/api/bridge";
+    return DEFAULT_API_BASE_URL;
   }
 
-  // Trim whitespace and remove any trailing slashes so request path joining is predictable
   const trimmed = baseUrl.trim();
   return trimmed.replace(/\/+$/, "");
 };
@@ -146,7 +147,7 @@ const normalizeBaseUrl = (baseUrl: string): string => {
 const resolveApiBaseUrl = (): string => {
   const envBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  if (envBaseUrl && envBaseUrl.trim().length > 0) {
+  if (typeof envBaseUrl === "string" && envBaseUrl.trim().length > 0) {
     return normalizeBaseUrl(envBaseUrl);
   }
 
@@ -157,7 +158,7 @@ const resolveApiBaseUrl = (): string => {
     }
   }
 
-  return normalizeBaseUrl("/api/bridge");
+  return normalizeBaseUrl(DEFAULT_API_BASE_URL);
 };
 
 export class OriginFDClient {
