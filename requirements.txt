@@ -1,6 +1,9 @@
 # OriginFD Core Dependencies
 # Shared dependencies across all services with pinned versions
 
+# Build tools (required for Python 3.12)
+setuptools>=69.0.0
+
 # FastAPI and web framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
