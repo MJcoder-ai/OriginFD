@@ -114,6 +114,7 @@ def test_client(sample_document):
     app.dependency_overrides[get_current_user] = lambda: {
         "id": str(user_id),
         "tenant_id": str(tenant_id),
+        "roles": ["viewer"],
     }
 
     client = TestClient(app)
@@ -139,3 +140,18 @@ def test_export_document_yaml(test_client, sample_document):
     exported = yaml.safe_load(response.text)
     expected = canonicalize_document(sample_document)
     assert exported == expected
+
+
+def test_export_document_forbidden_for_guest(test_client):
+    """Guests cannot export documents because they lack read access."""
+
+    test_client.app.dependency_overrides[get_current_user] = lambda: {
+        "id": str(uuid.uuid4()),
+        "tenant_id": str(test_client.document.tenant_id),
+        "roles": ["guest"],
+    }
+
+    response = test_client.get(f"/documents/{test_client.document.id}/export?format=json")
+
+    assert response.status_code == 403
+    assert "insufficient permissions" in response.json()["detail"].lower()
