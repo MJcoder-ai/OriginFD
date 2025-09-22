@@ -14,7 +14,7 @@ from .supplier import Supplier
 
 # Import models in dependency order to avoid circular imports
 # Core models without foreign key dependencies first
-from .tenant import Tenant
+from .tenant import Tenant, TenantMembership
 from .user import User
 
 __all__ = [
@@ -23,6 +23,7 @@ __all__ = [
     "TimestampMixin",
     "TenantMixin",
     "Tenant",
+    "TenantMembership",
     "User",
     "Project",
     "Component",

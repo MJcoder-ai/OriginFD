@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 # from core.rbac import guard_patch, has_document_access  # TODO: Implement RBAC
 import models
-from core.auth import get_current_user
+from deps import get_current_user
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from odl_sd.schemas import OdlSdDocument

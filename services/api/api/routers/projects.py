@@ -8,11 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 import httpx
-
-
-# Simple auth bypass for testing
-def get_current_user(*args, **kwargs):
-    return {"id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc", "email": "admin@originfd.com"}
+from deps import get_current_user
 
 
 from core.config import get_settings

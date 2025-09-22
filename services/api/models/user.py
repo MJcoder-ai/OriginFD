@@ -28,6 +28,21 @@ class User(Base, UUIDMixin, TimestampMixin):
 
     # Relationships
     projects = relationship("Project", back_populates="owner")
+    tenant_memberships = relationship(
+        "TenantMembership",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def roles(self) -> list[str]:
+        """Return roles as a list for compatibility with token payloads."""
+        role_value = getattr(self, "role", None)
+        if isinstance(role_value, list):
+            return role_value
+        if role_value:
+            return [role_value]
+        return ["user"]
 
     def update_last_login(self) -> None:
         """Update last login timestamp."""
