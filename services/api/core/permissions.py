@@ -70,6 +70,7 @@ class Role(str, Enum):
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     ENGINEER = "engineer"
+    PROJECT_MANAGER = "project_manager"
     REVIEWER = "reviewer"
     VIEWER = "viewer"
     GUEST = "guest"
@@ -125,59 +126,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         Permission.ANALYTICS_READ,
         Permission.ANALYTICS_EXPORT,
     ],
-    Role.ADMIN: [
-        # Limited system access
-        Permission.SYSTEM_MONITOR,
-        # User management (excluding create/delete)
-        Permission.USER_READ,
-        Permission.USER_UPDATE,
-        Permission.USER_INVITE,
-        # Full project access
-        Permission.PROJECT_CREATE,
-        Permission.PROJECT_READ,
-        Permission.PROJECT_UPDATE,
-        Permission.PROJECT_DELETE,
-        Permission.PROJECT_SHARE,
-        Permission.PROJECT_EXPORT,
-        # Full component access
-        Permission.COMPONENT_CREATE,
-        Permission.COMPONENT_READ,
-        Permission.COMPONENT_UPDATE,
-        Permission.COMPONENT_DELETE,
-        Permission.COMPONENT_APPROVE,
-        Permission.COMPONENT_TRANSITION,
-        # Full document access
-        Permission.DOCUMENT_CREATE,
-        Permission.DOCUMENT_READ,
-        Permission.DOCUMENT_UPDATE,
-        Permission.DOCUMENT_DELETE,
-        Permission.DOCUMENT_VERSION,
-        # Analytics access
-        Permission.ANALYTICS_READ,
-        Permission.ANALYTICS_EXPORT,
-    ],
-    Role.ENGINEER: [
-        # Basic user access
-        Permission.USER_READ,
-        # Project management
-        Permission.PROJECT_CREATE,
-        Permission.PROJECT_READ,
-        Permission.PROJECT_UPDATE,
-        Permission.PROJECT_SHARE,
-        Permission.PROJECT_EXPORT,
-        # Component management
-        Permission.COMPONENT_CREATE,
-        Permission.COMPONENT_READ,
-        Permission.COMPONENT_UPDATE,
-        Permission.COMPONENT_TRANSITION,
-        # Document management
-        Permission.DOCUMENT_CREATE,
-        Permission.DOCUMENT_READ,
-        Permission.DOCUMENT_UPDATE,
-        Permission.DOCUMENT_VERSION,
-        # Analytics read access
-        Permission.ANALYTICS_READ,
-    ],
     Role.REVIEWER: [
         # Basic user access
         Permission.USER_READ,
@@ -194,18 +142,6 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         # Analytics read access
         Permission.ANALYTICS_READ,
     ],
-    Role.VIEWER: [
-        # Basic user access
-        Permission.USER_READ,
-        # Read-only project access
-        Permission.PROJECT_READ,
-        # Read-only component access
-        Permission.COMPONENT_READ,
-        # Read-only document access
-        Permission.DOCUMENT_READ,
-        # Read-only analytics access
-        Permission.ANALYTICS_READ,
-    ],
     Role.GUEST: [
         # Very limited read access
         Permission.PROJECT_READ,
@@ -213,6 +149,32 @@ ROLE_PERMISSIONS: Dict[Role, List[Permission]] = {
         Permission.DOCUMENT_READ,
     ],
 }
+
+
+def _load_role_permissions_from_config() -> None:
+    """Overlay role permissions using the centralized configuration."""
+
+    from core.role_config import ROLE_ACTION_MAP
+
+    for role_name, actions in ROLE_ACTION_MAP.items():
+        try:
+            role = Role(role_name)
+        except ValueError:
+            logger.warning("Unknown role in ROLE_ACTION_MAP: %s", role_name)
+            continue
+
+        resolved_actions: List[Permission] = []
+        for action in actions:
+            try:
+                resolved_actions.append(Permission(action))
+            except ValueError:
+                logger.warning(
+                    "Unknown permission '%s' configured for role '%s'", action, role_name
+                )
+        ROLE_PERMISSIONS[role] = resolved_actions
+
+
+_load_role_permissions_from_config()
 
 # =====================================
 # Authorization Classes
@@ -252,6 +214,45 @@ class AuthorizationContext:
         self.resource_data = resource_data
 
 
+def _get_user_roles(user: Dict[str, Any]) -> List[Role]:
+    """Extract declared roles from a user payload."""
+
+    roles: List[Role] = []
+    raw_roles = user.get("roles")
+
+    if isinstance(raw_roles, (list, tuple, set)):
+        for role_name in raw_roles:
+            try:
+                roles.append(Role(role_name))
+            except ValueError:
+                logger.debug("Ignoring unknown role assignment: %s", role_name)
+    elif raw_roles:
+        try:
+            roles.append(Role(raw_roles))
+        except ValueError:
+            logger.debug("Ignoring unknown role assignment: %s", raw_roles)
+
+    single_role = user.get("role")
+    if single_role:
+        try:
+            role_value = Role(single_role)
+            if role_value not in roles:
+                roles.append(role_value)
+        except ValueError:
+            logger.debug("Ignoring unknown role assignment: %s", single_role)
+
+    if not roles:
+        roles.append(Role.GUEST)
+
+    return roles
+
+
+def _get_primary_role(user: Dict[str, Any]) -> Role:
+    """Return the first available role for ownership heuristics."""
+
+    return _get_user_roles(user)[0]
+
+
 class PermissionChecker:
     """Centralized permission checking logic."""
 
@@ -260,9 +261,11 @@ class PermissionChecker:
 
     def user_has_permission(self, user: Dict[str, Any], permission: Permission) -> bool:
         """Check if user has a specific permission based on their role."""
-        user_role = Role(user.get("role", Role.GUEST))
-        role_permissions = ROLE_PERMISSIONS.get(user_role, [])
-        return permission in role_permissions
+        for role in _get_user_roles(user):
+            role_permissions = ROLE_PERMISSIONS.get(role, [])
+            if permission in role_permissions:
+                return True
+        return False
 
     def user_has_any_permission(
         self, user: Dict[str, Any], permissions: List[Permission]
@@ -336,8 +339,12 @@ class PermissionChecker:
                 )
             )
 
-            if require_ownership:
+            if require_ownership and hasattr(models.Document, "created_by"):
                 query = query.filter(models.Document.created_by == user_id)
+            elif require_ownership and not hasattr(models.Document, "created_by"):
+                logger.debug(
+                    "Document model lacks 'created_by'; skipping ownership filter"
+                )
 
             resource = query.first()
 
@@ -389,7 +396,7 @@ class PermissionChecker:
         # Check resource-specific access
         if context.resource_id:
             # Determine if ownership is required based on user role and action
-            user_role = Role(context.user.get("role", Role.GUEST))
+            user_role = _get_primary_role(context.user)
             require_ownership = user_role not in [
                 Role.SUPER_ADMIN,
                 Role.ADMIN,
@@ -564,8 +571,12 @@ def get_document_for_user(
 
 def get_user_permissions(user: Dict[str, Any]) -> List[Permission]:
     """Get all permissions for a user based on their role."""
-    user_role = Role(user.get("role", Role.GUEST))
-    return ROLE_PERMISSIONS.get(user_role, [])
+    permissions: List[Permission] = []
+    for role in _get_user_roles(user):
+        for permission in ROLE_PERMISSIONS.get(role, []):
+            if permission not in permissions:
+                permissions.append(permission)
+    return permissions
 
 
 def can_user_access_resource(
@@ -582,7 +593,7 @@ def filter_resources_for_user(
     """Get query filter for resources accessible to user."""
     user_id = UUID(user["id"])
     tenant_id = UUID(user["tenant_id"])
-    user_role = Role(user.get("role", Role.GUEST))
+    user_role = _get_primary_role(user)
 
     # Super admins and admins can see all resources in their tenant
     if user_role in [Role.SUPER_ADMIN, Role.ADMIN]:

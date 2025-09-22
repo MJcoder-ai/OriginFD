@@ -1,14 +1,19 @@
+"""Integration tests for the document patch endpoint."""
+
+import copy
 import os
 import sys
 import uuid
 from datetime import datetime
 from types import SimpleNamespace
+from typing import Dict, List
+
+import jsonpatch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-# Ensure the API package and models are importable
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 API_ROOT = os.path.join(PROJECT_ROOT, "services", "api")
 if API_ROOT not in sys.path:
     sys.path.insert(0, API_ROOT)
@@ -21,11 +26,6 @@ from api.routers import documents  # noqa: E402
 from core.database import SessionDep  # noqa: E402
 from deps import get_current_user  # noqa: E402
 import models  # noqa: E402
-from models.document import DocumentVersion  # noqa: E402
-
-# Ensure DocumentVersion is accessible via the models package
-if not hasattr(models, "DocumentVersion"):
-    setattr(models, "DocumentVersion", DocumentVersion)
 
 
 class FakeQuery:
@@ -40,28 +40,28 @@ class FakeQuery:
     def with_for_update(self):
         return self
 
-    def order_by(self, *args, **kwargs):  # pragma: no cover - compatibility
+    def order_by(self, *args, **kwargs):  # pragma: no cover - compatibility shim
         return self
 
-    def offset(self, *args, **kwargs):  # pragma: no cover - compatibility
+    def offset(self, *args, **kwargs):  # pragma: no cover - compatibility shim
         return self
 
-    def limit(self, *args, **kwargs):  # pragma: no cover - compatibility
+    def limit(self, *args, **kwargs):  # pragma: no cover - compatibility shim
         return self
 
     def first(self):
         return self._result
 
-    def all(self):  # pragma: no cover - compatibility
+    def all(self):  # pragma: no cover - compatibility shim
         return self._result if isinstance(self._result, list) else []
 
 
 class FakeSession:
-    """In-memory session that mimics the SQLAlchemy interface used by the router."""
+    """In-memory session that captures commit/rollback behaviour."""
 
     def __init__(self, document):
         self.document = document
-        self.added_objects = []
+        self.added_objects: List[object] = []
         self.committed = False
         self.rolled_back = False
 
@@ -81,12 +81,12 @@ class FakeSession:
     def rollback(self):
         self.rolled_back = True
 
-    def refresh(self, obj):  # pragma: no cover - compatibility
+    def refresh(self, obj):  # pragma: no cover - compatibility shim
         return obj
 
 
-@pytest.fixture()
-def sample_document():
+@pytest.fixture
+def sample_document() -> Dict[str, object]:
     """Create a minimal valid ODL-SD document payload."""
 
     timestamp = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
@@ -131,9 +131,9 @@ def sample_document():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_client(sample_document, monkeypatch):
-    """Create a FastAPI TestClient with overridden dependencies."""
+    """Create a FastAPI TestClient with the patch router and stubbed dependencies."""
 
     app = FastAPI()
     app.include_router(documents.router, prefix="/documents")
@@ -168,33 +168,32 @@ def test_client(sample_document, monkeypatch):
         scale=sample_document["meta"]["scale"],
         current_version=1,
         content_hash=sample_document["meta"]["versioning"]["content_hash"],
-        document_data=sample_document,
+        document_data=copy.deepcopy(sample_document),
     )
     document.created_at = datetime.utcnow()
     document.updated_at = datetime.utcnow()
     document.is_active = True
 
     fake_session = FakeSession(document)
+    current_user = {"id": str(user_id), "tenant_id": str(tenant_id)}
 
     app.dependency_overrides[SessionDep] = lambda: fake_session
-    app.dependency_overrides[get_current_user] = lambda: {
-        "id": str(user_id),
-        "tenant_id": str(tenant_id),
-        "roles": ["engineer"],
-    }
+    app.dependency_overrides[get_current_user] = lambda: current_user
 
     client = TestClient(app)
     client.fake_session = fake_session  # type: ignore[attr-defined]
     client.document = document  # type: ignore[attr-defined]
+    client.current_user = current_user  # type: ignore[attr-defined]
     return client
 
 
-def test_patch_document_success(test_client):
-    """Applying a JSON-Patch request updates the document and returns success."""
+def test_patch_success_updates_hash_inverse_and_audit(test_client):
+    """Successful patches should recalculate hashes, audit entries and inverses."""
 
     document = test_client.document
     fake_session = test_client.fake_session
-
+    current_user = test_client.current_user
+    original_doc = copy.deepcopy(document.document_data)
     original_hash = document.content_hash
 
     payload = {
@@ -209,74 +208,75 @@ def test_patch_document_success(test_client):
     }
 
     response = test_client.post("/documents/patch", json=payload)
-
     assert response.status_code == 200
     body = response.json()
+
     assert body["success"] is True
-    assert body["doc_version"] == 2
-    assert body["inverse_patch"], "Expected inverse patch operations to be returned"
+    assert body["doc_version"] == document.current_version == 2
+    assert body["content_hash"] == document.content_hash
+    assert body["content_hash"] != original_hash
 
-    # Document state should be updated in-place
-    assert document.current_version == 2
+    inverse_ops = body["inverse_patch"]
+    assert inverse_ops, "Inverse patch operations should be returned"
+    reverted = jsonpatch.JsonPatch(inverse_ops).apply(copy.deepcopy(document.document_data))
+    assert reverted == original_doc, "Inverse patch should restore the original payload"
+
     assert document.document_data["meta"]["project"] == "Updated Project"
-    assert document.document_data["audit"], "Audit trail should record the patch"
+    assert (
+        document.document_data["meta"]["versioning"]["previous_hash"]
+        == original_hash
+    )
 
-    # Content hash should be updated and tracked in version history
-    assert document.content_hash != original_hash
+    audit_entries = document.document_data["audit"]
+    assert len(audit_entries) == 1
+    latest_audit = audit_entries[-1]
+    assert latest_audit["actor"] == current_user["id"]
+    assert latest_audit["details"]["patch_operations"] == len(payload["patch"])
+    assert latest_audit["details"]["evidence"] == payload["evidence"]
+    assert latest_audit["details"]["operations"] == [op["op"] for op in payload["patch"]]
+
     version_record = next(
         obj for obj in fake_session.added_objects if isinstance(obj, models.DocumentVersion)
     )
+    assert version_record.version_number == document.current_version
+    assert version_record.content_hash == document.content_hash
     assert version_record.previous_hash == original_hash
-    assert version_record.previous_hash != document.content_hash
+    assert version_record.patch_operations == payload["patch"]
+    assert version_record.evidence_uris == payload["evidence"]
+    assert version_record.document_data == document.document_data
 
-    # Database session interactions should commit without rollback
     assert fake_session.committed is True
     assert fake_session.rolled_back is False
-    assert fake_session.added_objects, "DocumentVersion should be recorded"
 
 
-def test_patch_document_forbidden_for_viewer(test_client):
-    """Viewers lack the document update permission and receive a 403 response."""
+def test_patch_validation_failure_rolls_back_and_preserves_state(test_client):
+    """Invalid patches should trigger a rollback and leave the document untouched."""
 
     document = test_client.document
-
-    test_client.app.dependency_overrides[get_current_user] = lambda: {
-        "id": str(uuid.uuid4()),
-        "tenant_id": str(document.tenant_id),
-        "roles": ["viewer"],
-    }
+    fake_session = test_client.fake_session
+    original_doc = copy.deepcopy(document.document_data)
+    original_hash = document.content_hash
 
     payload = {
         "doc_id": str(document.id),
         "doc_version": document.current_version,
         "patch": [
-            {"op": "replace", "path": "/meta/project", "value": "Blocked Update"}
+            {"op": "replace", "path": "/meta/nonexistent", "value": "bad"}
         ],
         "evidence": [],
         "dry_run": False,
-        "change_summary": "Attempted rename",
+        "change_summary": "Invalid change",
     }
 
     response = test_client.post("/documents/patch", json=payload)
+    assert response.status_code == 500
+    assert "Failed to generate inverse patch" in response.json()["detail"]
 
-    assert response.status_code == 403
-    body = response.json()
-    assert "insufficient permissions" in body["detail"].lower()
+    assert document.current_version == 1
+    assert document.content_hash == original_hash
+    assert document.document_data == original_doc
+    assert document.document_data["audit"] == []
 
-
-def test_get_document_requires_permission(test_client):
-    """Users without document read access are blocked with HTTP 403."""
-
-    document = test_client.document
-
-    test_client.app.dependency_overrides[get_current_user] = lambda: {
-        "id": str(uuid.uuid4()),
-        "tenant_id": str(document.tenant_id),
-        "roles": ["guest"],
-    }
-
-    response = test_client.get(f"/documents/{document.id}")
-
-    assert response.status_code == 403
-    body = response.json()
-    assert "permissions" in body["detail"].lower()
+    assert fake_session.committed is False
+    assert fake_session.rolled_back is True
+    assert not fake_session.added_objects

@@ -37,6 +37,7 @@ def get_mock_user():
 
 
 import models
+from models.lifecycle import LifecycleGate, LifecyclePhase
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from odl_sd.document_generator import DocumentGenerator
@@ -458,6 +459,7 @@ class ProjectListResponse(BaseModel):
     page_size: int
 
 
+
 class GateStatusUpdateRequest(BaseModel):
     """Payload for updating a lifecycle gate status."""
 
@@ -476,6 +478,93 @@ class GateStatusResponse(BaseModel):
     updated_at: Optional[datetime]
     updated_by: Optional[str]
     notes: Optional[str]
+
+DEFAULT_LIFECYCLE_TEMPLATE = [
+    {
+        "key": "design",
+        "name": "Design",
+        "status": "not_started",
+        "gates": [
+            {"key": "site_assessment", "name": "Site Assessment", "status": "not_started"},
+            {"key": "bom_approval", "name": "BOM Approval", "status": "not_started"},
+        ],
+    },
+    {
+        "key": "procurement",
+        "name": "Procurement",
+        "status": "not_started",
+        "gates": [
+            {
+                "key": "supplier_selection",
+                "name": "Supplier Selection",
+                "status": "not_started",
+            },
+            {
+                "key": "contract_signed",
+                "name": "Contract Signed",
+                "status": "not_started",
+            },
+        ],
+    },
+    {
+        "key": "construction",
+        "name": "Construction",
+        "status": "not_started",
+        "gates": [
+            {"key": "mobilization", "name": "Mobilization", "status": "not_started"},
+        ],
+    },
+]
+
+
+def _seed_project_lifecycle(db: Session, project: models.Project) -> None:
+    """Ensure a project has baseline lifecycle data."""
+
+    if not project.id:
+        return
+
+    has_phases = (
+        db.query(LifecyclePhase)
+        .filter(LifecyclePhase.project_id == project.id)
+        .limit(1)
+        .count()
+    )
+    if has_phases:
+        return
+
+    phases: List[LifecyclePhase] = []
+    for index, phase_template in enumerate(DEFAULT_LIFECYCLE_TEMPLATE, start=1):
+        phase = LifecyclePhase(
+            project=project,
+            key=phase_template["key"],
+            name=phase_template["name"],
+            status=phase_template.get("status", "not_started"),
+            position=index,
+        )
+
+        gates: List[LifecycleGate] = []
+        for gate_index, gate_template in enumerate(
+            phase_template.get("gates", []), start=1
+        ):
+            gate = LifecycleGate(
+                project=project,
+                phase=phase,
+                key=gate_template["key"],
+                name=gate_template["name"],
+                status=gate_template.get("status", "not_started"),
+                position=gate_index,
+            )
+            gates.append(gate)
+
+        if gates:
+            phase.lifecycle_gates = gates
+
+        phases.append(phase)
+
+    if phases:
+        project.lifecycle_phases.extend(phases)
+        db.flush()
+
 
 
 def _get_project_document_metadata(
@@ -661,6 +750,8 @@ async def create_project(
     try:
         db.add(project)
         db.flush()  # Ensure project ID is available for document linkage
+
+        _seed_project_lifecycle(db, project)
 
         document.portfolio_id = project.id
         db.add(document)
