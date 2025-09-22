@@ -16,6 +16,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
+from api.utils.document_serialization import (
+    canonicalize_document,
+    create_json_export_response,
+    create_yaml_export_response,
+)
 
 router = APIRouter()
 
@@ -194,6 +199,59 @@ async def get_document(
             )
 
         return doc_version.document_data
+
+
+@router.get("/{doc_id}/export")
+async def export_document(
+    doc_id: str,
+    format: str = Query("json", description="Export format: json or yaml"),
+    db: Session = Depends(SessionDep),
+    current_user: dict = Depends(get_current_user),
+):
+    """Export the canonical representation of a document in JSON or YAML."""
+
+    try:
+        doc_uuid = uuid.UUID(doc_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid document ID format"
+        )
+
+    document = (
+        db.query(models.Document)
+        .filter(
+            models.Document.id == doc_uuid,
+            models.Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    export_format = format.lower()
+    if export_format not in {"json", "yaml"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported format. Use 'json' or 'yaml'",
+        )
+
+    try:
+        canonical_doc = canonicalize_document(document.document_data)
+    except Exception as exc:  # pragma: no cover - defensive guard
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to serialize document: {exc}",
+        ) from exc
+
+    project_name = document.project_name or str(document.id)
+
+    if export_format == "json":
+        return create_json_export_response(project_name, canonical_doc)
+
+    return create_yaml_export_response(project_name, canonical_doc)
 
 
 @router.post("/patch", response_model=PatchResponse)
