@@ -37,6 +37,8 @@ import { ComponentSelector } from "@/components/components/component-selector";
 import type { DocumentResponse, OdlDocument } from "@/lib/types";
 import { DocumentViewer, SystemDiagram } from "@/components/odl-sd";
 
+import { DocumentTab } from "./DocumentTab";
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -126,6 +128,11 @@ export default function ProjectDetailPage() {
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
+  const primaryDocumentId =
+    projectDocuments.find((doc: any) => doc?.is_primary)?.id ||
+    projectDocuments[0]?.id ||
+    (document ? `${projectId}-main` : undefined);
 
   if (isProjectLoading || isDocumentLoading) {
     return (
@@ -538,17 +545,24 @@ export default function ProjectDetailPage() {
 
           {/* Primary Document Viewer - if available */}
           {document && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Primary System Document</CardTitle>
-                <CardDescription>
-                  Main ODL-SD document with full system specification
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DocumentViewer document={document} projectId={projectId} />
-              </CardContent>
-            </Card>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Primary System Document</CardTitle>
+                  <CardDescription>
+                    Main ODL-SD document with full system specification
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DocumentViewer document={document} projectId={projectId} />
+                </CardContent>
+              </Card>
+              <DocumentTab
+                documentId={primaryDocumentId}
+                document={document}
+                projectId={projectId}
+              />
+            </>
           )}
         </TabsContent>
 

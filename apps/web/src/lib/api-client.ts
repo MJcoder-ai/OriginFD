@@ -300,6 +300,13 @@ export class OriginFDClient {
     return this.request(`documents/${documentId}/versions`);
   }
 
+  async updateDocument(documentId: string, document: any): Promise<any> {
+    return this.request(`documents/${documentId}`, {
+      method: "PATCH",
+      body: JSON.stringify(document),
+    });
+  }
+
   async getProjectDocuments(projectId: string): Promise<any[]> {
     return this.request(`projects/${projectId}/documents`);
   }
