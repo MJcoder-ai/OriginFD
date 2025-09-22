@@ -9,8 +9,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 # Include core API routers
-# Temporarily disable commerce router due to import issues
-from api.routers import alarms, approvals, health, projects
+from api.routers import alarms, approvals, auth, commerce, components, documents, health, projects
 from core.config import get_settings
 from core.database import get_engine
 from core.logging_config import setup_logging
@@ -130,16 +129,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
 app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
-
-
 app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
-# Temporarily disabled due to import issues:
-# app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
+app.include_router(auth.router, prefix="/auth", tags=["authentication"])
+app.include_router(documents.router, prefix="/odl", tags=["documents"])
+app.include_router(components.router, prefix="/components", tags=["components"])
+app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
 
-
-# Temporarily disabled: app.include_router(auth.router, prefix="/auth", tags=["authentication"])
-# app.include_router(documents.router, prefix="/odl", tags=["documents"])
-# app.include_router(components.router, prefix="/components", tags=["components"])
 # app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
 # app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
 # app.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])
