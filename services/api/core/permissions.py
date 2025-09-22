@@ -8,8 +8,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from deps import get_current_user
 from core.database import get_db
+from deps import get_current_user
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -169,7 +169,9 @@ def _load_role_permissions_from_config() -> None:
                 resolved_actions.append(Permission(action))
             except ValueError:
                 logger.warning(
-                    "Unknown permission '%s' configured for role '%s'", action, role_name
+                    "Unknown permission '%s' configured for role '%s'",
+                    action,
+                    role_name,
                 )
         ROLE_PERMISSIONS[role] = resolved_actions
 

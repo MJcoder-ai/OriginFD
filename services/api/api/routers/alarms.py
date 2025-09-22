@@ -7,8 +7,8 @@ import random
 from datetime import datetime
 from typing import Dict, List
 
-from deps import get_current_user
 from core.database import SessionDep
+from deps import get_current_user
 from fastapi import (
     APIRouter,
     Depends,

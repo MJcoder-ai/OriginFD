@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import models
-from deps import get_current_user
 from core.database import SessionDep
+from deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_
@@ -434,9 +434,7 @@ async def update_component_specifications(
                 )
 
                 # Parse and update document
-                odl_document = OdlDocument.model_validate(
-                    current_version.document_data
-                )
+                odl_document = OdlDocument.model_validate(current_version.document_data)
 
                 # Update component specifications in document
                 updated = update_component_specs_in_document(

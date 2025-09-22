@@ -6,9 +6,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
-from deps import get_current_user
 from core.performance import db_monitor, health_monitor, rate_limiter, response_cache
 from core.redis_config import redis_config
+from deps import get_current_user
 from fastapi import APIRouter, Depends, Query
 
 logger = logging.getLogger(__name__)

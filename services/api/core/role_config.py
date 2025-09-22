@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-
 # NOTE: Permissions are expressed using their string representation to avoid
 # circular imports with ``core.permissions``. The ``Permission`` enum in that
 # module should contain matching values for each string defined below.
@@ -35,4 +34,3 @@ ROLE_ACTION_MAP: Dict[str, List[str]] = {
         "document:version",
     ],
 }
-

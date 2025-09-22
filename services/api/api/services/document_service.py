@@ -114,7 +114,9 @@ class DocumentService:
             logger.error("Patch validation error for document %s: %s", document_id, exc)
             raise DocumentPatchError(str(exc)) from exc
         except Exception as exc:  # pragma: no cover - defensive
-            logger.exception("Unexpected error applying patch to document %s", document_id)
+            logger.exception(
+                "Unexpected error applying patch to document %s", document_id
+            )
             raise DocumentPatchError("Failed to apply patch") from exc
 
         odl_document = OdlSdDocument.parse_obj(patched_document)

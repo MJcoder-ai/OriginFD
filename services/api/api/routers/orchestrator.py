@@ -7,9 +7,6 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import AliasChoices, BaseModel, Field
-
 from api.services import (
     DocumentNotFoundError,
     DocumentPatchError,
@@ -20,6 +17,8 @@ from api.services import (
 )
 from core.config import Settings, get_settings
 from core.database import SessionDep
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import AliasChoices, BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -62,7 +61,9 @@ def get_document_service(session: SessionDep) -> DocumentService:
     return DocumentService(session)
 
 
-def _verify_signature(raw_body: bytes, signature_header: Optional[str], secret: str) -> None:
+def _verify_signature(
+    raw_body: bytes, signature_header: Optional[str], secret: str
+) -> None:
     """Validate the request signature using the configured secret."""
 
     if not signature_header:
@@ -132,9 +133,13 @@ async def orchestrator_callback(
         except DocumentVersionConflictError as exc:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
         except DocumentValidationError as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            )
         except DocumentPatchError as exc:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+            )
     else:
         logger.info("Received unsupported orchestrator event %s", event.event)
         return {"status": "ignored", "event": event.event}

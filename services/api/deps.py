@@ -91,7 +91,11 @@ async def get_current_user(
 
     user: models.User | None = (
         db.query(models.User)
-        .options(joinedload(models.User.tenant_memberships).joinedload(models.TenantMembership.tenant))
+        .options(
+            joinedload(models.User.tenant_memberships).joinedload(
+                models.TenantMembership.tenant
+            )
+        )
         .filter(models.User.id == user_uuid)
         .first()
     )
@@ -112,7 +116,8 @@ async def get_current_user(
     active_memberships = [
         m
         for m in getattr(user, "tenant_memberships", [])
-        if bool(m.is_active) and (m.tenant is None or bool(getattr(m.tenant, "is_active", True)))
+        if bool(m.is_active)
+        and (m.tenant is None or bool(getattr(m.tenant, "is_active", True)))
     ]
 
     if not active_memberships:
@@ -122,13 +127,19 @@ async def get_current_user(
         )
 
     default_membership = next(
-        (membership for membership in active_memberships if bool(membership.is_default)),
+        (
+            membership
+            for membership in active_memberships
+            if bool(membership.is_default)
+        ),
         active_memberships[0],
     )
 
     memberships_payload = [_serialize_membership(m) for m in active_memberships]
     for membership in memberships_payload:
-        membership["is_default"] = membership["tenant_id"] == str(default_membership.tenant_id)
+        membership["is_default"] = membership["tenant_id"] == str(
+            default_membership.tenant_id
+        )
 
     user_roles = _normalize_roles(user, payload)
 

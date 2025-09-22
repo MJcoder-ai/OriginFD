@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
-from typing import List, Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, JSON, UniqueConstraint
-
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -13,7 +20,6 @@ from .base import Base, TimestampMixin, UUIDMixin
 
 
 class LifecyclePhase(Base, UUIDMixin, TimestampMixin):
-
     """Lifecycle phases associated with a project."""
 
     __tablename__ = "lifecycle_phases"
@@ -44,7 +50,9 @@ class LifecycleGate(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "lifecycle_gates"
 
-    phase_id = Column(UUID(as_uuid=True), ForeignKey("lifecycle_phases.id"), nullable=False)
+    phase_id = Column(
+        UUID(as_uuid=True), ForeignKey("lifecycle_phases.id"), nullable=False
+    )
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     sequence = Column(Integer, nullable=False)

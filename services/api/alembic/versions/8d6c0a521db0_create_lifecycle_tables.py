@@ -28,7 +28,11 @@ DEFAULT_LIFECYCLE_TEMPLATE = [
         "name": "Design",
         "status": "not_started",
         "gates": [
-            {"key": "site_assessment", "name": "Site Assessment", "status": "not_started"},
+            {
+                "key": "site_assessment",
+                "name": "Site Assessment",
+                "status": "not_started",
+            },
             {"key": "bom_approval", "name": "BOM Approval", "status": "not_started"},
         ],
     },
@@ -184,7 +188,9 @@ def upgrade() -> None:
     )
 
     conn = op.get_bind()
-    project_ids = [row[0] for row in conn.execute(sa.text("SELECT id FROM projects")).fetchall()]
+    project_ids = [
+        row[0] for row in conn.execute(sa.text("SELECT id FROM projects")).fetchall()
+    ]
 
     if not project_ids:
         return
@@ -213,7 +219,9 @@ def upgrade() -> None:
     gate_rows: List[dict] = []
 
     for project_id in project_ids:
-        for phase_index, phase_template in enumerate(DEFAULT_LIFECYCLE_TEMPLATE, start=1):
+        for phase_index, phase_template in enumerate(
+            DEFAULT_LIFECYCLE_TEMPLATE, start=1
+        ):
             phase_id = uuid.uuid4()
             phase_rows.append(
                 {

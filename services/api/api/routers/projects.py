@@ -5,15 +5,10 @@ models.Project management endpoints.
 import copy
 import logging
 import uuid
-
 from datetime import datetime, timedelta, timezone
-
-from typing import Any, Dict, List, Optional, Union, Literal
-
-
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import httpx
-
 
 
 # Simple auth bypass for testing
@@ -24,11 +19,9 @@ def get_current_user(*args, **kwargs):
         "tenant_id": "11111111-1111-4111-8111-111111111111",
     }
 
-from deps import get_current_user
-
-
 
 from core.config import get_settings
+from deps import get_current_user
 
 
 # Temporary mock for testing without auth
@@ -41,9 +34,10 @@ def get_mock_user():
 
 
 import models
-from models.lifecycle import LifecycleGate, LifecyclePhase
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from models.document import DocumentVersion as SADocumentVersion
+from models.lifecycle import LifecycleGate, LifecyclePhase
 from odl_sd.document_generator import DocumentGenerator
 from odl_sd_patch.patch import apply_patch
 from pydantic import BaseModel, Field, validator
@@ -51,7 +45,6 @@ from sqlalchemy import and_, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from models.document import DocumentVersion as SADocumentVersion
 from services.commerce_core import publish_usage_event
 
 # Temporarily disabled due to import issues:
@@ -66,15 +59,13 @@ class AgentManager:
         return []  # TODO: Implement actual bottleneck detection
 
 
-from models.project import (  # type: ignore  # circular import friendliness
-    ProjectDomain as SAProjectDomain,
-    ProjectScale as SAProjectScale,
-    ProjectStatus as SAProjectStatus,
+from models.project import (
+    ProjectDomain as SAProjectDomain,  # type: ignore  # circular import friendliness
 )
-
+from models.project import ProjectScale as SAProjectScale
+from models.project import ProjectStatus as SAProjectStatus
 
 router = APIRouter()
-
 
 
 PROJECT_CREATION_PSU_CHARGE = 50
@@ -193,9 +184,7 @@ def _get_project_or_404(db: Session, project_id: str) -> models.Project:
 
     if project is None and hasattr(db, "query"):
         project = (
-            db.query(models.Project)
-            .filter(models.Project.id == project_uuid)
-            .first()
+            db.query(models.Project).filter(models.Project.id == project_uuid).first()
         )
 
     if project is None:
@@ -207,7 +196,9 @@ def _get_project_or_404(db: Session, project_id: str) -> models.Project:
     return project
 
 
-def _get_project_document(db: Session, project: models.Project) -> Optional[models.Document]:
+def _get_project_document(
+    db: Session, project: models.Project
+) -> Optional[models.Document]:
     """Fetch the primary document associated with a project if available."""
 
     document_id = getattr(project, "primary_document_id", None)
@@ -313,7 +304,6 @@ def _persist_gate_state(
         pass
     if hasattr(document, "updated_at"):
         document.updated_at = datetime.now(timezone.utc)
-
 
 
 class ProjectCreateRequest(BaseModel):
@@ -468,7 +458,6 @@ class ProjectListResponse(BaseModel):
     page_size: int
 
 
-
 class GateStatusUpdateRequest(BaseModel):
     """Payload for updating a lifecycle gate status."""
 
@@ -488,13 +477,18 @@ class GateStatusResponse(BaseModel):
     updated_by: Optional[str]
     notes: Optional[str]
 
+
 DEFAULT_LIFECYCLE_TEMPLATE = [
     {
         "key": "design",
         "name": "Design",
         "status": "not_started",
         "gates": [
-            {"key": "site_assessment", "name": "Site Assessment", "status": "not_started"},
+            {
+                "key": "site_assessment",
+                "name": "Site Assessment",
+                "status": "not_started",
+            },
             {"key": "bom_approval", "name": "BOM Approval", "status": "not_started"},
         ],
     },
@@ -573,7 +567,6 @@ def _seed_project_lifecycle(db: Session, project: models.Project) -> None:
     if phases:
         project.lifecycle_phases.extend(phases)
         db.flush()
-
 
 
 def _get_project_document_metadata(
@@ -724,7 +717,8 @@ async def create_project(
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="; ".join(validation_errors) or "Generated document failed validation",
+            detail="; ".join(validation_errors)
+            or "Generated document failed validation",
         )
 
     document_payload = odl_document.to_dict()
@@ -856,8 +850,9 @@ async def create_project(
         created_at=project.created_at,
         updated_at=project.updated_at,
         initialization_task_id=task_id,
-        primary_document_id=
-            str(project.primary_document_id) if project.primary_document_id else None,
+        primary_document_id=(
+            str(project.primary_document_id) if project.primary_document_id else None
+        ),
         document=document_metadata,
         document_id=str(document.id),
         document_hash=document_hash,
@@ -927,8 +922,9 @@ async def get_project(
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
-        primary_document_id=
-            str(project.primary_document_id) if project.primary_document_id else None,
+        primary_document_id=(
+            str(project.primary_document_id) if project.primary_document_id else None
+        ),
         document=document_metadata,
         document_id=str(document.id) if document else None,
         document_hash=document.content_hash if document else None,
@@ -1013,8 +1009,9 @@ async def update_project(
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
-        primary_document_id=
-            str(project.primary_document_id) if project.primary_document_id else None,
+        primary_document_id=(
+            str(project.primary_document_id) if project.primary_document_id else None
+        ),
         document=document_metadata,
         document_id=str(document.id) if document else None,
         document_hash=document.content_hash if document else None,
@@ -1165,7 +1162,9 @@ def _serialize_gate(
         "owner": gate.owner,
         "metadata": gate.context_dict(),
         "approval": approval_payload,
-        "approval_status": approval_payload["status"] if approval_payload else "pending",
+        "approval_status": (
+            approval_payload["status"] if approval_payload else "pending"
+        ),
     }
 
     return payload
@@ -1178,7 +1177,10 @@ def _serialize_phase(
     """Serialize a lifecycle phase with ordered gates."""
 
     if gates is None:
-        gates = [_serialize_gate(gate) for gate in sorted(phase.gates, key=lambda gate: gate.sequence)]
+        gates = [
+            _serialize_gate(gate)
+            for gate in sorted(phase.gates, key=lambda gate: gate.sequence)
+        ]
     return {
         "id": str(phase.id),
         "name": phase.name,
@@ -1221,7 +1223,6 @@ async def get_project_lifecycle(
 ):
     """Return lifecycle phases and gate checklist for a project."""
 
-
     try:
         project_uuid = uuid.UUID(project_id)
     except ValueError as exc:  # pragma: no cover - defensive
@@ -1242,13 +1243,14 @@ async def get_project_lifecycle(
 
     if phase_cache:
         ordered_phases = [
-            entry[1] for entry in sorted(
-                phase_cache.values(), key=lambda item: item[0].sequence
-            )
+            entry[1]
+            for entry in sorted(phase_cache.values(), key=lambda item: item[0].sequence)
         ]
 
         for phase_payload in ordered_phases:
-            phase_payload["gates"].sort(key=lambda gate_payload: gate_payload["sequence"])
+            phase_payload["gates"].sort(
+                key=lambda gate_payload: gate_payload["sequence"]
+            )
     else:
         phases_only = (
             db.query(models.LifecyclePhase)
@@ -1290,7 +1292,6 @@ async def update_lifecycle_gate_status(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is not permitted to approve lifecycle gates",
         )
-
 
     project = _get_project_or_404(db, project_id)
     project_id_str = str(project.id)
@@ -1348,7 +1349,9 @@ async def update_lifecycle_gate_status(
         db.commit()
     except SQLAlchemyError as exc:  # pragma: no cover - defensive
         db.rollback()
-        logging.getLogger(__name__).exception("Failed to update lifecycle gate: %s", exc)
+        logging.getLogger(__name__).exception(
+            "Failed to update lifecycle gate: %s", exc
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update lifecycle gate",

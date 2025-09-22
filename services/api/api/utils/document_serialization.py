@@ -35,7 +35,9 @@ def _build_filename(project_name: str, extension: str) -> str:
     return f"{safe_name}_odl.{extension}"
 
 
-def create_json_export_response(project_name: str, document: Dict[str, Any]) -> JSONResponse:
+def create_json_export_response(
+    project_name: str, document: Dict[str, Any]
+) -> JSONResponse:
     """Create the JSON export response used by the legacy API."""
 
     filename = _build_filename(project_name, "json")
@@ -45,7 +47,9 @@ def create_json_export_response(project_name: str, document: Dict[str, Any]) -> 
     )
 
 
-def create_yaml_export_response(project_name: str, document: Dict[str, Any]) -> Response:
+def create_yaml_export_response(
+    project_name: str, document: Dict[str, Any]
+) -> Response:
     """Create the YAML export response used by the legacy API."""
 
     try:
