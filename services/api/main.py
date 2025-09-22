@@ -10,7 +10,16 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 # Include core API routers
-from api.routers import alarms, approvals, auth, commerce, documents, health, projects
+from api.routers import (
+    alarms,
+    approvals,
+    auth,
+    commerce,
+    documents,
+    health,
+    orchestrator,
+    projects,
+)
 from core.config import get_settings
 from core.database import get_engine
 from core.logging_config import setup_logging
@@ -138,6 +147,9 @@ app.include_router(documents.router, prefix="/documents", tags=["documents"])
 app.include_router(documents.project_router, prefix="/projects", tags=["documents"])
 app.include_router(simple_components_router, prefix="/components", tags=["components"])
 app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
+app.include_router(
+    orchestrator.router, prefix="/orchestrator", tags=["orchestrator"]
+)
 
 # app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
 # app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])

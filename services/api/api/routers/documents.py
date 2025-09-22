@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
+from services.commerce_core import publish_usage_event
 from api.utils.document_serialization import (
     canonicalize_document,
     create_json_export_response,
@@ -80,6 +81,9 @@ class PatchResponse(BaseModel):
     content_hash: str
     inverse_patch: List[Dict[str, Any]]
     applied_at: datetime
+
+
+DOCUMENT_PATCH_PSU_CHARGE = 5
 
 
 @project_router.get(
@@ -209,6 +213,7 @@ async def get_document(
     version: Optional[int] = Query(None, description="Specific version number"),
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """
     Get ODL-SD document by ID, optionally at specific version.
@@ -235,9 +240,14 @@ async def get_document(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    # TODO: Check document access permissions
-    # if not has_document_access(current_user, document, "read"):
-    #     raise HTTPException(status_code=403, detail="Access denied")
+    checker.authorize(
+        AuthorizationContext(
+            user=current_user,
+            resource_type=ResourceType.DOCUMENT,
+            resource_id=document.id,
+            action=Permission.DOCUMENT_READ,
+        )
+    )
 
     if version is None:
         # Return current version
@@ -270,6 +280,7 @@ async def export_document(
     format: str = Query("json", description="Export format: json or yaml"),
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """Export the canonical representation of a document in JSON or YAML."""
 
@@ -293,6 +304,15 @@ async def export_document(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
+
+    checker.authorize(
+        AuthorizationContext(
+            user=current_user,
+            resource_type=ResourceType.DOCUMENT,
+            resource_id=document.id,
+            action=Permission.DOCUMENT_READ,
+        )
+    )
 
     export_format = format.lower()
     if export_format not in {"json", "yaml"}:
@@ -322,6 +342,7 @@ async def apply_document_patch(
     request: PatchRequest,
     db: Session = Depends(SessionDep),
     current_user: dict = Depends(get_current_user),
+    checker: PermissionChecker = Depends(get_permission_checker),
 ):
     """
     Apply JSON-Patch operations to an ODL-SD document.
@@ -349,6 +370,15 @@ async def apply_document_patch(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
+
+    checker.authorize(
+        AuthorizationContext(
+            user=current_user,
+            resource_type=ResourceType.DOCUMENT,
+            resource_id=document.id,
+            action=Permission.DOCUMENT_UPDATE,
+        )
+    )
 
     # Version conflict check (optimistic concurrency)
     if document.current_version != request.doc_version:
@@ -425,6 +455,18 @@ async def apply_document_patch(
 
         db.add(version)
         db.commit()
+
+        publish_usage_event(
+            str(document.tenant_id),
+            DOCUMENT_PATCH_PSU_CHARGE,
+            {
+                "event": "document_patched",
+                "document_id": str(document.id),
+                "project_name": document.project_name,
+                "version": new_version,
+                "change_summary": request.change_summary,
+            },
+        )
 
         return PatchResponse(
             success=True,

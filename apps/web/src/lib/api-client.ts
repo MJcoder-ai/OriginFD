@@ -133,20 +133,49 @@ export class ApiError extends Error {
   }
 }
 
+const normalizeBaseUrl = (baseUrl: string): string => {
+  if (!baseUrl) {
+    return "/api/bridge";
+  }
+
+  // Trim whitespace and remove any trailing slashes so request path joining is predictable
+  const trimmed = baseUrl.trim();
+  return trimmed.replace(/\/+$/, "");
+};
+
+const resolveApiBaseUrl = (): string => {
+  const envBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (envBaseUrl && envBaseUrl.trim().length > 0) {
+    return normalizeBaseUrl(envBaseUrl);
+  }
+
+  if (typeof window !== "undefined") {
+    const browserBase = (window as any).__ORIGINFD_API_BASE__;
+    if (typeof browserBase === "string" && browserBase.trim().length > 0) {
+      return normalizeBaseUrl(browserBase);
+    }
+  }
+
+  return normalizeBaseUrl("/api/bridge");
+};
+
 export class OriginFDClient {
   private baseUrl: string;
   private authTokens: { accessToken: string; refreshToken: string } | null =
     null;
 
-  constructor(baseUrl = "/api/bridge") {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl = resolveApiBaseUrl()) {
+    this.baseUrl = normalizeBaseUrl(baseUrl);
   }
 
   private async request(
     endpoint: string,
     options: RequestInit = {},
   ): Promise<any> {
-    const url = `${this.baseUrl}${endpoint.startsWith("/") ? endpoint : "/" + endpoint}`;
+    const url = `${this.baseUrl}${
+      endpoint.startsWith("/") ? endpoint : "/" + endpoint
+    }`;
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -496,16 +525,7 @@ export class OriginFDClient {
 // Default client instance
 // Use real backend API instead of mock endpoints
 // Use environment variable for API base URL in production
-const API_BASE_URL = (() => {
-  const browserBase =
-    typeof window !== "undefined"
-      ? (window as any).__ORIGINFD_API_BASE__
-      : undefined;
-
-  const envBase = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  return browserBase || envBase || "/api/bridge";
-})();
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = new OriginFDClient(API_BASE_URL);
 

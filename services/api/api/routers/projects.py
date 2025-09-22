@@ -2,10 +2,15 @@
 models.Project management endpoints.
 """
 
+import copy
 import logging
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+
+from datetime import datetime, timedelta, timezone
+
+from typing import Any, Dict, List, Optional, Union, Literal
+
+
 
 import httpx
 
@@ -36,15 +41,18 @@ def get_mock_user():
 
 
 import models
+from models.lifecycle import LifecycleGate, LifecyclePhase
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from odl_sd.document_generator import DocumentGenerator
+from odl_sd_patch.patch import apply_patch
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from models.document import DocumentVersion as SADocumentVersion
+from services.commerce_core import publish_usage_event
 
 # Temporarily disabled due to import issues:
 # from services.orchestrator.agents.agent_manager import AgentManager
@@ -66,6 +74,246 @@ from models.project import (  # type: ignore  # circular import friendliness
 
 
 router = APIRouter()
+
+
+
+PROJECT_CREATION_PSU_CHARGE = 50
+
+ALLOWED_GATE_APPROVER_ROLES = {"admin", "engineer", "project_manager", "approver"}
+
+
+def _create_default_lifecycle() -> Dict[str, Any]:
+    """Construct the default lifecycle template for new projects."""
+
+    return {
+        "phases": [
+            {
+                "id": "design",
+                "name": "Design",
+                "status": "not_started",
+                "gates": [
+                    {
+                        "id": "site_assessment",
+                        "name": "Site Assessment",
+                        "status": "pending",
+                        "approved_by": None,
+                        "approved_at": None,
+                        "updated_at": None,
+                        "updated_by": None,
+                        "notes": None,
+                    },
+                    {
+                        "id": "bom_approval",
+                        "name": "BOM Approval",
+                        "status": "pending",
+                        "approved_by": None,
+                        "approved_at": None,
+                        "updated_at": None,
+                        "updated_by": None,
+                        "notes": None,
+                    },
+                ],
+            },
+            {
+                "id": "procurement",
+                "name": "Procurement",
+                "status": "upcoming",
+                "gates": [
+                    {
+                        "id": "supplier_selection",
+                        "name": "Supplier Selection",
+                        "status": "pending",
+                        "approved_by": None,
+                        "approved_at": None,
+                        "updated_at": None,
+                        "updated_by": None,
+                        "notes": None,
+                    },
+                    {
+                        "id": "contract_signed",
+                        "name": "Contract Signed",
+                        "status": "pending",
+                        "approved_by": None,
+                        "approved_at": None,
+                        "updated_at": None,
+                        "updated_by": None,
+                        "notes": None,
+                    },
+                ],
+            },
+            {
+                "id": "construction",
+                "name": "Construction",
+                "status": "upcoming",
+                "gates": [
+                    {
+                        "id": "mobilization",
+                        "name": "Mobilization",
+                        "status": "pending",
+                        "approved_by": None,
+                        "approved_at": None,
+                        "updated_at": None,
+                        "updated_by": None,
+                        "notes": None,
+                    }
+                ],
+            },
+        ]
+    }
+
+
+PROJECT_LIFECYCLE_STATE: Dict[str, Dict[str, Any]] = {}
+
+
+def _ensure_lifecycle(project_id: str) -> Dict[str, Any]:
+    """Return existing lifecycle data for a project or initialize it."""
+
+    lifecycle = PROJECT_LIFECYCLE_STATE.get(project_id)
+    if lifecycle is None:
+        lifecycle = _create_default_lifecycle()
+        PROJECT_LIFECYCLE_STATE[project_id] = lifecycle
+    return lifecycle
+
+
+def _get_project_or_404(db: Session, project_id: str) -> models.Project:
+    """Fetch a project by ID, raising a 404 if it does not exist."""
+
+    try:
+        project_uuid = uuid.UUID(str(project_id))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        ) from exc
+
+    project: Optional[models.Project] = None
+    get_method = getattr(db, "get", None)
+    if callable(get_method):  # pragma: no branch - attribute presence check
+        project = get_method(models.Project, project_uuid)
+
+    if project is None and hasattr(db, "query"):
+        project = (
+            db.query(models.Project)
+            .filter(models.Project.id == project_uuid)
+            .first()
+        )
+
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    return project
+
+
+def _get_project_document(db: Session, project: models.Project) -> Optional[models.Document]:
+    """Fetch the primary document associated with a project if available."""
+
+    document_id = getattr(project, "primary_document_id", None)
+    if not document_id:
+        return None
+
+    try:
+        document_uuid = uuid.UUID(str(document_id))
+    except (TypeError, ValueError):  # pragma: no cover - defensive
+        return None
+
+    get_method = getattr(db, "get", None)
+    if callable(get_method):
+        document = get_method(models.Document, document_uuid)
+        if document is not None:
+            return document
+
+    if hasattr(db, "query"):
+        document = (
+            db.query(models.Document)
+            .filter(models.Document.id == document_uuid)
+            .first()
+        )
+        if document is not None:
+            return document
+
+    # Support simple in-memory test sessions
+    documents = getattr(db, "documents", None)
+    if isinstance(documents, list):
+        for doc in documents:
+            if str(getattr(doc, "id", "")) == str(document_uuid):
+                return doc
+    return None
+
+
+def _recalculate_progress(lifecycle: Dict[str, Any]) -> Dict[str, Union[int, str]]:
+    """Compute display status and completion percentage from lifecycle data."""
+
+    phases = lifecycle.get("phases", [])
+    gates: List[Dict[str, Any]] = [
+        gate
+        for phase in phases
+        for gate in phase.get("gates", [])
+        if isinstance(gate, dict)
+    ]
+
+    total_gates = len(gates)
+    completed_gates = sum(
+        1 for gate in gates if gate.get("status") in {"approved", "completed"}
+    )
+
+    completion_percentage = (
+        int(round((completed_gates / total_gates) * 100)) if total_gates else 0
+    )
+
+    if total_gates and completed_gates == total_gates:
+        display_status = "gates_completed"
+    elif completed_gates:
+        display_status = "in_gate_review"
+    else:
+        display_status = "awaiting_approvals"
+
+    return {
+        "display_status": display_status,
+        "completion_percentage": completion_percentage,
+    }
+
+
+def _persist_gate_state(
+    db: Session,
+    project: models.Project,
+    lifecycle: Dict[str, Any],
+    actor_id: str,
+) -> None:
+    """Write lifecycle gate state to the project's primary document audit log."""
+
+    document = _get_project_document(db, project)
+    if document is None:
+        return
+
+    doc_data: Dict[str, Any] = document.document_data or {}
+
+    try:
+        patched_doc = apply_patch(
+            doc_data,
+            [{"op": "add", "path": "/lifecycle", "value": lifecycle}],
+            actor=str(actor_id),
+        )
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logging.getLogger(__name__).warning(
+            "Failed to persist gate state to document audit: %s", exc
+        )
+        return
+
+    document.document_data = patched_doc
+    try:
+        document.content_hash = (
+            patched_doc.get("meta", {})
+            .get("versioning", {})
+            .get("content_hash", document.content_hash)
+        )
+    except AttributeError:  # pragma: no cover - defensive
+        pass
+    if hasattr(document, "updated_at"):
+        document.updated_at = datetime.now(timezone.utc)
+
 
 
 class ProjectCreateRequest(BaseModel):
@@ -218,6 +466,114 @@ class ProjectListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+
+class GateStatusUpdateRequest(BaseModel):
+    """Payload for updating a lifecycle gate status."""
+
+    status: Literal["pending", "in_review", "approved", "rejected", "blocked"]
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+class GateStatusResponse(BaseModel):
+    """Response model after updating a lifecycle gate."""
+
+    gate_id: str
+    phase_id: str
+    status: str
+    approved_by: Optional[str]
+    approved_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    updated_by: Optional[str]
+    notes: Optional[str]
+
+DEFAULT_LIFECYCLE_TEMPLATE = [
+    {
+        "key": "design",
+        "name": "Design",
+        "status": "not_started",
+        "gates": [
+            {"key": "site_assessment", "name": "Site Assessment", "status": "not_started"},
+            {"key": "bom_approval", "name": "BOM Approval", "status": "not_started"},
+        ],
+    },
+    {
+        "key": "procurement",
+        "name": "Procurement",
+        "status": "not_started",
+        "gates": [
+            {
+                "key": "supplier_selection",
+                "name": "Supplier Selection",
+                "status": "not_started",
+            },
+            {
+                "key": "contract_signed",
+                "name": "Contract Signed",
+                "status": "not_started",
+            },
+        ],
+    },
+    {
+        "key": "construction",
+        "name": "Construction",
+        "status": "not_started",
+        "gates": [
+            {"key": "mobilization", "name": "Mobilization", "status": "not_started"},
+        ],
+    },
+]
+
+
+def _seed_project_lifecycle(db: Session, project: models.Project) -> None:
+    """Ensure a project has baseline lifecycle data."""
+
+    if not project.id:
+        return
+
+    has_phases = (
+        db.query(LifecyclePhase)
+        .filter(LifecyclePhase.project_id == project.id)
+        .limit(1)
+        .count()
+    )
+    if has_phases:
+        return
+
+    phases: List[LifecyclePhase] = []
+    for index, phase_template in enumerate(DEFAULT_LIFECYCLE_TEMPLATE, start=1):
+        phase = LifecyclePhase(
+            project=project,
+            key=phase_template["key"],
+            name=phase_template["name"],
+            status=phase_template.get("status", "not_started"),
+            position=index,
+        )
+
+        gates: List[LifecycleGate] = []
+        for gate_index, gate_template in enumerate(
+            phase_template.get("gates", []), start=1
+        ):
+            gate = LifecycleGate(
+                project=project,
+                phase=phase,
+                key=gate_template["key"],
+                name=gate_template["name"],
+                status=gate_template.get("status", "not_started"),
+                position=gate_index,
+            )
+            gates.append(gate)
+
+        if gates:
+            phase.lifecycle_gates = gates
+
+        phases.append(phase)
+
+    if phases:
+        project.lifecycle_phases.extend(phases)
+        db.flush()
+
 
 
 def _get_project_document_metadata(
@@ -404,6 +760,8 @@ async def create_project(
         db.add(project)
         db.flush()  # Ensure project ID is available for document linkage
 
+        _seed_project_lifecycle(db, project)
+
         document.portfolio_id = project.id
         db.add(document)
         db.flush()
@@ -437,6 +795,8 @@ async def create_project(
 
     document_metadata = _build_document_metadata(document)
 
+    _ensure_lifecycle(str(project.id))
+
     # Submit initialization task to AI orchestrator
     settings = get_settings()
     task_id: Optional[str] = None
@@ -464,6 +824,21 @@ async def create_project(
         logging.getLogger(__name__).error(
             "Failed to submit project initialization task: %s", e
         )
+
+    usage_metadata: Dict[str, Optional[str]] = {
+        "event": "project_created",
+        "project_id": str(project.id),
+        "owner_id": str(owner_uuid),
+        "document_id": str(document.id),
+    }
+    if task_id:
+        usage_metadata["initialization_task_id"] = task_id
+
+    publish_usage_event(
+        str(tenant_uuid),
+        PROJECT_CREATION_PSU_CHARGE,
+        usage_metadata,
+    )
 
     return ProjectResponse(
         id=str(project.id),
@@ -846,6 +1221,7 @@ async def get_project_lifecycle(
 ):
     """Return lifecycle phases and gate checklist for a project."""
 
+
     try:
         project_uuid = uuid.UUID(project_id)
     except ValueError as exc:  # pragma: no cover - defensive
@@ -884,8 +1260,120 @@ async def get_project_lifecycle(
 
     lifecycle_data = {"phases": ordered_phases}
 
-    # Use orchestrator to detect bottlenecks and annotate gates
-    bottlenecks = AgentManager.detect_bottlenecks(lifecycle_data)
-    lifecycle_data["bottlenecks"] = bottlenecks
+    lifecycle_state = copy.deepcopy(_ensure_lifecycle(project_id))
 
-    return lifecycle_data
+    # Use orchestrator to detect bottlenecks and annotate gates
+    bottlenecks = AgentManager.detect_bottlenecks(lifecycle_state)
+    lifecycle_state["bottlenecks"] = bottlenecks
+
+    return lifecycle_state
+
+
+@router.post(
+    "/{project_id}/lifecycle/gates/{gate_id}/status",
+    response_model=GateStatusResponse,
+)
+async def update_lifecycle_gate_status(
+    project_id: str,
+    gate_id: str,
+    request: GateStatusUpdateRequest,
+    db: Session = Depends(SessionDep),
+    current_user: dict = Depends(get_current_user),
+):
+    """Update the status of a lifecycle gate with RBAC and auditing."""
+
+    user_roles = {
+        str(role).lower() for role in current_user.get("roles", []) if role is not None
+    }
+    if not user_roles.intersection(ALLOWED_GATE_APPROVER_ROLES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not permitted to approve lifecycle gates",
+        )
+
+
+    project = _get_project_or_404(db, project_id)
+    project_id_str = str(project.id)
+    lifecycle = _ensure_lifecycle(project_id_str)
+
+    target_gate: Optional[Dict[str, Any]] = None
+    target_phase_id: Optional[str] = None
+    for phase in lifecycle.get("phases", []):
+        for gate in phase.get("gates", []):
+            if gate.get("id") == gate_id:
+                target_gate = gate
+                target_phase_id = phase.get("id")
+                break
+        if target_gate:
+            break
+
+    if target_gate is None or target_phase_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lifecycle gate not found",
+        )
+
+    raw_actor_id = current_user.get("id")
+    if not raw_actor_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current user identifier missing",
+        )
+    actor_id = str(raw_actor_id)
+    now = datetime.now(timezone.utc)
+    iso_now = now.isoformat()
+
+    target_gate["status"] = request.status
+    target_gate["updated_at"] = iso_now
+    target_gate["updated_by"] = actor_id
+
+    if request.notes is not None:
+        target_gate["notes"] = request.notes
+
+    if request.status == "approved":
+        target_gate["approved_by"] = actor_id
+        target_gate["approved_at"] = iso_now
+    else:
+        target_gate["approved_by"] = actor_id
+        target_gate["approved_at"] = None
+
+    progress = _recalculate_progress(lifecycle)
+    project.display_status = str(progress["display_status"])
+    project.completion_percentage = int(progress["completion_percentage"])
+    project.updated_at = now
+
+    _persist_gate_state(db, project, lifecycle, actor_id)
+
+    try:
+        db.commit()
+    except SQLAlchemyError as exc:  # pragma: no cover - defensive
+        db.rollback()
+        logging.getLogger(__name__).exception("Failed to update lifecycle gate: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update lifecycle gate",
+        ) from exc
+
+    db.refresh(project)
+
+    approved_at_value = target_gate.get("approved_at")
+    updated_at_value = target_gate.get("updated_at")
+
+    return GateStatusResponse(
+        gate_id=gate_id,
+        phase_id=target_phase_id,
+        status=target_gate.get("status", "pending"),
+        approved_by=target_gate.get("approved_by"),
+        approved_at=(
+            datetime.fromisoformat(approved_at_value)
+            if isinstance(approved_at_value, str)
+            else None
+        ),
+        updated_at=(
+            datetime.fromisoformat(updated_at_value)
+            if isinstance(updated_at_value, str)
+            else None
+        ),
+        updated_by=target_gate.get("updated_by"),
+        notes=target_gate.get("notes"),
+    )

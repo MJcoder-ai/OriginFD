@@ -40,6 +40,7 @@ def skip_metadata_creation(monkeypatch) -> Generator[None, None, None]:
         "/alarms",
         "/documents",
         "/components",
+        "/commerce",
     ],
 )
 def test_router_base_path_is_mounted(client, path):
