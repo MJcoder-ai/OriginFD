@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "playwright test -c ../../playwright.config.ts"
+    "test": "tsx --test tests/diff/json-patch-viewer.test.tsx tests/projects/lifecycle-journey.test.ts && playwright test -c ../../playwright.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -71,6 +71,7 @@
     "postcss": "^8.4.32",
     "prisma": "^6.16.0",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.19.1",
     "typescript": "^5.3.3"
   }
 }
