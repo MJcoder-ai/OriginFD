@@ -2,6 +2,7 @@
  * Temporary API client implementation while fixing workspace packages
  * This will be replaced with proper @originfd/http-client import once module resolution is fixed
  */
+import type { DocumentVersion } from "@originfd/types-odl";
 
 export type Domain = "PV" | "BESS" | "HYBRID" | "GRID" | "MICROGRID";
 export type Scale =
@@ -233,8 +234,16 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}`);
   }
 
-  async getDocument(documentId: string): Promise<any> {
-    return this.request(`documents/${documentId}`);
+  async getDocument(documentId: string, version?: number): Promise<any> {
+    const qs =
+      typeof version === "number" && !Number.isNaN(version)
+        ? `?version=${encodeURIComponent(version)}`
+        : "";
+    return this.request(`documents/${documentId}${qs}`);
+  }
+
+  async getDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
+    return this.request(`documents/${documentId}/versions`);
   }
 
   async getProjectDocuments(projectId: string): Promise<any[]> {

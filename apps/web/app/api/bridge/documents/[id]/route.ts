@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findDocument } from "../../shared-data";
+import {
+  findDocument,
+  getDocumentVersionHistory,
+  getDocumentVersionSnapshot,
+} from "../../shared-data";
 
 // Legacy static mock documents for backward compatibility
 const legacyMockDocuments: { [key: string]: any } = {
@@ -482,6 +486,34 @@ export async function GET(
   const { id } = params;
 
   console.log("Fetching document with ID:", id);
+
+  const versionParam = request.nextUrl.searchParams.get("version");
+  const history = getDocumentVersionHistory(id);
+
+  if (history.length > 0) {
+    if (versionParam) {
+      const versionNumber = Number.parseInt(versionParam, 10);
+      if (Number.isNaN(versionNumber)) {
+        return NextResponse.json(
+          { detail: "Invalid version parameter" },
+          { status: 400 },
+        );
+      }
+
+      const snapshot = getDocumentVersionSnapshot(id, versionNumber);
+      if (!snapshot) {
+        return NextResponse.json(
+          { detail: `Version ${versionNumber} not found` },
+          { status: 404 },
+        );
+      }
+
+      return NextResponse.json(snapshot.document);
+    }
+
+    const latest = history[history.length - 1];
+    return NextResponse.json(latest.document);
+  }
 
   // First, try to find document in shared data store (includes newly created documents)
   let document = findDocument(id);
