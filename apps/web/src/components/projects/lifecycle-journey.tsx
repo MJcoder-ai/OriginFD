@@ -7,6 +7,8 @@ import { Loader2, Check, AlertTriangle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@originfd/ui";
 import { apiClient } from "@/lib/api-client";
 
+import { ProjectOrchestratorTasks } from "./project-orchestrator-tasks";
+
 interface LifecycleJourneyProps {
   projectId: string;
 }
@@ -93,6 +95,7 @@ export function LifecycleJourney({ projectId }: LifecycleJourneyProps) {
           </Card>
         ))}
       </div>
+      <ProjectOrchestratorTasks projectId={projectId} />
     </div>
   );
 }

@@ -439,6 +439,11 @@ export class OriginFDClient {
     });
   }
 
+  async getProjectTasks(projectId: string): Promise<any[]> {
+    const searchParams = new URLSearchParams({ project_id: projectId });
+    return this.request(`tasks/?${searchParams.toString()}`);
+  }
+
   // Component APIs
   async listComponents(
     params: {
