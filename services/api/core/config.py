@@ -114,6 +114,9 @@ class Settings(BaseSettings):
     ORCHESTRATOR_URL: str = Field(
         default="http://localhost:8001", env="ORCHESTRATOR_URL"
     )
+    ORCHESTRATOR_WEBHOOK_SECRET: Optional[str] = Field(
+        default=None, env="ORCHESTRATOR_WEBHOOK_SECRET"
+    )
 
     # Google Cloud
     GOOGLE_CLOUD_PROJECT: Optional[str] = Field(
