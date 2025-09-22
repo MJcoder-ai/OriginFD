@@ -17,7 +17,17 @@ from sqlalchemy.orm import Session
 
 from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
 
+from core.permissions import (
+    AuthorizationContext,
+    Permission,
+    ResourceType,
+    PermissionChecker,
+    get_permission_checker,
+    get_project_for_user,
+)
+
 router = APIRouter()
+project_router = APIRouter()
 
 
 class DocumentCreateRequest(BaseModel):
@@ -65,6 +75,59 @@ class PatchResponse(BaseModel):
     content_hash: str
     inverse_patch: List[Dict[str, Any]]
     applied_at: datetime
+
+
+@project_router.get(
+    "/{project_id}/document",
+    response_model=Dict[str, Any],
+    summary="Retrieve the active document for a project",
+)
+async def get_project_document(
+    project_id: uuid.UUID,
+    project: models.Project = Depends(get_project_for_user),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(SessionDep),
+    checker: PermissionChecker = Depends(get_permission_checker),
+):
+    """Return the active document associated with a project."""
+
+    if not getattr(project, "primary_document_id", None):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project does not have an active document",
+        )
+
+    document = (
+        db.query(models.Document)
+        .join(
+            models.Project,
+            models.Project.primary_document_id == models.Document.id,
+        )
+        .filter(
+            models.Project.id == project.id,
+            models.Document.id == project.primary_document_id,
+            models.Document.tenant_id == uuid.UUID(current_user["tenant_id"]),
+            models.Document.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Active project document not found",
+        )
+
+    checker.authorize(
+        AuthorizationContext(
+            user=current_user,
+            resource_type=ResourceType.DOCUMENT,
+            resource_id=document.id,
+            action=Permission.DOCUMENT_READ,
+        )
+    )
+
+    return document.document_data
 
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
