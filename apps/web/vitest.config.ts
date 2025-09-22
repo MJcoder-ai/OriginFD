@@ -8,9 +8,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@/components": path.resolve(__dirname, "src/components"),
+      "@/lib": path.resolve(__dirname, "src/lib"),
+      "@/hooks": path.resolve(__dirname, "src/hooks"),
+      "@/utils": path.resolve(__dirname, "src/utils"),
       "@originfd/ui": path.resolve(
         __dirname,
-        "../../packages/ts/ui/src/index.ts",
+        "test/mocks/originfd-ui.tsx",
       ),
     },
   },
@@ -18,7 +22,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
-    css: false,
-    include: ["src/**/*.test.{ts,tsx}"]
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "app/**/*.{test,spec}.{ts,tsx}",
+    ],
+    css: true,
   },
 });
