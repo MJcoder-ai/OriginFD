@@ -256,167 +256,194 @@ steps:
   # Step 3: Build and Push Docker Images
   - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-api'
+    entrypoint: '/busybox/sh'
     args:
-      - '--dockerfile=services/api/Dockerfile'
-      - '--context=dir://.'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:latest'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA'
-      - '--cache=true'
-      - '--cache-ttl=24h'
+      - '-c'
+      - |
+        set -eu
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+        DEST_BASE="${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api"
+
+        set -- "--destination=${DEST_BASE}:latest"
+        if [ "${IMAGE_TAG}" != "latest" ]; then
+          set -- "$@" "--destination=${DEST_BASE}:${IMAGE_TAG}"
+        fi
+
+        /kaniko/executor \
+          --dockerfile=services/api/Dockerfile \
+          --context=dir://. \
+          "$@" \
+          --cache=true \
+          --cache-ttl=24h
 
   - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-orchestrator'
+    entrypoint: '/busybox/sh'
     args:
-      - '--dockerfile=services/orchestrator/Dockerfile'
-      - '--context=dir://.'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:latest'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$COMMIT_SHA'
-      - '--cache=true'
-      - '--cache-ttl=24h'
-      - '--compressed-caching=false'
-      - '--single-snapshot'
+      - '-c'
+      - |
+        set -eu
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+        DEST_BASE="${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator"
+
+        set -- "--destination=${DEST_BASE}:latest"
+        if [ "${IMAGE_TAG}" != "latest" ]; then
+          set -- "$@" "--destination=${DEST_BASE}:${IMAGE_TAG}"
+        fi
+
+        /kaniko/executor \
+          --dockerfile=services/orchestrator/Dockerfile \
+          --context=dir://. \
+          "$@" \
+          --cache=true \
+          --cache-ttl=24h \
+          --compressed-caching=false \
+          --single-snapshot
 
   - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-workers'
+    entrypoint: '/busybox/sh'
     args:
-      - '--dockerfile=services/workers/Dockerfile'
-      - '--context=dir://.'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:latest'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$COMMIT_SHA'
-      - '--cache=true'
-      - '--cache-ttl=24h'
+      - '-c'
+      - |
+        set -eu
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+        DEST_BASE="${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers"
+
+        set -- "--destination=${DEST_BASE}:latest"
+        if [ "${IMAGE_TAG}" != "latest" ]; then
+          set -- "$@" "--destination=${DEST_BASE}:${IMAGE_TAG}"
+        fi
+
+        /kaniko/executor \
+          --dockerfile=services/workers/Dockerfile \
+          --context=dir://. \
+          "$@" \
+          --cache=true \
+          --cache-ttl=24h
 
   - name: 'gcr.io/kaniko-project/executor:v1.19.2'
     id: 'build-web'
+    entrypoint: '/busybox/sh'
     args:
-      - '--dockerfile=apps/web/Dockerfile'
-      - '--context=dir://.'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:latest'
-      - '--destination=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA'
-      - '--cache=true'
-      - '--cache-ttl=24h'
+      - '-c'
+      - |
+        set -eu
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+        DEST_BASE="${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web"
+
+        set -- "--destination=${DEST_BASE}:latest"
+        if [ "${IMAGE_TAG}" != "latest" ]; then
+          set -- "$@" "--destination=${DEST_BASE}:${IMAGE_TAG}"
+        fi
+
+        /kaniko/executor \
+          --dockerfile=apps/web/Dockerfile \
+          --context=dir://. \
+          "$@" \
+          --cache=true \
+          --cache-ttl=24h
 
   # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-api'
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'api'
-      - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA'
-      - '--region'
-      - '${_REGION}'
-      - '--platform'
-      - 'managed'
-      - '--no-allow-unauthenticated'
-      - '--vpc-connector'
-      - '${_VPC_CONNECTOR}'
-      - '--vpc-egress'
-      - 'all-traffic'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1'
-      - '--concurrency'
-      - '80'
-      - '--max-instances'
-      - '10'
-      - '--set-env-vars'
-      - 'ENVIRONMENT=production,DEBUG=false'
-      - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
+      - '-c'
+      - |
+        set -euo pipefail
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+
+        gcloud run deploy api \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:${IMAGE_TAG}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --no-allow-unauthenticated \
+          --vpc-connector "${_VPC_CONNECTOR}" \
+          --vpc-egress all-traffic \
+          --memory 512Mi \
+          --cpu 1 \
+          --concurrency 80 \
+          --max-instances 10 \
+          --set-env-vars ENVIRONMENT=production,DEBUG=false \
+          --set-secrets DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-orchestrator'
     waitFor: ['deploy-api']
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'orchestrator'
-      - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:$COMMIT_SHA'
-      - '--region'
-      - '${_REGION}'
-      - '--platform'
-      - 'managed'
-      - '--no-allow-unauthenticated'
-      - '--vpc-connector'
-      - '${_VPC_CONNECTOR}'
-      - '--vpc-egress'
-      - 'all-traffic'
-      - '--memory'
-      - '1Gi'
-      - '--cpu'
-      - '1'
-      - '--concurrency'
-      - '40'
-      - '--max-instances'
-      - '5'
-      - '--set-env-vars'
-      - 'ENVIRONMENT=production,DEBUG=false'
-      - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
+      - '-c'
+      - |
+        set -euo pipefail
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+
+        gcloud run deploy orchestrator \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/orchestrator:${IMAGE_TAG}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --no-allow-unauthenticated \
+          --vpc-connector "${_VPC_CONNECTOR}" \
+          --vpc-egress all-traffic \
+          --memory 1Gi \
+          --cpu 1 \
+          --concurrency 40 \
+          --max-instances 5 \
+          --set-env-vars ENVIRONMENT=production,DEBUG=false \
+          --set-secrets DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-workers'
     waitFor: ['deploy-orchestrator']
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'workers'
-      - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:$COMMIT_SHA'
-      - '--region'
-      - '${_REGION}'
-      - '--platform'
-      - 'managed'
-      - '--no-allow-unauthenticated'
-      - '--vpc-connector'
-      - '${_VPC_CONNECTOR}'
-      - '--vpc-egress'
-      - 'all-traffic'
-      - '--memory'
-      - '1Gi'
-      - '--cpu'
-      - '2'
-      - '--concurrency'
-      - '20'
-      - '--max-instances'
-      - '10'
-      - '--set-env-vars'
-      - 'ENVIRONMENT=production,DEBUG=false'
-      - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
+      - '-c'
+      - |
+        set -euo pipefail
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+
+        gcloud run deploy workers \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/workers:${IMAGE_TAG}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --no-allow-unauthenticated \
+          --vpc-connector "${_VPC_CONNECTOR}" \
+          --vpc-egress all-traffic \
+          --memory 1Gi \
+          --cpu 2 \
+          --concurrency 20 \
+          --max-instances 10 \
+          --set-env-vars ENVIRONMENT=production,DEBUG=false \
+          --set-secrets DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET_KEY=jwt-secret-key:latest
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
     id: 'deploy-web'
     waitFor: ['deploy-workers']
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'web'
-      - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:$COMMIT_SHA'
-      - '--region'
-      - '${_REGION}'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1'
-      - '--concurrency'
-      - '100'
-      - '--max-instances'
-      - '20'
-      - '--set-env-vars'
-      - 'NEXT_PUBLIC_API_URL=https://api-203727718263.us-central1.run.app,NODE_ENV=production'
+      - '-c'
+      - |
+        set -euo pipefail
+
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+
+        gcloud run deploy web \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/web:${IMAGE_TAG}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --memory 512Mi \
+          --cpu 1 \
+          --concurrency 100 \
+          --max-instances 20 \
+          --set-env-vars NEXT_PUBLIC_API_URL=https://api-203727718263.us-central1.run.app,NODE_ENV=production
 
   # Step 4: Database Migration and Setup
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:456.0.0-slim'
@@ -427,12 +454,15 @@ steps:
       - |
         echo "Running database migrations..."
 
+        IMAGE_TAG="${COMMIT_SHA:-latest}"
+        JOB_IMAGE="${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:${IMAGE_TAG}"
+
         # Delete existing job if it exists, then create new one
         gcloud run jobs delete db-migrate --region=${_REGION} --quiet || echo "No existing migration job to delete"
 
         echo "Creating migration job..."
         gcloud run jobs create db-migrate \
-          --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/api:$COMMIT_SHA \
+          --image=${JOB_IMAGE} \
           --region=${_REGION} \
           --set-secrets="DATABASE_URL=database-url:latest" \
           --set-env-vars="ENVIRONMENT=production" \
