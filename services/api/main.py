@@ -3,13 +3,14 @@ OriginFD API Gateway - Main FastAPI Application
 """
 
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
 import uvicorn
 
 # Include core API routers
-from api.routers import alarms, approvals, auth, commerce, components, documents, health, projects
+from api.routers import alarms, approvals, auth, commerce, documents, health, projects
 from core.config import get_settings
 from core.database import get_engine
 from core.logging_config import setup_logging
@@ -19,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from simple_components import router as simple_components_router
 
 # Temporarily disabled: , auth
 # from api.routers import commerce
@@ -39,15 +41,16 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
 
     # Warm up database connection
-    try:
-        with get_engine().connect() as conn:
-            from sqlalchemy import text
+    if os.getenv("SKIP_DB_STARTUP", "0") != "1":
+        try:
+            with get_engine().connect() as conn:
+                from sqlalchemy import text
 
-            conn.execute(text("SELECT 1"))
-        logger.info("Database connection verified")
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        raise
+                conn.execute(text("SELECT 1"))
+            logger.info("Database connection verified")
+        except Exception as e:
+            logger.error(f"Database connection failed: {e}")
+            raise
 
     # TODO: Warm up caches, load tool registry, etc.
     logger.info("API Gateway startup complete")
@@ -131,8 +134,8 @@ app.include_router(projects.router, prefix="/projects", tags=["projects"])
 app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
-app.include_router(documents.router, prefix="/odl", tags=["documents"])
-app.include_router(components.router, prefix="/components", tags=["components"])
+app.include_router(documents.router, prefix="/documents", tags=["documents"])
+app.include_router(simple_components_router, prefix="/components", tags=["components"])
 app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
 
 # app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
