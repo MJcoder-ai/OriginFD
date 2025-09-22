@@ -19,6 +19,9 @@ pydantic-settings>=2.1.0,<2.2.0
 # Environment and configuration
 python-dotenv>=1.0.0,<1.1.0
 
+# System and process utilities
+psutil>=5.9.0,<5.10.0
+
 # Date and time utilities
 python-dateutil>=2.8.2,<2.9.0
 
