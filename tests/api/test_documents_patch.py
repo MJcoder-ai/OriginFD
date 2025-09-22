@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 
 # Ensure the API package and models are importable
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 API_ROOT = os.path.join(PROJECT_ROOT, "services", "api")
 if API_ROOT not in sys.path:
     sys.path.insert(0, API_ROOT)
@@ -21,11 +23,36 @@ from api.routers import documents  # noqa: E402
 from core.database import SessionDep  # noqa: E402
 from deps import get_current_user  # noqa: E402
 import models  # noqa: E402
-from models.document import DocumentVersion  # noqa: E402
 
 # Ensure DocumentVersion is accessible via the models package
-if not hasattr(models, "DocumentVersion"):
-    setattr(models, "DocumentVersion", DocumentVersion)
+class StubDocument:
+    """Simplified document record for unit testing."""
+
+    id: uuid.UUID | None = None
+    tenant_id: uuid.UUID | None = None
+
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id", uuid.uuid4())
+        self.tenant_id = kwargs.get("tenant_id")
+        self.project_name = kwargs.get("project_name")
+        self.portfolio_id = kwargs.get("portfolio_id")
+        self.domain = kwargs.get("domain")
+        self.scale = kwargs.get("scale")
+        self.current_version = kwargs.get("current_version", 1)
+        self.content_hash = kwargs.get("content_hash", "")
+        self.document_data = kwargs.get("document_data", {})
+        self.is_active = kwargs.get("is_active", True)
+        self.created_at = kwargs.get("created_at", datetime.utcnow())
+        self.updated_at = kwargs.get("updated_at", self.created_at)
+
+
+class StubDocumentVersion:
+    """Lightweight DocumentVersion stand-in."""
+
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id", uuid.uuid4())
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 class FakeQuery:
@@ -138,6 +165,9 @@ def test_client(sample_document, monkeypatch):
     app = FastAPI()
     app.include_router(documents.router, prefix="/documents")
 
+    monkeypatch.setattr(models, "Document", StubDocument)
+    monkeypatch.setattr(models, "DocumentVersion", StubDocumentVersion, raising=False)
+
     class StubOdlDocument:
         def __init__(self, data):
             self._data = data
@@ -183,9 +213,22 @@ def test_client(sample_document, monkeypatch):
         "roles": ["engineer"],
     }
 
+    publish_calls = []
+
+    def _record_usage(tenant: str, psu: int, metadata: dict | None = None):
+        publish_calls.append({
+            "tenant_id": tenant,
+            "psu": psu,
+            "metadata": metadata or {},
+        })
+        return {"psu": psu, "fee": 0}
+
+    monkeypatch.setattr(documents, "publish_usage_event", _record_usage)
+
     client = TestClient(app)
     client.fake_session = fake_session  # type: ignore[attr-defined]
     client.document = document  # type: ignore[attr-defined]
+    client.publish_calls = publish_calls  # type: ignore[attr-defined]
     return client
 
 
@@ -235,6 +278,15 @@ def test_patch_document_success(test_client):
     assert fake_session.added_objects, "DocumentVersion should be recorded"
 
 
+    assert test_client.publish_calls  # type: ignore[attr-defined]
+    usage_call = test_client.publish_calls[0]  # type: ignore[index]
+    assert usage_call["tenant_id"] == str(document.tenant_id)
+    assert usage_call["psu"] > 0
+    assert usage_call["metadata"]["event"] == "document_patched"
+    assert usage_call["metadata"]["document_id"] == str(document.id)
+    assert usage_call["metadata"]["version"] == document.current_version
+
+
 def test_patch_document_forbidden_for_viewer(test_client):
     """Viewers lack the document update permission and receive a 403 response."""
 
@@ -280,3 +332,4 @@ def test_get_document_requires_permission(test_client):
     assert response.status_code == 403
     body = response.json()
     assert "permissions" in body["detail"].lower()
+

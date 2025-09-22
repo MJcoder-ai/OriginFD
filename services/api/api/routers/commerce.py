@@ -11,6 +11,18 @@ from services.commerce_core import escrow_manager, payout_ledger, psu_meter
 router = APIRouter()
 
 
+@router.get("/")
+async def commerce_root() -> dict[str, list[str]]:
+    """Provide discovery information for commerce routes."""
+    return {
+        "available_endpoints": [
+            "GET /commerce/psu/{tenant_id}",
+            "GET /commerce/escrow/{tenant_id}",
+            "GET /commerce/transactions/{tenant_id}",
+        ]
+    }
+
+
 @router.get("/psu/{tenant_id}")
 async def get_psu_usage(tenant_id: str):
     """Retrieve PSU usage for a tenant."""

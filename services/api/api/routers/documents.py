@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from odl_sd_patch import apply_patch, inverse_patch, PatchValidationError
+from services.commerce_core import publish_usage_event
 from api.utils.document_serialization import (
     canonicalize_document,
     create_json_export_response,
@@ -80,6 +81,9 @@ class PatchResponse(BaseModel):
     content_hash: str
     inverse_patch: List[Dict[str, Any]]
     applied_at: datetime
+
+
+DOCUMENT_PATCH_PSU_CHARGE = 5
 
 
 @project_router.get(
@@ -451,6 +455,18 @@ async def apply_document_patch(
 
         db.add(version)
         db.commit()
+
+        publish_usage_event(
+            str(document.tenant_id),
+            DOCUMENT_PATCH_PSU_CHARGE,
+            {
+                "event": "document_patched",
+                "document_id": str(document.id),
+                "project_name": document.project_name,
+                "version": new_version,
+                "change_summary": request.change_summary,
+            },
+        )
 
         return PatchResponse(
             success=True,

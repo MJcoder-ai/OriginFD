@@ -6,11 +6,15 @@ from typing import Any, Dict, Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+from services.commerce_core import publish_usage_event
 
 # Temporarily disabled due to import issues:
 # from packages.py.odl_sd_patch.diff_utils import generate_diff_summary
 
 router = APIRouter()
+
+
+APPROVAL_DECISION_PSU_CHARGE = 10
 
 
 class ApprovalRequest(BaseModel):
@@ -37,9 +41,37 @@ async def handle_approval(req: ApprovalRequest) -> ApprovalResponse:
     # TODO: Implement generate_diff_summary when package is available
     # summary = generate_diff_summary(req.source, req.target)
     summary = {"grouped_diffs": {}, "kpi_deltas": {}}  # Temporary placeholder
+    tenant_id = _resolve_tenant_id(req.source) or _resolve_tenant_id(req.target)
+    metadata = {
+        "event": "gate_approval",
+        "project_id": req.project_id,
+        "decision": req.decision,
+        "has_summary": bool(summary["grouped_diffs"]),
+    }
+    publish_usage_event(
+        tenant_id or "00000000-0000-0000-0000-000000000000",
+        APPROVAL_DECISION_PSU_CHARGE,
+        metadata,
+    )
     return ApprovalResponse(
         project_id=req.project_id,
         decision=req.decision,
         grouped_diffs=summary["grouped_diffs"],
         kpi_deltas=summary["kpi_deltas"],
     )
+
+
+def _resolve_tenant_id(payload: Dict[str, Any]) -> str | None:
+    """Extract a tenant identifier from nested payload structures."""
+    if not isinstance(payload, dict):
+        return None
+
+    candidate = payload.get("tenant_id")
+    if candidate:
+        return str(candidate)
+
+    context = payload.get("context")
+    if isinstance(context, dict) and context.get("tenant_id"):
+        return str(context["tenant_id"])
+
+    return None

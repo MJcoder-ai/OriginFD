@@ -6,7 +6,9 @@ import copy
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
+
 from typing import Any, Dict, List, Optional, Union, Literal
+
 
 import httpx
 
@@ -48,6 +50,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from models.document import DocumentVersion as SADocumentVersion
+from services.commerce_core import publish_usage_event
 
 # Temporarily disabled due to import issues:
 # from services.orchestrator.agents.agent_manager import AgentManager
@@ -70,6 +73,9 @@ from models.project import (  # type: ignore  # circular import friendliness
 
 router = APIRouter()
 
+
+
+PROJECT_CREATION_PSU_CHARGE = 50
 
 ALLOWED_GATE_APPROVER_ROLES = {"admin", "engineer", "project_manager", "approver"}
 
@@ -305,6 +311,7 @@ def _persist_gate_state(
         pass
     if hasattr(document, "updated_at"):
         document.updated_at = datetime.now(timezone.utc)
+
 
 
 class ProjectCreateRequest(BaseModel):
@@ -815,6 +822,21 @@ async def create_project(
         logging.getLogger(__name__).error(
             "Failed to submit project initialization task: %s", e
         )
+
+    usage_metadata: Dict[str, Optional[str]] = {
+        "event": "project_created",
+        "project_id": str(project.id),
+        "owner_id": str(owner_uuid),
+        "document_id": str(document.id),
+    }
+    if task_id:
+        usage_metadata["initialization_task_id"] = task_id
+
+    publish_usage_event(
+        str(tenant_uuid),
+        PROJECT_CREATION_PSU_CHARGE,
+        usage_metadata,
+    )
 
     return ProjectResponse(
         id=str(project.id),
