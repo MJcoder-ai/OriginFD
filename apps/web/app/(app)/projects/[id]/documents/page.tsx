@@ -21,7 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@originfd/ui";
-import { DocumentViewer } from "@/components/odl-sd";
+import { DocumentViewer, DocumentVersionTimeline } from "@/components/odl-sd";
 
 export default function ProjectDocumentsPage() {
   const params = useParams();
@@ -47,6 +47,17 @@ export default function ProjectDocumentsPage() {
     queryFn: () => apiClient.getPrimaryProjectDocument(projectId),
     enabled: !!projectId,
   });
+
+  const primaryDocumentId = React.useMemo(() => {
+    const projectDoc = projectDocuments.find((doc: any) => doc.is_primary);
+    if (projectDoc?.id) {
+      return projectDoc.id as string;
+    }
+    if (projectId) {
+      return `${projectId}-main`;
+    }
+    return undefined;
+  }, [projectDocuments, projectId]);
 
   // Mock documents data for now
   const documents = [
@@ -341,6 +352,21 @@ export default function ProjectDocumentsPage() {
           </CardHeader>
           <CardContent>
             <DocumentViewer document={primaryDocument} projectId={projectId} />
+          </CardContent>
+        </Card>
+      )}
+
+      {primaryDocumentId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Version History &amp; Diffs</CardTitle>
+            <CardDescription>
+              Review previous revisions and compare document changes side by
+              side.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DocumentVersionTimeline documentId={primaryDocumentId} />
           </CardContent>
         </Card>
       )}
