@@ -68,6 +68,14 @@ class Project(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
     owner = relationship("User", back_populates="projects")
+    primary_document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id"),
+        nullable=True,
+    )
+    primary_document: Optional["Document"] = relationship(
+        "Document", foreign_keys=[primary_document_id]
+    )
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)
     primary_document_id = Column(

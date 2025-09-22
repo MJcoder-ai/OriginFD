@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import models
-from api.routers.auth import get_current_user
+from deps import get_current_user
 from core.database import SessionDep
 from core.performance import (
     cached_response,

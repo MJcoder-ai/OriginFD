@@ -10,6 +10,7 @@ from typing import List, Optional
 import httpx
 
 
+
 # Simple auth bypass for testing
 def get_current_user(*args, **kwargs):
     return {
@@ -17,6 +18,9 @@ def get_current_user(*args, **kwargs):
         "email": "admin@originfd.com",
         "tenant_id": "11111111-1111-4111-8111-111111111111",
     }
+
+from deps import get_current_user
+
 
 
 from core.config import get_settings
