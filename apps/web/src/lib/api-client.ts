@@ -135,21 +135,14 @@ export class ApiError extends Error {
 
 const normalizeBaseUrl = (baseUrl: string): string => {
   if (!baseUrl) {
-    return "/api/bridge";
+    return "/api/proxy";
   }
 
-  // Trim whitespace and remove any trailing slashes so request path joining is predictable
   const trimmed = baseUrl.trim();
   return trimmed.replace(/\/+$/, "");
 };
 
 const resolveApiBaseUrl = (): string => {
-  const envBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  if (envBaseUrl && envBaseUrl.trim().length > 0) {
-    return normalizeBaseUrl(envBaseUrl);
-  }
-
   if (typeof window !== "undefined") {
     const browserBase = (window as any).__ORIGINFD_API_BASE__;
     if (typeof browserBase === "string" && browserBase.trim().length > 0) {
@@ -157,13 +150,11 @@ const resolveApiBaseUrl = (): string => {
     }
   }
 
-  return normalizeBaseUrl("/api/bridge");
+  return normalizeBaseUrl("/api/proxy");
 };
 
 export class OriginFDClient {
   private baseUrl: string;
-  private authTokens: { accessToken: string; refreshToken: string } | null =
-    null;
 
   constructor(baseUrl = resolveApiBaseUrl()) {
     this.baseUrl = normalizeBaseUrl(baseUrl);
@@ -182,14 +173,10 @@ export class OriginFDClient {
       ...(options.headers || {}),
     };
 
-    if (this.authTokens?.accessToken) {
-      (headers as any)["Authorization"] =
-        `Bearer ${this.authTokens.accessToken}`;
-    }
-
     const response = await fetch(url, {
       ...options,
       headers,
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -343,67 +330,79 @@ export class OriginFDClient {
   }
 
   async login(credentials: LoginRequest): Promise<UserResponse> {
-    const response = await this.request("auth/login", {
+    const response = await fetch("/api/auth/login", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(credentials),
+      cache: "no-store",
     });
 
-    this.authTokens = {
-      accessToken: response.access_token,
-      refreshToken: response.refresh_token,
-    };
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = "Authentication failed";
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.detail || errorMessage;
+      } catch {
+        if (errorText) {
+          errorMessage = errorText;
+        }
+      }
 
-    // Store tokens in localStorage (in browser environment)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("originfd_tokens", JSON.stringify(this.authTokens));
+      throw new ApiError(errorMessage, response.status);
     }
 
-    // Return user data from login response (if available) or get user info separately
-    if (response.user) {
-      return response.user;
-    } else {
-      return this.getCurrentUser();
+    const data = await response.json();
+
+    if (data?.user) {
+      return data.user;
     }
+
+    return this.getCurrentUser();
   }
 
   async getCurrentUser(): Promise<UserResponse> {
-    return this.request("auth/me");
+    const response = await fetch("/api/auth/me", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.detail || errorMessage;
+      } catch {
+        if (errorText) {
+          errorMessage = errorText;
+        }
+      }
+
+      throw new ApiError(errorMessage, response.status);
+    }
+
+    return response.json();
   }
 
   async logout(): Promise<void> {
     try {
-      await this.request("auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST" });
     } catch (error) {
       // Ignore logout errors
-    } finally {
-      this.authTokens = null;
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("originfd_tokens");
-      }
     }
   }
 
-  loadStoredTokens(): void {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("originfd_tokens");
-      if (stored) {
-        try {
-          this.authTokens = JSON.parse(stored);
-        } catch (error) {
-          // Invalid stored tokens, remove them
-          localStorage.removeItem("originfd_tokens");
-        }
-      }
-    }
-  }
+  loadStoredTokens(): void {}
 
   getTokens(): AuthTokens | null {
-    return this.authTokens;
+    return null;
   }
 
-  setTokens(tokens: AuthTokens): void {
-    this.authTokens = tokens;
-  }
+  setTokens(_tokens: AuthTokens): void {}
 
   // Commerce APIs
   async getPsuUsage(tenantId: string): Promise<PSUUsageResponse> {
@@ -493,16 +492,10 @@ export class OriginFDClient {
     formData.append("file", file);
 
     const url = `${this.baseUrl}/components/parse-datasheet`;
-    const headers: HeadersInit = {};
-    if (this.authTokens?.accessToken) {
-      (headers as any)["Authorization"] =
-        `Bearer ${this.authTokens.accessToken}`;
-    }
-
     const response = await fetch(url, {
       method: "POST",
       body: formData,
-      headers,
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -518,7 +511,7 @@ export class OriginFDClient {
   }
 
   isAuthenticated(): boolean {
-    return !!this.authTokens?.accessToken;
+    return false;
   }
 }
 

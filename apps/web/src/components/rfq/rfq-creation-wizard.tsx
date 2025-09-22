@@ -109,7 +109,7 @@ export default function RFQCreationWizard({
   const { data: components } = useQuery({
     queryKey: ["components-available"],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/components?status=available");
+      const response = await fetch("/api/proxy/components?status=available");
       if (!response.ok) throw new Error("Failed to fetch components");
       return response.json();
     },
@@ -119,7 +119,7 @@ export default function RFQCreationWizard({
   // Create RFQ mutation
   const createRFQMutation = useMutation({
     mutationFn: async (data: RFQFormData) => {
-      const response = await fetch("/api/bridge/rfq", {
+      const response = await fetch("/api/proxy/rfq", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

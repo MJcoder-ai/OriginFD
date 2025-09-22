@@ -47,7 +47,7 @@ export default function AlarmPanel() {
 
   const createWorkOrder = async (alarmId: string) => {
     try {
-      await fetch("/api/bridge/work-orders", {
+      await fetch("/api/proxy/work-orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alarm_id: alarmId }),

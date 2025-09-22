@@ -152,7 +152,7 @@ export default function MediaAssetManager({
   } = useQuery({
     queryKey: ["media-assets", componentId, typeFilter],
     queryFn: async () => {
-      let url = "/api/bridge/media";
+      let url = "/api/proxy/media";
       const params = new URLSearchParams();
 
       if (componentId) params.append("component_id", componentId);
@@ -170,7 +170,7 @@ export default function MediaAssetManager({
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (assetData: any) => {
-      const response = await fetch("/api/bridge/media", {
+      const response = await fetch("/api/proxy/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(assetData),

@@ -123,7 +123,7 @@ export default function PODashboard({
   } = useQuery({
     queryKey: ["purchase-orders", statusFilter, searchTerm],
     queryFn: async () => {
-      let url = "/api/bridge/purchase-orders";
+      let url = "/api/proxy/purchase-orders";
       const params = new URLSearchParams();
 
       if (statusFilter !== "all") params.append("status", statusFilter);
@@ -145,7 +145,7 @@ export default function PODashboard({
       notes: string;
     }) => {
       const response = await fetch(
-        `/api/bridge/purchase-orders/${data.poId}/approve`,
+        `/api/proxy/purchase-orders/${data.poId}/approve`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -176,7 +176,7 @@ export default function PODashboard({
       notes: string;
     }) => {
       const response = await fetch(
-        `/api/bridge/purchase-orders/${data.poId}/status`,
+        `/api/proxy/purchase-orders/${data.poId}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

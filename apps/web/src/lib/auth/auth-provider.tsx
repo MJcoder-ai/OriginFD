@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ApiError,
   apiClient,
   type AuthTokens,
   type UserResponse,
@@ -27,40 +28,56 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null);
-  const [tokens, setTokens] = useState<AuthTokens | null>(
-    apiClient.getTokens(),
-  );
-  const [isLoading, setIsLoading] = useState<boolean>(!!tokens);
+  const [tokens, setTokens] = useState<AuthTokens | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (tokens && !user) {
-      setIsLoading(true);
-      apiClient
-        .getCurrentUser()
-        .then(setUser)
-        .catch((error) => {
+    let isMounted = true;
+
+    setIsLoading(true);
+    apiClient
+      .getCurrentUser()
+      .then((currentUser) => {
+        if (isMounted) {
+          setUser(currentUser);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 401) {
+          setUser(null);
+        } else {
           console.warn("Failed to get current user:", error);
-          // Clear invalid tokens completely
-          setTokens(null);
-          // Use logout to properly clear all tokens and storage
-          apiClient.logout();
-        })
-        .finally(() => {
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
           setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
-    }
-  }, [tokens, user]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
-      const currentUser = await apiClient.login({ email: username, password });
+      setIsLoading(true);
+      const currentUser = await apiClient.login({
+        email: username,
+        password,
+      });
       setUser(currentUser);
-      setTokens(apiClient.getTokens());
+      setTokens(null);
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 

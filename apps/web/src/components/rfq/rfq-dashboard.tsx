@@ -92,7 +92,7 @@ export default function RFQDashboard({
   } = useQuery({
     queryKey: ["rfqs", statusFilter],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/rfq");
+      const response = await fetch("/api/proxy/rfq");
       if (!response.ok) throw new Error("Failed to fetch RFQs");
       return response.json();
     },

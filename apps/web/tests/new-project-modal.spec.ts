@@ -1,15 +1,77 @@
 import { test, expect, Page, Route } from "@playwright/test";
 
-// Mock API responses for project creation
-async function mockProjectCreation(page: Page) {
-  await page.route("**/api/bridge/odl/**", (route: Route) => {
+const TEST_USER = {
+  id: "test-user",
+  email: "test@originfd.com",
+  full_name: "Test User",
+  is_active: true,
+  roles: ["admin"],
+};
+
+async function mockAuthenticatedApi(page: Page) {
+  await page.route("**/api/auth/login", (route: Route) => {
+    route.fulfill({
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "set-cookie": [
+          "originfd_access_token=test-access; Path=/; HttpOnly; SameSite=Lax",
+          "originfd_refresh_token=test-refresh; Path=/; HttpOnly; SameSite=Lax",
+        ],
+      },
+      body: JSON.stringify({ user: TEST_USER }),
+    });
+  });
+
+  await page.route("**/api/auth/me", (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ id: "test-project" }),
+      body: JSON.stringify(TEST_USER),
+    });
+  });
+
+  await page.route("**/api/auth/logout", (route: Route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ success: true }),
+    });
+  });
+
+  await page.route("**/api/proxy/**", (route: Route) => {
+    const url = route.request().url();
+    const method = route.request().method();
+
+    if (method === "POST" && url.includes("/odl/")) {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "test-project" }),
+      });
+      return;
+    }
+
+    if (method === "GET" && url.includes("/projects")) {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ projects: [] }),
+      });
+      return;
+    }
+
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({}),
     });
   });
 }
+
+test.beforeEach(async ({ page }) => {
+  await mockAuthenticatedApi(page);
+});
 
 test.describe("New Project modal", () => {
   test("dashboard button opens and closes modal", async ({ page }) => {
@@ -38,7 +100,6 @@ test.describe("New Project modal", () => {
   });
 
   test("submitting modal navigates to new project", async ({ page }) => {
-    await mockProjectCreation(page);
     await page.goto("/dashboard");
     await page.getByRole("heading", { name: "Create PV System" }).click();
     await page.getByLabel("Project Name *").fill("Test Project");

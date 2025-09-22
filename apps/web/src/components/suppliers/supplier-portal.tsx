@@ -126,7 +126,7 @@ export default function SupplierPortal({
   const { data: availableRFQs = [], isLoading: rfqsLoading } = useQuery({
     queryKey: ["supplier-rfqs", "receiving_bids"],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/rfq?status=receiving_bids");
+      const response = await fetch("/api/proxy/rfq?status=receiving_bids");
       if (!response.ok) throw new Error("Failed to fetch RFQs");
       return response.json();
     },
@@ -138,7 +138,7 @@ export default function SupplierPortal({
     queryFn: async () => {
       // In real implementation, this would fetch bids by supplier_id
       // For now, we'll filter from available RFQs
-      const allRFQs = await fetch("/api/bridge/rfq").then((r) => r.json());
+      const allRFQs = await fetch("/api/proxy/rfq").then((r) => r.json());
       const bids: RFQBid[] = [];
 
       allRFQs.forEach((rfq: RFQRequest) => {
@@ -160,7 +160,7 @@ export default function SupplierPortal({
   // Submit bid mutation
   const submitBidMutation = useMutation({
     mutationFn: async (data: { rfqId: string; bidData: any }) => {
-      const response = await fetch(`/api/bridge/rfq/${data.rfqId}/bids`, {
+      const response = await fetch(`/api/proxy/rfq/${data.rfqId}/bids`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
