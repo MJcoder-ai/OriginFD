@@ -1,7 +1,7 @@
 # OriginFD API Service Dockerfile - Multi-stage build
 
 # Builder stage
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r service-requirements.txt
 
 # Runtime stage
-FROM python:3.11-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 

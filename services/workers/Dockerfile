@@ -1,7 +1,7 @@
 # OriginFD Workers Service Dockerfile - Multi-stage build
 
 # Builder stage
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN python -c "import psycopg2; print('psycopg2 imported successfully')" && \
     python -c "import celery; print('celery imported successfully')"
 
 # Runtime stage
-FROM python:3.11-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
