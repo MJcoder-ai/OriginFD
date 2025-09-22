@@ -9,6 +9,7 @@ from .component import Component
 # Complex models with multiple dependencies last
 from .document import Document
 from .inventory_record import InventoryRecord
+from .lifecycle import LifecycleGate, LifecyclePhase
 from .project import Project
 from .supplier import Supplier
 
@@ -26,6 +27,8 @@ __all__ = [
     "TenantMembership",
     "User",
     "Project",
+    "LifecyclePhase",
+    "LifecycleGate",
     "Component",
     "Supplier",
     "InventoryRecord",

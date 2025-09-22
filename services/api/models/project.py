@@ -82,6 +82,18 @@ class Project(Base, UUIDMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True
     )
 
+    lifecycle_phases = relationship(
+        "LifecyclePhase",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="LifecyclePhase.position",
+    )
+    lifecycle_gates = relationship(
+        "LifecycleGate",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+
     def can_edit(self, user_id: str) -> bool:
         """Check if a user can edit this project."""
         return str(self.owner_id) == user_id
