@@ -1,6 +1,9 @@
 # Development dependencies for OriginFD
 # Separate from production to keep containers lean
 
+# Runtime dependencies required in development environments
+bcrypt==4.1.2
+
 # Dependency management and lock file generation
 pip-tools==7.3.0
 
