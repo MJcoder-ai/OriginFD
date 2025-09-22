@@ -135,6 +135,7 @@ app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(documents.router, prefix="/documents", tags=["documents"])
+app.include_router(documents.project_router, prefix="/projects", tags=["documents"])
 app.include_router(simple_components_router, prefix="/components", tags=["components"])
 app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
 
