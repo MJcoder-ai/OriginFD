@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findDocument } from "../../shared-data";
+import { createHash } from "node:crypto";
+
+import { findDocument, updateDocumentRecord } from "../../shared-data";
 
 // Legacy static mock documents for backward compatibility
 const legacyMockDocuments: { [key: string]: any } = {
@@ -487,6 +489,11 @@ export async function GET(
   let document = findDocument(id);
 
   if (document) {
+    const storedOdlDocument = (document as any).odl_document;
+    if (storedOdlDocument) {
+      return NextResponse.json(storedOdlDocument);
+    }
+
     console.log("Found document in shared data:", document);
     // If it's a simple document from shared data, wrap in ODL format
     if (!(document as any).$schema) {
@@ -583,4 +590,54 @@ export async function GET(
     (document as any).meta?.project || "unknown",
   );
   return NextResponse.json(document);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const { id } = params;
+
+  let payload: any;
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON payload" },
+      { status: 400 },
+    );
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return NextResponse.json(
+      { error: "Document payload must be an object" },
+      { status: 400 },
+    );
+  }
+
+  const derivedHash =
+    typeof payload?.meta?.versioning?.content_hash === "string"
+      ? payload.meta.versioning.content_hash
+      : `sha256:${createHash("sha256")
+          .update(JSON.stringify(payload))
+          .digest("hex")
+          .slice(0, 12)}`;
+
+  const updated = updateDocumentRecord(id, {
+    document: payload,
+    contentHash: derivedHash,
+    version: payload?.meta?.versioning?.document_version,
+  });
+
+  if (!updated) {
+    return NextResponse.json({ error: "Document not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    document: payload,
+    document_id: id,
+    content_hash: updated.content_hash,
+    current_version: updated.current_version,
+    updated_at: updated.updated_at,
+  });
 }

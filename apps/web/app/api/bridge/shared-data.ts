@@ -273,6 +273,68 @@ export function getAllDocuments() {
   return mockDocuments;
 }
 
+export function updateDocumentRecord(
+  id: string,
+  {
+    document,
+    contentHash,
+    version,
+  }: {
+    document: any;
+    contentHash?: string;
+    version?: string | number;
+  },
+) {
+  const index = mockDocuments.findIndex((d) => d.id === id);
+  if (index === -1) {
+    return null;
+  }
+
+  const existing = mockDocuments[index];
+  const updatedAt = new Date().toISOString();
+
+  const resolvedContentHash =
+    contentHash ||
+    (typeof document?.meta?.versioning?.content_hash === "string"
+      ? document.meta.versioning.content_hash
+      : existing.content_hash);
+
+  let resolvedVersion = existing.current_version + 1;
+  if (typeof version === "number") {
+    resolvedVersion = version;
+  } else if (typeof version === "string") {
+    const parsed = parseInt(version.split(".")[0] ?? "", 10);
+    if (!Number.isNaN(parsed)) {
+      resolvedVersion = parsed;
+    }
+  }
+
+  const updated = {
+    ...existing,
+    current_version: resolvedVersion,
+    content_hash: resolvedContentHash,
+    updated_at: updatedAt,
+    document_data: document ?? existing.document_data,
+    odl_document: document,
+  };
+
+  mockDocuments[index] = updated;
+
+  const projectIndex = mockProjects.findIndex(
+    (project) => project.id === existing.project_id,
+  );
+  if (projectIndex !== -1) {
+    mockProjects[projectIndex] = {
+      ...mockProjects[projectIndex],
+      current_version: resolvedVersion,
+      content_hash: resolvedContentHash,
+      updated_at: updatedAt,
+    };
+  }
+
+  return updated;
+}
+
 // Simple notification store used by API routes
 export let mockNotifications: any[] = [];
 
