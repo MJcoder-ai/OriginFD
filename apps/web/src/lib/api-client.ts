@@ -48,6 +48,38 @@ export interface ProjectResponse {
   document_hash?: string | null;
 }
 
+export type LifecycleGateStatus =
+  | "pending"
+  | "in_review"
+  | "approved"
+  | "rejected"
+  | "blocked"
+  | "completed";
+
+export interface LifecycleGateResponse {
+  id: string;
+  name: string;
+  status: LifecycleGateStatus;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  updated_at?: string | null;
+  updated_by?: string | null;
+  notes?: string | null;
+  bottleneck?: string | null;
+}
+
+export interface LifecyclePhaseResponse {
+  id: string;
+  name: string;
+  status: string;
+  gates: LifecycleGateResponse[];
+}
+
+export interface ProjectLifecycleResponse {
+  phases: LifecyclePhaseResponse[];
+  bottlenecks?: any[];
+}
+
 export interface DocumentCreateRequest {
   project_name: string;
   portfolio_id?: string;
@@ -249,6 +281,12 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}`);
   }
 
+  async getProjectLifecycle(
+    projectId: string,
+  ): Promise<ProjectLifecycleResponse> {
+    return this.request(`projects/${projectId}/lifecycle`);
+  }
+
   async getDocument(documentId: string): Promise<any> {
     return this.request(`documents/${documentId}`);
   }
@@ -274,6 +312,18 @@ export class OriginFDClient {
 
   async getProjectReview(projectId: string): Promise<any> {
     return this.request(`projects/${projectId}/review`);
+  }
+
+  async updateProjectLifecycleGateStatus(
+    projectId: string,
+    gateId: string,
+    status: LifecycleGateStatus,
+    notes?: string,
+  ): Promise<any> {
+    return this.request(`projects/${projectId}/lifecycle/gates/${gateId}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status, notes }),
+    });
   }
 
   // ---- New (Phase-1) ----

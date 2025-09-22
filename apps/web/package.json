@@ -11,7 +11,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "playwright test -c ../../playwright.config.ts",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:tsx": "tsx --test tests/diff/json-patch-viewer.test.tsx tests/projects/lifecycle-journey.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -69,29 +70,19 @@
     "@types/nprogress": "^0.2.3",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
-<<<<<<< HEAD
-=======
     "@types/testing-library__jest-dom": "^5.14.9",
->>>>>>> origin/codex/implement-component-search-and-add-functionality
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.4",
-<<<<<<< HEAD
-    "jsdom": "^24.0.0",
-=======
     "jsdom": "^27.0.0",
->>>>>>> origin/codex/implement-component-search-and-add-functionality
     "postcss": "^8.4.32",
     "prisma": "^6.16.0",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.19.1",
     "typescript": "^5.3.3",
-<<<<<<< HEAD
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.0.0",
     "vitest": "^2.1.4"
-=======
-    "vitest": "^2.1.3"
->>>>>>> origin/codex/implement-component-search-and-add-functionality
   }
 }
