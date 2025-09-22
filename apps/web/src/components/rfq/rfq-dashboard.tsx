@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/api-client";
 import { RFQRequest, RFQStatus, BidStatus } from "@/lib/types";
 import RFQCreationWizard from "./rfq-creation-wizard";
 import {
@@ -92,9 +93,33 @@ export default function RFQDashboard({
   } = useQuery({
     queryKey: ["rfqs", statusFilter],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/rfq");
-      if (!response.ok) throw new Error("Failed to fetch RFQs");
-      return response.json();
+      try {
+        const params =
+          statusFilter !== "all"
+            ? { status: statusFilter as string }
+            : undefined;
+        const response = await apiClient.get(
+          "suppliers/rfqs",
+          params,
+        );
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (Array.isArray(response?.results)) {
+          return response.results;
+        }
+
+        if (Array.isArray(response?.rfqs)) {
+          return response.rfqs;
+        }
+
+        return [];
+      } catch (error) {
+        console.error("Failed to fetch RFQs", error);
+        return [];
+      }
     },
   });
 

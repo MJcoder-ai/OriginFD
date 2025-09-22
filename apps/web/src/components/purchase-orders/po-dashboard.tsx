@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/api-client";
 import { PurchaseOrder, POStatus, ApprovalStep } from "@/lib/types";
 import {
   Card,
@@ -123,17 +124,39 @@ export default function PODashboard({
   } = useQuery({
     queryKey: ["purchase-orders", statusFilter, searchTerm],
     queryFn: async () => {
-      let url = "/api/bridge/purchase-orders";
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
 
-      if (statusFilter !== "all") params.append("status", statusFilter);
-      if (searchTerm) params.append("search", searchTerm);
+      if (statusFilter !== "all") {
+        params.status = statusFilter as string;
+      }
 
-      if (params.toString()) url += `?${params.toString()}`;
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
 
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch purchase orders");
-      return response.json();
+      try {
+        const response = await apiClient.get(
+          "commerce/purchase-orders",
+          Object.keys(params).length > 0 ? params : undefined,
+        );
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (Array.isArray(response?.purchase_orders)) {
+          return response.purchase_orders;
+        }
+
+        if (Array.isArray(response?.results)) {
+          return response.results;
+        }
+
+        return [];
+      } catch (err) {
+        console.error("Failed to fetch purchase orders", err);
+        return [];
+      }
     },
   });
 
@@ -144,21 +167,15 @@ export default function PODashboard({
       action: "approve" | "reject";
       notes: string;
     }) => {
-      const response = await fetch(
-        `/api/bridge/purchase-orders/${data.poId}/approve`,
+      return apiClient.post(
+        `commerce/purchase-orders/${data.poId}/approve`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            approver_id: "current_user",
-            approver_role: userRole,
-            action: data.action,
-            notes: data.notes,
-          }),
+          approver_id: "current_user",
+          approver_role: userRole,
+          action: data.action,
+          notes: data.notes,
         },
       );
-      if (!response.ok) throw new Error("Failed to process approval");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
@@ -175,20 +192,14 @@ export default function PODashboard({
       newStatus: POStatus;
       notes: string;
     }) => {
-      const response = await fetch(
-        `/api/bridge/purchase-orders/${data.poId}/status`,
+      return apiClient.patch(
+        `commerce/purchase-orders/${data.poId}/status`,
         {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            new_status: data.newStatus,
-            updated_by: "current_user",
-            notes: data.notes,
-          }),
+          new_status: data.newStatus,
+          updated_by: "current_user",
+          notes: data.notes,
         },
       );
-      if (!response.ok) throw new Error("Failed to update status");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });

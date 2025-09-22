@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { componentAPI } from "@/lib/api-client";
 import {
   ComponentLifecycleManager,
   getStatusBadgeProps,
@@ -75,9 +76,28 @@ export default function LifecycleDashboard({
   const { data: lifecycleData, isLoading } = useQuery({
     queryKey: ["components-lifecycle", stageFilter, searchQuery],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/components");
-      if (!response.ok) throw new Error("Failed to fetch components");
-      return response.json();
+      try {
+        const params: Record<string, string> = {};
+
+        if (searchQuery) {
+          params.search = searchQuery;
+        }
+
+        const response = await componentAPI.listComponents(params);
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (Array.isArray(response?.components)) {
+          return response.components;
+        }
+
+        return [];
+      } catch (error) {
+        console.error("Failed to fetch components", error);
+        return [];
+      }
     },
   });
 
@@ -85,9 +105,12 @@ export default function LifecycleDashboard({
   const { data: stats } = useQuery({
     queryKey: ["component-stats"],
     queryFn: async () => {
-      const response = await fetch("/api/bridge/components/stats");
-      if (!response.ok) throw new Error("Failed to fetch stats");
-      return response.json();
+      try {
+        return await componentAPI.getStats();
+      } catch (error) {
+        console.error("Failed to fetch component stats", error);
+        return null;
+      }
     },
   });
 
@@ -98,20 +121,11 @@ export default function LifecycleDashboard({
       newStatus: ODLComponentStatus;
       reason: string;
     }) => {
-      const response = await fetch(
-        `/api/bridge/components/${data.componentId}/lifecycle`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            new_status: data.newStatus,
-            transition_reason: data.reason,
-            updated_by: "current_user",
-          }),
-        },
+      return componentAPI.transitionStatus(
+        data.componentId,
+        data.newStatus,
+        data.reason,
       );
-      if (!response.ok) throw new Error("Failed to transition component");
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["components-lifecycle"] });
