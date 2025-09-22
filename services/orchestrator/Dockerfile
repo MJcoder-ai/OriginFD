@@ -18,7 +18,7 @@ COPY services/orchestrator/requirements.txt ./service-requirements.txt
 # Create virtual environment and install dependencies
 RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r shared-requirements.txt && \
     pip install --no-cache-dir -r service-requirements.txt
 

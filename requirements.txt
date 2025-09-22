@@ -3,6 +3,7 @@
 
 # Build tools (required for Python 3.12)
 setuptools>=69.0.0
+wheel>=0.42.0
 
 # FastAPI and web framework
 fastapi==0.104.1
