@@ -180,6 +180,7 @@ def test_client(sample_document, monkeypatch):
     app.dependency_overrides[get_current_user] = lambda: {
         "id": str(user_id),
         "tenant_id": str(tenant_id),
+        "roles": ["engineer"],
     }
 
     client = TestClient(app)
@@ -232,3 +233,50 @@ def test_patch_document_success(test_client):
     assert fake_session.committed is True
     assert fake_session.rolled_back is False
     assert fake_session.added_objects, "DocumentVersion should be recorded"
+
+
+def test_patch_document_forbidden_for_viewer(test_client):
+    """Viewers lack the document update permission and receive a 403 response."""
+
+    document = test_client.document
+
+    test_client.app.dependency_overrides[get_current_user] = lambda: {
+        "id": str(uuid.uuid4()),
+        "tenant_id": str(document.tenant_id),
+        "roles": ["viewer"],
+    }
+
+    payload = {
+        "doc_id": str(document.id),
+        "doc_version": document.current_version,
+        "patch": [
+            {"op": "replace", "path": "/meta/project", "value": "Blocked Update"}
+        ],
+        "evidence": [],
+        "dry_run": False,
+        "change_summary": "Attempted rename",
+    }
+
+    response = test_client.post("/documents/patch", json=payload)
+
+    assert response.status_code == 403
+    body = response.json()
+    assert "insufficient permissions" in body["detail"].lower()
+
+
+def test_get_document_requires_permission(test_client):
+    """Users without document read access are blocked with HTTP 403."""
+
+    document = test_client.document
+
+    test_client.app.dependency_overrides[get_current_user] = lambda: {
+        "id": str(uuid.uuid4()),
+        "tenant_id": str(document.tenant_id),
+        "roles": ["guest"],
+    }
+
+    response = test_client.get(f"/documents/{document.id}")
+
+    assert response.status_code == 403
+    body = response.json()
+    assert "permissions" in body["detail"].lower()
