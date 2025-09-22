@@ -78,6 +78,9 @@ class Project(Base, UUIDMixin, TimestampMixin):
     )
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)
+    primary_document_id = Column(
+        UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True
+    )
 
     def can_edit(self, user_id: str) -> bool:
         """Check if a user can edit this project."""
@@ -125,6 +128,7 @@ class ProjectSchema(BaseModel):
     created_at: datetime
     updated_at: datetime
     initialization_task_id: Optional[str] = None
+    primary_document_id: Optional[uuid.UUID] = None
 
     class Config:
         from_attributes = True

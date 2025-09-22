@@ -5,10 +5,22 @@ models.Project management endpoints.
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import httpx
+
+
+
+# Simple auth bypass for testing
+def get_current_user(*args, **kwargs):
+    return {
+        "id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc",
+        "email": "admin@originfd.com",
+        "tenant_id": "11111111-1111-4111-8111-111111111111",
+    }
+
 from deps import get_current_user
+
 
 
 from core.config import get_settings
@@ -16,7 +28,11 @@ from core.config import get_settings
 
 # Temporary mock for testing without auth
 def get_mock_user():
-    return {"id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc", "email": "admin@originfd.com"}
+    return {
+        "id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc",
+        "email": "admin@originfd.com",
+        "tenant_id": "11111111-1111-4111-8111-111111111111",
+    }
 
 
 import models
@@ -136,6 +152,19 @@ class ProjectUpdateRequest(BaseModel):
         str_strip_whitespace = True
 
 
+class DocumentMetadata(BaseModel):
+    """Summary metadata about a project's associated document."""
+
+    id: str
+    content_hash: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class ProjectResponse(BaseModel):
     """Response model for project data."""
 
@@ -154,6 +183,8 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     initialization_task_id: Optional[str] = None
+    primary_document_id: Optional[str] = None
+    document: Optional[DocumentMetadata] = None
     document_id: Optional[str] = None
     document_hash: Optional[str] = None
 
@@ -191,8 +222,8 @@ class ProjectListResponse(BaseModel):
 
 def _get_project_document_metadata(
     db: Session, project_id: uuid.UUID, tenant_id: Optional[uuid.UUID] = None
-) -> Tuple[Optional[str], Optional[str]]:
-    """Return the latest document identifier/hash for a project if available."""
+) -> Optional[models.Document]:
+    """Return the latest document for a project if available."""
 
     document_query = db.query(models.Document).filter(
         models.Document.portfolio_id == project_id
@@ -201,12 +232,19 @@ def _get_project_document_metadata(
     if tenant_id:
         document_query = document_query.filter(models.Document.tenant_id == tenant_id)
 
-    document = document_query.order_by(models.Document.created_at.desc()).first()
+    return document_query.order_by(models.Document.created_at.desc()).first()
 
-    if not document:
-        return None, None
 
-    return str(document.id), document.content_hash
+def _build_document_metadata(document: models.Document) -> DocumentMetadata:
+    """Serialize a document ORM instance to response metadata."""
+
+    return DocumentMetadata(
+        id=str(document.id),
+        content_hash=document.content_hash,
+        version=document.current_version,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
+    )
 
 
 @router.get("/", response_model=ProjectListResponse)
@@ -294,25 +332,20 @@ async def create_project(
             detail="Invalid user identifier for project owner",
         )
 
-    tenant_uuid: Optional[uuid.UUID] = None
     tenant_id_value = current_user.get("tenant_id")
-    if tenant_id_value:
-        try:
-            tenant_uuid = uuid.UUID(str(tenant_id_value))
-        except (TypeError, ValueError):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tenant identifier",
-            )
-    else:
-        tenant_record = db.query(models.Tenant).first()
-        if tenant_record:
-            tenant_uuid = tenant_record.id
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tenant context is required to create a project",
-            )
+    if not tenant_id_value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant context is required to create a project",
+        )
+
+    try:
+        tenant_uuid = uuid.UUID(str(tenant_id_value))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tenant identifier",
+        ) from exc
 
     # Generate initial ODL-SD document for the project
     try:
@@ -375,6 +408,8 @@ async def create_project(
         db.add(document)
         db.flush()
 
+        project.primary_document_id = document.id
+
         document_version = SADocumentVersion(
             tenant_id=tenant_uuid,
             document_id=document.id,
@@ -399,6 +434,8 @@ async def create_project(
 
     db.refresh(project)
     db.refresh(document)
+
+    document_metadata = _build_document_metadata(document)
 
     # Submit initialization task to AI orchestrator
     settings = get_settings()
@@ -444,6 +481,9 @@ async def create_project(
         created_at=project.created_at,
         updated_at=project.updated_at,
         initialization_task_id=task_id,
+        primary_document_id=
+            str(project.primary_document_id) if project.primary_document_id else None,
+        document=document_metadata,
         document_id=str(document.id),
         document_hash=document_hash,
     )
@@ -494,9 +534,8 @@ async def get_project(
     except (TypeError, ValueError):
         tenant_uuid = None
 
-    document_id, document_hash = _get_project_document_metadata(
-        db, project.id, tenant_uuid
-    )
+    document = _get_project_document_metadata(db, project.id, tenant_uuid)
+    document_metadata = _build_document_metadata(document) if document else None
 
     return ProjectResponse(
         id=str(project.id),
@@ -513,8 +552,11 @@ async def get_project(
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
-        document_id=document_id,
-        document_hash=document_hash,
+        primary_document_id=
+            str(project.primary_document_id) if project.primary_document_id else None,
+        document=document_metadata,
+        document_id=str(document.id) if document else None,
+        document_hash=document.content_hash if document else None,
     )
 
 
@@ -578,9 +620,8 @@ async def update_project(
     except (TypeError, ValueError):
         tenant_uuid = None
 
-    document_id, document_hash = _get_project_document_metadata(
-        db, project.id, tenant_uuid
-    )
+    document = _get_project_document_metadata(db, project.id, tenant_uuid)
+    document_metadata = _build_document_metadata(document) if document else None
 
     return ProjectResponse(
         id=str(project.id),
@@ -597,8 +638,11 @@ async def update_project(
         owner_id=str(project.owner_id),
         created_at=project.created_at,
         updated_at=project.updated_at,
-        document_id=document_id,
-        document_hash=document_hash,
+        primary_document_id=
+            str(project.primary_document_id) if project.primary_document_id else None,
+        document=document_metadata,
+        document_id=str(document.id) if document else None,
+        document_hash=document.content_hash if document else None,
     )
 
 
