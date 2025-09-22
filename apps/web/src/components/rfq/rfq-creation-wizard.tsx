@@ -113,7 +113,6 @@ export default function RFQCreationWizard({
       try {
         const response = await componentAPI.listComponents({
           status: "available",
-          active_only: true,
         });
 
         if (Array.isArray(response)) {

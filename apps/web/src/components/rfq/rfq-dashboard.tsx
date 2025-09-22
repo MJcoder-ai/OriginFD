@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api-client";
+import { apiClient } from "@originfd/http-client";
 import { RFQRequest, RFQStatus, BidStatus } from "@/lib/types";
 import RFQCreationWizard from "./rfq-creation-wizard";
 import {
@@ -98,10 +98,7 @@ export default function RFQDashboard({
           statusFilter !== "all"
             ? { status: statusFilter as string }
             : undefined;
-        const response = await apiClient.get(
-          "suppliers/rfqs",
-          params,
-        );
+        const response = await apiClient.get("suppliers/rfqs", params);
 
         if (Array.isArray(response)) {
           return response;

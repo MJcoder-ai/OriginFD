@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import apiClient from "@/lib/api-client";
+import { apiClient } from "@originfd/http-client";
 import { PurchaseOrder, POStatus, ApprovalStep } from "@/lib/types";
 import {
   Card,
@@ -167,15 +167,12 @@ export default function PODashboard({
       action: "approve" | "reject";
       notes: string;
     }) => {
-      return apiClient.post(
-        `commerce/purchase-orders/${data.poId}/approve`,
-        {
-          approver_id: "current_user",
-          approver_role: userRole,
-          action: data.action,
-          notes: data.notes,
-        },
-      );
+      return apiClient.post(`commerce/purchase-orders/${data.poId}/approve`, {
+        approver_id: "current_user",
+        approver_role: userRole,
+        action: data.action,
+        notes: data.notes,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
@@ -192,14 +189,11 @@ export default function PODashboard({
       newStatus: POStatus;
       notes: string;
     }) => {
-      return apiClient.patch(
-        `commerce/purchase-orders/${data.poId}/status`,
-        {
-          new_status: data.newStatus,
-          updated_by: "current_user",
-          notes: data.notes,
-        },
-      );
+      return apiClient.patch(`commerce/purchase-orders/${data.poId}/status`, {
+        new_status: data.newStatus,
+        updated_by: "current_user",
+        notes: data.notes,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
