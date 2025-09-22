@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from fastapi.responses import JSONResponse, Response
-
 from odl_sd.schemas import OdlSdDocument
 
 

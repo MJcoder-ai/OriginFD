@@ -1,7 +1,7 @@
 """Add primary_document_id to projects
 
 Revision ID: b8f4a5b1cd23
-Revises: de1cf7c4075a
+Revises: 8d6c0a521db0
 Create Date: 2024-03-09 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b8f4a5b1cd23"
-down_revision = "de1cf7c4075a"
+down_revision = "8d6c0a521db0"
 branch_labels = None
 depends_on = None
 

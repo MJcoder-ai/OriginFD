@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import models
-from deps import get_current_user
 from core.database import SessionDep
 from core.performance import (
     cached_response,
@@ -18,6 +17,7 @@ from core.performance import (
     performance_metrics,
     rate_limit,
 )
+from deps import get_current_user
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_
