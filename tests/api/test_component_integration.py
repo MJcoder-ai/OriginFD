@@ -26,7 +26,7 @@ if PACKAGES_ROOT not in sys.path:
 
 
 from api.routers import component_integration  # noqa: E402
-from core.auth import get_current_user  # noqa: E402
+from deps import get_current_user  # noqa: E402
 from core.database import SessionDep  # noqa: E402
 import models  # noqa: E402
 from models.document import DocumentVersion  # noqa: E402

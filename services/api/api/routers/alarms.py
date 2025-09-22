@@ -7,7 +7,7 @@ import random
 from datetime import datetime
 from typing import Dict, List
 
-from api.routers.auth import get_current_user
+from deps import get_current_user
 from core.database import SessionDep
 from fastapi import (
     APIRouter,

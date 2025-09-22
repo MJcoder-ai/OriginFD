@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import models
-from core.auth import get_current_user
+from deps import get_current_user
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
