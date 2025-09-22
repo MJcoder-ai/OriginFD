@@ -11,6 +11,7 @@ from .document import Document
 from .inventory_record import InventoryRecord
 from .lifecycle import LifecycleGate, LifecyclePhase
 from .project import Project
+from .lifecycle import LifecycleGate, LifecycleGateApproval, LifecyclePhase
 from .supplier import Supplier
 
 # Import models in dependency order to avoid circular imports
@@ -33,4 +34,7 @@ __all__ = [
     "Supplier",
     "InventoryRecord",
     "Document",
+    "LifecyclePhase",
+    "LifecycleGate",
+    "LifecycleGateApproval",
 ]

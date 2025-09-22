@@ -5,9 +5,11 @@ models.Project management endpoints.
 import copy
 import logging
 import uuid
+
 from datetime import datetime, timedelta, timezone
 
 from typing import Any, Dict, List, Optional, Union, Literal
+
 
 
 import httpx
@@ -1144,12 +1146,119 @@ async def get_project_stats(
     }
 
 
+def _serialize_gate(
+    gate: "models.LifecycleGate",
+    approval: Optional["models.LifecycleGateApproval"] = None,
+) -> dict:
+    """Serialize a lifecycle gate with approval metadata."""
+
+    approval_obj = approval if approval is not None else getattr(gate, "approval", None)
+    approval_payload = approval_obj.as_dict() if approval_obj else None
+
+    payload = {
+        "id": str(gate.id),
+        "name": gate.name,
+        "status": gate.status,
+        "sequence": gate.sequence,
+        "description": gate.description,
+        "due_date": gate.due_date.isoformat() if gate.due_date else None,
+        "owner": gate.owner,
+        "metadata": gate.context_dict(),
+        "approval": approval_payload,
+        "approval_status": approval_payload["status"] if approval_payload else "pending",
+    }
+
+    return payload
+
+
+def _serialize_phase(
+    phase: "models.LifecyclePhase",
+    gates: Optional[List[dict]] = None,
+) -> dict:
+    """Serialize a lifecycle phase with ordered gates."""
+
+    if gates is None:
+        gates = [_serialize_gate(gate) for gate in sorted(phase.gates, key=lambda gate: gate.sequence)]
+    return {
+        "id": str(phase.id),
+        "name": phase.name,
+        "status": phase.status,
+        "sequence": phase.sequence,
+        "description": phase.description,
+        "metadata": phase.context_dict(),
+        "gates": gates,
+    }
+
+
+def _fetch_project_lifecycle_rows(db: Session, project_uuid: uuid.UUID):
+    """Return phase, gate, approval rows for lifecycle serialization."""
+
+    return (
+        db.query(
+            models.LifecyclePhase,
+            models.LifecycleGate,
+            models.LifecycleGateApproval,
+        )
+        .outerjoin(
+            models.LifecycleGate,
+            models.LifecycleGate.phase_id == models.LifecyclePhase.id,
+        )
+        .outerjoin(
+            models.LifecycleGateApproval,
+            models.LifecycleGateApproval.gate_id == models.LifecycleGate.id,
+        )
+        .filter(models.LifecyclePhase.project_id == project_uuid)
+        .order_by(models.LifecyclePhase.sequence, models.LifecycleGate.sequence)
+        .all()
+    )
+
+
 @router.get("/{project_id}/lifecycle")
 async def get_project_lifecycle(
     project_id: str,
+    db: SessionDep,
     current_user: dict = Depends(get_current_user),
 ):
     """Return lifecycle phases and gate checklist for a project."""
+
+
+    try:
+        project_uuid = uuid.UUID(project_id)
+    except ValueError as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=404, detail="Project not found") from exc
+
+    rows = _fetch_project_lifecycle_rows(db, project_uuid)
+
+    phase_cache: dict[uuid.UUID, tuple["models.LifecyclePhase", dict]] = {}
+
+    for phase, gate, approval in rows:
+        if phase.id not in phase_cache:
+            phase_cache[phase.id] = (phase, _serialize_phase(phase, gates=[]))
+
+        phase_payload = phase_cache[phase.id][1]
+
+        if gate is not None:
+            phase_payload["gates"].append(_serialize_gate(gate, approval))
+
+    if phase_cache:
+        ordered_phases = [
+            entry[1] for entry in sorted(
+                phase_cache.values(), key=lambda item: item[0].sequence
+            )
+        ]
+
+        for phase_payload in ordered_phases:
+            phase_payload["gates"].sort(key=lambda gate_payload: gate_payload["sequence"])
+    else:
+        phases_only = (
+            db.query(models.LifecyclePhase)
+            .filter(models.LifecyclePhase.project_id == project_uuid)
+            .order_by(models.LifecyclePhase.sequence)
+            .all()
+        )
+        ordered_phases = [_serialize_phase(phase) for phase in phases_only]
+
+    lifecycle_data = {"phases": ordered_phases}
 
     lifecycle_state = copy.deepcopy(_ensure_lifecycle(project_id))
 
@@ -1181,6 +1290,7 @@ async def update_lifecycle_gate_status(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is not permitted to approve lifecycle gates",
         )
+
 
     project = _get_project_or_404(db, project_id)
     project_id_str = str(project.id)
