@@ -42,7 +42,6 @@ RUN adduser --system --uid 1001 nextjs
 # Copy standalone output and static assets into the application directory
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/packages ./packages
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/apps/web ./apps/web
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
