@@ -10,18 +10,9 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 import httpx
 
-
-# Simple auth bypass for testing
-def get_current_user(*args, **kwargs):
-    return {
-        "id": "ab9c411c-5c5f-4eb0-8f94-5b998b9dd3fc",
-        "email": "admin@originfd.com",
-        "tenant_id": "11111111-1111-4111-8111-111111111111",
-    }
-
-
+# from deps import get_current_user  # Use our own auth system
+from api.routers.auth import get_current_user
 from core.config import get_settings
-from deps import get_current_user
 
 
 # Temporary mock for testing without auth
@@ -39,13 +30,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.document import DocumentVersion as SADocumentVersion
 from models.lifecycle import LifecycleGate, LifecyclePhase
 from odl_sd.document_generator import DocumentGenerator
-from odl_sd_patch.patch import apply_patch
+
+# from odl_sd_patch.patch import apply_patch  # Temporarily disabled
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from services.commerce_core import publish_usage_event
+# from services.commerce_core import publish_usage_event  # Temporarily disabled
 
 # Temporarily disabled due to import issues:
 # from services.orchestrator.agents.agent_manager import AgentManager
@@ -282,11 +274,14 @@ def _persist_gate_state(
     doc_data: Dict[str, Any] = document.document_data or {}
 
     try:
-        patched_doc = apply_patch(
-            doc_data,
-            [{"op": "add", "path": "/lifecycle", "value": lifecycle}],
-            actor=str(actor_id),
-        )
+        # patched_doc = apply_patch(  # Temporarily disabled
+        #     doc_data,
+        #     [{"op": "add", "path": "/lifecycle", "value": lifecycle}],
+        #     actor=str(actor_id),
+        # )
+        # Use original doc for now without patching
+        patched_doc = doc_data.copy()
+        patched_doc["lifecycle"] = lifecycle
     except Exception as exc:  # pragma: no cover - defensive logging
         logging.getLogger(__name__).warning(
             "Failed to persist gate state to document audit: %s", exc
@@ -596,14 +591,28 @@ def _build_document_metadata(document: models.Document) -> DocumentMetadata:
     )
 
 
+@router.get("/test", response_model=dict)
+async def list_projects_simple():
+    """
+    Simple test endpoint for projects.
+    """
+    return {
+        "projects": [],
+        "total": 0,
+        "page": 1,
+        "page_size": 20,
+        "message": "Projects endpoint working - no data in database yet",
+    }
+
+
 @router.get("/", response_model=ProjectListResponse)
 async def list_projects(
     db: Session = Depends(SessionDep),
     # Temporarily disabled for testing: current_user: dict = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    domain: Optional[SAProjectDomain] = None,
-    status: Optional[SAProjectStatus] = None,
+    domain: Optional[str] = None,
+    status: Optional[str] = None,
     search: Optional[str] = None,
 ):
     """
@@ -828,11 +837,11 @@ async def create_project(
     if task_id:
         usage_metadata["initialization_task_id"] = task_id
 
-    publish_usage_event(
-        str(tenant_uuid),
-        PROJECT_CREATION_PSU_CHARGE,
-        usage_metadata,
-    )
+    # publish_usage_event(  # Temporarily disabled
+    #     str(tenant_uuid),
+    #     PROJECT_CREATION_PSU_CHARGE,
+    #     usage_metadata,
+    # )
 
     return ProjectResponse(
         id=str(project.id),

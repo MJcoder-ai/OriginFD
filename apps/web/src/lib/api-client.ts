@@ -275,7 +275,8 @@ export class OriginFDClient {
   }
 
   async listProjects(): Promise<DocumentResponse[]> {
-    return this.request("projects/");
+    const response = await this.request("projects/");
+    return response.projects || [];
   }
 
   async getProject(projectId: string): Promise<any> {
@@ -336,10 +337,13 @@ export class OriginFDClient {
     status: LifecycleGateStatus,
     notes?: string,
   ): Promise<any> {
-    return this.request(`projects/${projectId}/lifecycle/gates/${gateId}/status`, {
-      method: "POST",
-      body: JSON.stringify({ status, notes }),
-    });
+    return this.request(
+      `projects/${projectId}/lifecycle/gates/${gateId}/status`,
+      {
+        method: "POST",
+        body: JSON.stringify({ status, notes }),
+      },
+    );
   }
 
   // ---- New (Phase-1) ----

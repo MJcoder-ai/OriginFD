@@ -7,7 +7,8 @@ from typing import Any, Dict, Literal
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from services.commerce_core import publish_usage_event
+# Temporarily disabled - import issue
+# from services.commerce_core import publish_usage_event
 
 # Temporarily disabled due to import issues:
 # from packages.py.odl_sd_patch.diff_utils import generate_diff_summary
@@ -49,11 +50,12 @@ async def handle_approval(req: ApprovalRequest) -> ApprovalResponse:
         "decision": req.decision,
         "has_summary": bool(summary["grouped_diffs"]),
     }
-    publish_usage_event(
-        tenant_id or "00000000-0000-0000-0000-000000000000",
-        APPROVAL_DECISION_PSU_CHARGE,
-        metadata,
-    )
+    # Temporarily disabled - publish_usage_event call
+    # publish_usage_event(
+    #     tenant_id or "00000000-0000-0000-0000-000000000000",
+    #     APPROVAL_DECISION_PSU_CHARGE,
+    #     metadata,
+    # )
     return ApprovalResponse(
         project_id=req.project_id,
         decision=req.decision,

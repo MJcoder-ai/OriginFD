@@ -35,8 +35,6 @@ def create_database_engine():
         "connect_args": {
             "connect_timeout": settings.DATABASE_CONNECT_TIMEOUT,
             "application_name": f"OriginFD-API-{settings.ENVIRONMENT}",
-            # Enable prepared statements for better performance
-            "options": "-c default_transaction_isolation=read committed",
         },
     }
 
@@ -136,7 +134,8 @@ def get_db_with_tenant(tenant_id: str) -> Generator[Session, None, None]:
     """
     Create database session with tenant context for RLS.
     """
-    db = SessionLocal()
+    session_local = get_session_local()
+    db = session_local()
     try:
         # Set tenant context for Row Level Security
         db.execute(
