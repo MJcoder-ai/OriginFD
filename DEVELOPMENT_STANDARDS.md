@@ -83,6 +83,26 @@ Type error: Property 'dedupe_pending' does not exist on type '{ draft: string; p
 **Correct Code**: `<Badge>{component.component_management?.status || 'draft'}</Badge>`
 **Solution**: Always verify API response structure and use optional chaining with fallbacks
 
+### Python API Quality Guardrails
+
+- **JWT secrets** must always come from `Settings.get_secret_key()` (Secret Manager or environment) – hardcoded secrets are forbidden and will trigger Bandit failures.
+- **Import hygiene**: remove unused imports/variables before committing; run `ruff --select F401,F841` or `poetry run python -m compileall` locally to catch them.
+- **Line length**: Python files follow Black's 88-character limit. Use `python tools/check_line_length.py` (or the inline helper below) before pushing:
+
+  ```bash
+  python - <<'PY'
+  from pathlib import Path
+  for path in Path('services/api').rglob('*.py'):
+      for i, line in enumerate(path.read_text().splitlines(), start=1):
+          if len(line) > 88:
+              print(f"{path}:{i}:{len(line)}")
+  PY
+  ```
+
+- **Type safety**: add forward references guarded by `TYPE_CHECKING` for SQLAlchemy relationships instead of importing models at runtime to avoid circular imports and MyPy errors.
+- **Token logic**: call `Settings.get_secret_key()` in every token encode/decode utility to ensure staging/production secrets flow through configuration.
+- **Testing**: execute `poetry run pytest tests -q` for backend changes and capture any missing fixtures before opening a PR. When pre-commit is unavailable, manually run `ruff`, `black --check`, and `pytest`.
+
 ## Mandatory Development Process for All AIs
 
 ### 1. Problem Analysis Phase
