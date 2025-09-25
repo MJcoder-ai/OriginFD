@@ -7,13 +7,11 @@ from typing import Optional
 
 import bcrypt
 import jwt
-import models
 from core.config import get_settings
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 security = HTTPBearer()
@@ -69,8 +67,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         )
 
     to_encode.update({"exp": expire})
-    # Use hardcoded secret for development
-    secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
+    secret_key = settings.get_secret_key()
     return jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
 
 
@@ -80,8 +77,7 @@ def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
-    # Use hardcoded secret for development
-    secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
+    secret_key = settings.get_secret_key()
     return jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
 
 
@@ -89,8 +85,7 @@ def decode_token(token: str) -> dict:
     """Decode and verify JWT token."""
     settings = get_settings()
     try:
-        # Use hardcoded secret for development
-        secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
+        secret_key = settings.get_secret_key()
         payload = jwt.decode(token, secret_key, algorithms=[settings.ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
@@ -153,14 +148,16 @@ async def login(login_request: LoginRequest):
     """
     # Temporary mock authentication for demo - skip database query for now
     # TODO: Fix SQLAlchemy relationship issue between Project and primary_document
-    if login_request.email not in ["admin@originfd.com", "user@originfd.com"]:
+    allowed_emails = {"admin@originfd.com", "user@originfd.com"}
+    if login_request.email not in allowed_emails:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if login_request.password not in ["admin", "password"]:
+    allowed_passwords = {"admin", "password"}
+    if login_request.password not in allowed_passwords:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -171,7 +168,11 @@ async def login(login_request: LoginRequest):
     user_data = {
         "sub": "mock-user-id",
         "email": login_request.email,
-        "roles": ["admin"] if login_request.email == "admin@originfd.com" else ["user"],
+        "roles": (
+            ["admin"]
+            if login_request.email == "admin@originfd.com"
+            else ["user"]
+        ),
     }
 
     settings = get_settings()
@@ -198,13 +199,15 @@ async def refresh_token(
 
     if payload.get("type") != "refresh":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
         )
 
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
         )
 
     # TODO: Get user from database and verify they're still active

@@ -2,8 +2,6 @@
 Database models for ODL-SD documents.
 """
 
-from datetime import datetime
-
 from sqlalchemy import (
     Boolean,
     Column,
@@ -16,7 +14,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import text
 
 from .base import Base, TenantMixin, TimestampMixin, UUIDMixin
 
@@ -56,7 +53,13 @@ class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
     access_controls = relationship("DocumentAccess", back_populates="document")
 
     def __repr__(self):
-        return f"<Document(id={self.id}, project={self.project_name}, version={self.current_version})>"
+        return (
+            "<Document(id={id}, project={project}, version={version})>".format(
+                id=self.id,
+                project=self.project_name,
+                version=self.current_version,
+            )
+        )
 
 
 class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -93,7 +96,12 @@ class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
     document = relationship("Document", back_populates="versions")
 
     def __repr__(self):
-        return f"<DocumentVersion(document_id={self.document_id}, version={self.version_number})>"
+        return (
+            "<DocumentVersion(document_id={doc}, version={version})>".format(
+                doc=self.document_id,
+                version=self.version_number,
+            )
+        )
 
 
 class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -114,7 +122,8 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
 
     # Permission flags
     permissions = Column(
-        JSONB, nullable=False
+        JSONB,
+        nullable=False,
     )  # {"read": true, "write": false, "approve": false}
 
     # Access constraints
@@ -129,7 +138,13 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
     document = relationship("Document", back_populates="access_controls")
 
     def __repr__(self):
-        return f"<DocumentAccess(document_id={self.document_id}, user_id={self.user_id}, role={self.role})>"
+        return (
+            "<DocumentAccess(document_id={doc}, user_id={user}, role={role})>".format(
+                doc=self.document_id,
+                user=self.user_id,
+                role=self.role,
+            )
+        )
 
 
 # Row Level Security (RLS) policies - applied at database level

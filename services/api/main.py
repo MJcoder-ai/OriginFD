@@ -10,26 +10,28 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 # Include core API routers
-from api.routers import (  # alarms,; approvals,; commerce,; documents,; orchestrator,; projects,  # Temporarily disabled
+from api.routers import (
+    alarms,
+    approvals,
     auth,
+    commerce,
+    component_integration,
+    documents,
     health,
+    marketplace,
+    orchestrator,
+    projects,
+    suppliers,
 )
 from core.config import get_settings
 from core.database import get_engine
 from core.logging_config import setup_logging
-from core.performance import compression_middleware, db_monitor, health_monitor
+from core.performance import health_monitor
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from simple_components import router as simple_components_router
-
-# Temporarily disabled: , auth
-# from api.routers import commerce
-
-# Temporarily disabled due to import issues:
-# from api.routers import documents, marketplace, components, component_integration, suppliers
 
 # Set up logging
 setup_logging()
@@ -148,26 +150,49 @@ app.include_router(projects.router, prefix="/projects", tags=["projects"])
 app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
 app.include_router(documents.router, prefix="/documents", tags=["documents"])
-app.include_router(documents.project_router, prefix="/projects", tags=["documents"])
-app.include_router(simple_components_router, prefix="/components", tags=["components"])
+app.include_router(
+    documents.project_router,
+    prefix="/projects",
+    tags=["documents"],
+)
+app.include_router(
+    simple_components_router,
+    prefix="/components",
+    tags=["components"],
+)
 app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
-app.include_router(orchestrator.router, prefix="/orchestrator", tags=["orchestrator"])
-app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
+app.include_router(
+    orchestrator.router,
+    prefix="/orchestrator",
+    tags=["orchestrator"],
+)
+app.include_router(
+    component_integration.router,
+    prefix="/component-integration",
+    tags=["component-integration"],
+)
 app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
-app.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])
+app.include_router(
+    marketplace.router,
+    prefix="/marketplace",
+    tags=["marketplace"],
+)
 
 
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
+    requests_processed = health_monitor.request_count
+    error_rate = health_monitor.error_count / max(requests_processed, 1)
+
     return {
         "name": "OriginFD API Gateway",
         "version": "0.1.0",
         "status": "operational",
         "docs": "/docs",
         "performance": {
-            "requests_processed": health_monitor.request_count,
-            "error_rate": f"{(health_monitor.error_count / max(health_monitor.request_count, 1) * 100):.2f}%",
+            "requests_processed": requests_processed,
+            "error_rate": f"{(error_rate * 100):.2f}%",
         },
     }
 
@@ -178,7 +203,8 @@ async def health_detailed():
     return await health_monitor.get_health_status()
 
 
-# In-memory storage for projects, documents, and components (replace with database later)
+# In-memory storage for projects, documents, and components
+# TODO: replace with persistent database layer
 projects_store = {}
 documents_store = {}
 components_store = {}

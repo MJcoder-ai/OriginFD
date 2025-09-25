@@ -6,7 +6,7 @@ import json
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import Boolean, Column
@@ -21,6 +21,10 @@ from .base import Base, TimestampMixin, UUIDMixin
 def _document_id_column():
     from services.api.models.document import Document
     return Document.__table__.c.id
+
+
+if TYPE_CHECKING:
+    from .document import Document
 
 
 class ProjectDomain(str, Enum):
@@ -81,13 +85,11 @@ class Project(Base, UUIDMixin, TimestampMixin):
     primary_document: Optional["Document"] = relationship(
         "Document",
         foreign_keys=[primary_document_id],
-        primaryjoin=lambda: Project.primary_document_id == foreign(_document_id_column()),
+        primaryjoin=lambda: Project.primary_document_id
+        == foreign(_document_id_column()),
     )
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)
-    primary_document_id = Column(
-        UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True
-    )
 
     lifecycle_phases = relationship(
         "LifecyclePhase",
