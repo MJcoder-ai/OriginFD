@@ -1,0 +1,29 @@
+name: api-contract
+
+on:
+  pull_request:
+    paths:
+      - "services/api/**"
+      - "tests/api/**"
+      - "docs/lifecycle/**"
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+      DATABASE_URL: sqlite:///./test.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run contract tests (nocov)
+        run: |
+          python -m pytest -c tests/pytest.nocov.ini \
+            tests/api/projects/test_lifecycle_contract.py \
+            tests/api/projects/test_lifecycle_edge_gates.py -q

@@ -12,10 +12,7 @@ export default defineConfig({
       "@/lib": path.resolve(__dirname, "src/lib"),
       "@/hooks": path.resolve(__dirname, "src/hooks"),
       "@/utils": path.resolve(__dirname, "src/utils"),
-      "@originfd/ui": path.resolve(
-        __dirname,
-        "test/mocks/originfd-ui.tsx",
-      ),
+      "@originfd/ui": path.resolve(__dirname, "test/mocks/originfd-ui.tsx"),
     },
   },
   test: {
@@ -25,6 +22,7 @@ export default defineConfig({
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
       "app/**/*.{test,spec}.{ts,tsx}",
+      "tests/**/*.{test,spec}.{ts,tsx}",
     ],
     css: true,
   },

@@ -36,6 +36,16 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
+# Non-blocking prestart (migrate + seed); safe in dev/CI
+try:
+    from services.api import prestart as _prestart  # noqa: F401
+    _prestart.main()
+except Exception:  # pragma: no cover
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        "prestart skipped (dev env or missing settings)"
+    )
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown tasks."""
@@ -131,21 +141,20 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
-# Include routers - temporarily reduced for testing
+# Include routers - production architecture enabled
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
-# app.include_router(projects.router, prefix="/projects", tags=["projects"])  # Temporarily disabled
-# app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
-# app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
-# app.include_router(documents.router, prefix="/documents", tags=["documents"])
-# app.include_router(documents.project_router, prefix="/projects", tags=["documents"])
-# app.include_router(simple_components_router, prefix="/components", tags=["components"])
-# app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
-# app.include_router(orchestrator.router, prefix="/orchestrator", tags=["orchestrator"])
-
-# app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
-# app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
-# app.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])
+app.include_router(projects.router, prefix="/projects", tags=["projects"])
+app.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
+app.include_router(alarms.router, prefix="/alarms", tags=["alarms"])
+app.include_router(documents.router, prefix="/documents", tags=["documents"])
+app.include_router(documents.project_router, prefix="/projects", tags=["documents"])
+app.include_router(simple_components_router, prefix="/components", tags=["components"])
+app.include_router(commerce.router, prefix="/commerce", tags=["commerce"])
+app.include_router(orchestrator.router, prefix="/orchestrator", tags=["orchestrator"])
+app.include_router(component_integration.router, prefix="/component-integration", tags=["component-integration"])
+app.include_router(suppliers.router, prefix="/suppliers", tags=["suppliers"])
+app.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])
 
 
 @app.get("/")
@@ -272,87 +281,7 @@ async def get_project_documents(project_id: str):
     return project_documents
 
 
-@app.get("/projects/{project_id}/lifecycle")
-async def get_project_lifecycle(project_id: str):
-    """Get project lifecycle phases and gates."""
-    if project_id not in projects_store:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    # Return standard project lifecycle phases for energy projects
-    lifecycle = {
-        "phases": [
-            {
-                "id": "concept",
-                "name": "Concept Development",
-                "status": "completed",
-                "gates": [
-                    {
-                        "id": "gate-1",
-                        "name": "Feasibility Gate",
-                        "status": "approved",
-                        "approved_by": "admin@originfd.com",
-                        "approved_at": "2025-09-20T10:00:00Z",
-                        "notes": "Project shows good technical and commercial feasibility",
-                    }
-                ],
-            },
-            {
-                "id": "design",
-                "name": "Design Phase",
-                "status": "in_progress",
-                "gates": [
-                    {
-                        "id": "gate-2",
-                        "name": "Design Review Gate",
-                        "status": "in_review",
-                        "notes": "Preliminary design review in progress",
-                    }
-                ],
-            },
-            {
-                "id": "procurement",
-                "name": "Procurement",
-                "status": "pending",
-                "gates": [
-                    {
-                        "id": "gate-3",
-                        "name": "Procurement Gate",
-                        "status": "pending",
-                        "notes": "Awaiting design completion",
-                    }
-                ],
-            },
-            {
-                "id": "construction",
-                "name": "Construction",
-                "status": "pending",
-                "gates": [
-                    {
-                        "id": "gate-4",
-                        "name": "Construction Gate",
-                        "status": "pending",
-                        "notes": "Awaiting procurement completion",
-                    }
-                ],
-            },
-            {
-                "id": "commissioning",
-                "name": "Commissioning",
-                "status": "pending",
-                "gates": [
-                    {
-                        "id": "gate-5",
-                        "name": "Final Gate",
-                        "status": "pending",
-                        "notes": "Project completion and handover",
-                    }
-                ],
-            },
-        ],
-        "bottlenecks": [],
-    }
-
-    return lifecycle
+# Lifecycle endpoint now handled by projects router - removed development bypass
 
 
 @app.get("/documents/{document_id}")

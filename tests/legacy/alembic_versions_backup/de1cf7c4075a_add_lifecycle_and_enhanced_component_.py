@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.xfail(reason="Legacy in-memory lifecycle; superseded by DB-backed model", strict=False)
+
 """add_lifecycle_and_enhanced_component_fields
 
 Revision ID: de1cf7c4075a

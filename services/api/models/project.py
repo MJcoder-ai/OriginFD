@@ -13,9 +13,14 @@ from sqlalchemy import Boolean, Column
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, foreign
 
 from .base import Base, TimestampMixin, UUIDMixin
+
+
+def _document_id_column():
+    from services.api.models.document import Document
+    return Document.__table__.c.id
 
 
 class ProjectDomain(str, Enum):
@@ -74,7 +79,9 @@ class Project(Base, UUIDMixin, TimestampMixin):
         nullable=True,
     )
     primary_document: Optional["Document"] = relationship(
-        "Document", foreign_keys=[primary_document_id]
+        "Document",
+        foreign_keys=[primary_document_id],
+        primaryjoin=lambda: Project.primary_document_id == foreign(_document_id_column()),
     )
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)
@@ -86,7 +93,7 @@ class Project(Base, UUIDMixin, TimestampMixin):
         "LifecyclePhase",
         back_populates="project",
         cascade="all, delete-orphan",
-        order_by="LifecyclePhase.position",
+        order_by="LifecyclePhase.order",
     )
     lifecycle_gates = relationship(
         "LifecycleGate",

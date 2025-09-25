@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.xfail(reason="Legacy in-memory lifecycle; superseded by DB-backed model", strict=False)
+
 """Add component management schema
 
 Revision ID: 752df9eaede8

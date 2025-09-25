@@ -3,6 +3,7 @@ Alembic environment configuration for OriginFD database migrations.
 """
 
 import logging
+import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -10,15 +11,22 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# Add the parent directory to Python path to import models
-sys.path.append(str(Path(__file__).parent.parent))
+# Ensure repository root is on sys.path so packages import cleanly
+try:
+    from tools.paths import ensure_repo_on_path  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
 
-# Import all models to ensure they're registered with Base
-import models  # noqa: E402, F401
+    def ensure_repo_on_path() -> None:
+        root = Path(__file__).resolve().parents[3]
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+
+
+ensure_repo_on_path()
+
 from core.config import get_settings  # noqa: E402
 
-# Get Base from the models module to avoid direct import
-Base = models.Base
+from services.api.models import Base  # noqa: E402
 
 # Alembic Config object
 config = context.config
@@ -34,7 +42,7 @@ target_metadata = Base.metadata
 
 # Get database URL from settings
 settings = get_settings()
-database_url = settings.get_database_url()
+database_url = os.getenv("DATABASE_URL", settings.get_database_url())
 config.set_main_option("sqlalchemy.url", database_url)
 
 
@@ -68,7 +76,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
     """
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    configuration["sqlalchemy.url"] = database_url
 
     connectable = engine_from_config(
         configuration,

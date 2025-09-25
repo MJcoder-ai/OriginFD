@@ -2,17 +2,57 @@
 models.Project management endpoints.
 """
 
-import copy
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Literal, Optional, Union
+from datetime import datetime, timezone
+from types import SimpleNamespace
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
-
-# from deps import get_current_user  # Use our own auth system
 from api.routers.auth import get_current_user
 from core.config import get_settings
+from core.database import SessionDep
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from odl_sd.document_generator import DocumentGenerator
+
+# from odl_sd_patch.patch import apply_patch  # Temporarily disabled
+from pydantic import BaseModel, Field, validator
+from sqlalchemy import and_, or_
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from services.api.domain.lifecycle_service import (
+    ForbiddenApprovalError,
+    GateUpdateError,
+    update_gate_status,
+)
+from services.api.domain.lifecycle_view import build_lifecycle_view
+from services.api.models.document import Document as SADocument
+from services.api.models.document import DocumentVersion as SADocumentVersion
+from services.api.models.lifecycle import ApprovalDecision, GateStatus
+from services.api.models.project import Project as SAProject
+from services.api.models.project import (
+    ProjectDomain as SAProjectDomain,  # type: ignore  # circular import friendliness
+)
+from services.api.models.project import ProjectScale as SAProjectScale
+from services.api.models.project import ProjectStatus as SAProjectStatus
+from services.api.seeders.lifecycle_seeder import seed_lifecycle_catalog
+
+try:
+    from services.api.domain.lifecycle_hooks import emit_phase_milestone
+except ImportError:  # pragma: no cover
+    emit_phase_milestone = None
+
+logger = logging.getLogger(__name__)
+
+models = SimpleNamespace(
+    Project=SAProject,
+    Document=SADocument,
+    ProjectDomain=SAProjectDomain,
+    ProjectScale=SAProjectScale,
+    ProjectStatus=SAProjectStatus,
+)
 
 
 # Temporary mock for testing without auth
@@ -24,18 +64,8 @@ def get_mock_user():
     }
 
 
-import models
-from core.database import SessionDep
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from models.document import DocumentVersion as SADocumentVersion
-from models.lifecycle import LifecycleGate, LifecyclePhase
-from odl_sd.document_generator import DocumentGenerator
-
 # from odl_sd_patch.patch import apply_patch  # Temporarily disabled
-from pydantic import BaseModel, Field, validator
-from sqlalchemy import and_, or_
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+
 
 # from services.commerce_core import publish_usage_event  # Temporarily disabled
 
@@ -51,13 +81,18 @@ class AgentManager:
         return []  # TODO: Implement actual bottleneck detection
 
 
-from models.project import (
-    ProjectDomain as SAProjectDomain,  # type: ignore  # circular import friendliness
-)
-from models.project import ProjectScale as SAProjectScale
-from models.project import ProjectStatus as SAProjectStatus
-
 router = APIRouter()
+
+optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_optional_user(
+    db: SessionDep,
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer),
+):
+    if credentials is None:
+        return None
+    return await get_current_user(db=db, credentials=credentials)
 
 
 PROJECT_CREATION_PSU_CHARGE = 50
@@ -65,97 +100,54 @@ PROJECT_CREATION_PSU_CHARGE = 50
 ALLOWED_GATE_APPROVER_ROLES = {"admin", "engineer", "project_manager", "approver"}
 
 
-def _create_default_lifecycle() -> Dict[str, Any]:
-    """Construct the default lifecycle template for new projects."""
+STATUS_MAP = {
+    "NOT_STARTED": "pending",
+    "IN_PROGRESS": "in_review",
+    "BLOCKED": "blocked",
+    "APPROVED": "approved",
+    "REJECTED": "rejected",
+}
 
-    return {
-        "phases": [
+
+def _ensure_lifecycle(db: Session, project: models.Project) -> Dict[str, Any]:
+    """Load lifecycle state from the database for backward compatibility."""
+
+    _seed_project_lifecycle(db, project)
+    lifecycle_view = build_lifecycle_view(db, project.id)
+    phases: List[Dict[str, Any]] = []
+
+    for phase in lifecycle_view:
+        gates: List[Dict[str, Any]] = []
+        for gate in phase.get("gates", []):
+            gate_code = gate.get("gate_code")
+            status_raw = str(gate.get("status", "NOT_STARTED")).upper()
+            gates.append(
+                {
+                    "id": gate_code,
+                    "key": gate.get("key", gate_code),
+                    "name": gate.get("name", "Gate"),
+                    "status": STATUS_MAP.get(status_raw, status_raw.lower()),
+                    "approved_by": None,
+                    "approved_at": None,
+                    "updated_at": None,
+                    "updated_by": None,
+                    "notes": None,
+                }
+            )
+
+        phases.append(
             {
-                "id": "design",
-                "name": "Design",
-                "status": "not_started",
-                "gates": [
-                    {
-                        "id": "site_assessment",
-                        "name": "Site Assessment",
-                        "status": "pending",
-                        "approved_by": None,
-                        "approved_at": None,
-                        "updated_at": None,
-                        "updated_by": None,
-                        "notes": None,
-                    },
-                    {
-                        "id": "bom_approval",
-                        "name": "BOM Approval",
-                        "status": "pending",
-                        "approved_by": None,
-                        "approved_at": None,
-                        "updated_at": None,
-                        "updated_by": None,
-                        "notes": None,
-                    },
-                ],
-            },
-            {
-                "id": "procurement",
-                "name": "Procurement",
-                "status": "upcoming",
-                "gates": [
-                    {
-                        "id": "supplier_selection",
-                        "name": "Supplier Selection",
-                        "status": "pending",
-                        "approved_by": None,
-                        "approved_at": None,
-                        "updated_at": None,
-                        "updated_by": None,
-                        "notes": None,
-                    },
-                    {
-                        "id": "contract_signed",
-                        "name": "Contract Signed",
-                        "status": "pending",
-                        "approved_by": None,
-                        "approved_at": None,
-                        "updated_at": None,
-                        "updated_by": None,
-                        "notes": None,
-                    },
-                ],
-            },
-            {
-                "id": "construction",
-                "name": "Construction",
-                "status": "upcoming",
-                "gates": [
-                    {
-                        "id": "mobilization",
-                        "name": "Mobilization",
-                        "status": "pending",
-                        "approved_by": None,
-                        "approved_at": None,
-                        "updated_at": None,
-                        "updated_by": None,
-                        "notes": None,
-                    }
-                ],
-            },
-        ]
-    }
+                "id": str(phase.get("phase_key")),
+                "name": phase.get("title"),
+                "status": phase.get("status", "not_started"),
+                "sequence": phase.get("order"),
+                "description": phase.get("description"),
+                "metadata": {},
+                "gates": gates,
+            }
+        )
 
-
-PROJECT_LIFECYCLE_STATE: Dict[str, Dict[str, Any]] = {}
-
-
-def _ensure_lifecycle(project_id: str) -> Dict[str, Any]:
-    """Return existing lifecycle data for a project or initialize it."""
-
-    lifecycle = PROJECT_LIFECYCLE_STATE.get(project_id)
-    if lifecycle is None:
-        lifecycle = _create_default_lifecycle()
-        PROJECT_LIFECYCLE_STATE[project_id] = lifecycle
-    return lifecycle
+    return {"phases": phases}
 
 
 def _get_project_or_404(db: Session, project_id: str) -> models.Project:
@@ -456,8 +448,129 @@ class ProjectListResponse(BaseModel):
 class GateStatusUpdateRequest(BaseModel):
     """Payload for updating a lifecycle gate status."""
 
-    status: Literal["pending", "in_review", "approved", "rejected", "blocked"]
-    notes: Optional[str] = Field(None, max_length=500)
+    phase_code: int = Field(..., ge=0, le=99, example=0)
+    gate_code: Optional[str] = Field(None, pattern=r"^G\d{1,2}$", example="G0")
+    decision: ApprovalDecision = Field(..., example=ApprovalDecision.APPROVE.value)
+    role_key: str = Field(..., min_length=1, example="role.project_manager")
+    comment: Optional[str] = Field(None, max_length=500, example="Looks good")
+
+    class Config:
+        json_schema_extra = {
+            "examples": [
+                {
+                    "phase_code": 0,
+                    "gate_code": "G0",
+                    "decision": "APPROVE",
+                    "role_key": "role.project_manager",
+                    "comment": "baseline complete",
+                }
+            ]
+        }
+
+
+def _handle_gate_approval_request(
+    *,
+    project_id: str,
+    request: GateStatusUpdateRequest,
+    db: Session,
+    current_user: dict,
+    gate_code_override: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Shared gate approval workflow for lifecycle gate approvals."""
+
+    user_roles = set()
+    for role in current_user.get("roles", []):
+        if role is None:
+            continue
+        role_str = str(role).lower()
+        user_roles.add(role_str)
+        if role_str.startswith("role."):
+            user_roles.add(role_str.split("role.", 1)[1])
+    logger.debug(
+        "Gate approval roles=%s normalized=%s",
+        current_user.get("roles"),
+        sorted(user_roles),
+    )
+    if not user_roles.intersection(ALLOWED_GATE_APPROVER_ROLES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not permitted to approve lifecycle gates",
+        )
+
+    project = _get_project_or_404(db, project_id)
+    _seed_project_lifecycle(db, project)
+
+    raw_actor_id = current_user.get("id")
+    if not raw_actor_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current user identifier missing",
+        )
+    try:
+        approver_uuid = uuid.UUID(str(raw_actor_id))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user identifier",
+        ) from exc
+
+    gate_code = gate_code_override or request.gate_code
+    if not gate_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gate code is required",
+        )
+
+    try:
+        decision_enum = ApprovalDecision(request.decision)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported decision value",
+        ) from exc
+
+    try:
+        gate, _approval = update_gate_status(
+            db,
+            project_id=project.id,
+            phase_code=request.phase_code,
+            gate_code=gate_code,
+            decision=decision_enum,
+            role_key=request.role_key,
+            approver_user_id=approver_uuid,
+            comment=request.comment,
+        )
+    except ForbiddenApprovalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+    except GateUpdateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+    lifecycle_state = _ensure_lifecycle(db, project)
+    progress = _recalculate_progress(lifecycle_state)
+    project.display_status = str(progress["display_status"])
+    project.completion_percentage = int(progress["completion_percentage"])
+    project.updated_at = datetime.now(timezone.utc)
+
+    _persist_gate_state(db, project, lifecycle_state, str(approver_uuid))
+
+    try:
+        db.commit()
+    except SQLAlchemyError as exc:  # pragma: no cover - defensive
+        db.rollback()
+        logger.exception("Failed to update lifecycle gate: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update lifecycle gate",
+        ) from exc
+
+    db.refresh(project)
+    db.refresh(gate)
+
+    return build_lifecycle_view(db, project.id)
 
 
 class GateStatusResponse(BaseModel):
@@ -473,95 +586,12 @@ class GateStatusResponse(BaseModel):
     notes: Optional[str]
 
 
-DEFAULT_LIFECYCLE_TEMPLATE = [
-    {
-        "key": "design",
-        "name": "Design",
-        "status": "not_started",
-        "gates": [
-            {
-                "key": "site_assessment",
-                "name": "Site Assessment",
-                "status": "not_started",
-            },
-            {"key": "bom_approval", "name": "BOM Approval", "status": "not_started"},
-        ],
-    },
-    {
-        "key": "procurement",
-        "name": "Procurement",
-        "status": "not_started",
-        "gates": [
-            {
-                "key": "supplier_selection",
-                "name": "Supplier Selection",
-                "status": "not_started",
-            },
-            {
-                "key": "contract_signed",
-                "name": "Contract Signed",
-                "status": "not_started",
-            },
-        ],
-    },
-    {
-        "key": "construction",
-        "name": "Construction",
-        "status": "not_started",
-        "gates": [
-            {"key": "mobilization", "name": "Mobilization", "status": "not_started"},
-        ],
-    },
-]
-
-
 def _seed_project_lifecycle(db: Session, project: models.Project) -> None:
-    """Ensure a project has baseline lifecycle data."""
-
-    if not project.id:
+    """Ensure a project has catalog-backed lifecycle data."""
+    if not project or not project.id:
         return
-
-    has_phases = (
-        db.query(LifecyclePhase)
-        .filter(LifecyclePhase.project_id == project.id)
-        .limit(1)
-        .count()
-    )
-    if has_phases:
-        return
-
-    phases: List[LifecyclePhase] = []
-    for index, phase_template in enumerate(DEFAULT_LIFECYCLE_TEMPLATE, start=1):
-        phase = LifecyclePhase(
-            project=project,
-            key=phase_template["key"],
-            name=phase_template["name"],
-            status=phase_template.get("status", "not_started"),
-            position=index,
-        )
-
-        gates: List[LifecycleGate] = []
-        for gate_index, gate_template in enumerate(
-            phase_template.get("gates", []), start=1
-        ):
-            gate = LifecycleGate(
-                project=project,
-                phase=phase,
-                key=gate_template["key"],
-                name=gate_template["name"],
-                status=gate_template.get("status", "not_started"),
-                position=gate_index,
-            )
-            gates.append(gate)
-
-        if gates:
-            phase.lifecycle_gates = gates
-
-        phases.append(phase)
-
-    if phases:
-        project.lifecycle_phases.extend(phases)
-        db.flush()
+    summary = seed_lifecycle_catalog(db, project=project)
+    logger.debug("Seeded lifecycle for project %s: %s", project.id, summary)
 
 
 def _get_project_document_metadata(
@@ -607,7 +637,7 @@ async def list_projects_simple():
 
 @router.get("/", response_model=ProjectListResponse)
 async def list_projects(
-    db: Session = Depends(SessionDep),
+    db: SessionDep,
     # Temporarily disabled for testing: current_user: dict = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -676,7 +706,7 @@ async def list_projects(
 @router.post("/", response_model=ProjectResponse)
 async def create_project(
     project_data: ProjectCreateRequest,
-    db: Session = Depends(SessionDep),
+    db: SessionDep,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -798,7 +828,7 @@ async def create_project(
 
     document_metadata = _build_document_metadata(document)
 
-    _ensure_lifecycle(str(project.id))
+    _ensure_lifecycle(db, project)
 
     # Submit initialization task to AI orchestrator
     settings = get_settings()
@@ -871,7 +901,7 @@ async def create_project(
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: str,
-    db: Session = Depends(SessionDep),
+    db: SessionDep,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -944,7 +974,7 @@ async def get_project(
 async def update_project(
     project_id: str,
     project_data: ProjectUpdateRequest,
-    db: Session = Depends(SessionDep),
+    db: SessionDep,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -1030,7 +1060,7 @@ async def update_project(
 @router.delete("/{project_id}")
 async def delete_project(
     project_id: str,
-    db: Session = Depends(SessionDep),
+    db: SessionDep,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -1075,7 +1105,7 @@ async def delete_project(
 
 @router.get("/stats/summary")
 async def get_project_stats(
-    db: Session = Depends(SessionDep), current_user: dict = Depends(get_current_user)
+    db: SessionDep, current_user: dict = Depends(get_current_user)
 ):
     """
     Get project statistics for the current user.
@@ -1099,7 +1129,7 @@ async def get_project_stats(
         .filter(
             and_(
                 models.Project.owner_id == user_id,
-                models.Project.status == models.models.ProjectStatus.ACTIVE,
+                models.Project.status == models.ProjectStatus.ACTIVE,
                 models.Project.is_archived is False,
             )
         )
@@ -1112,7 +1142,7 @@ async def get_project_stats(
         .filter(
             and_(
                 models.Project.owner_id == user_id,
-                models.Project.domain == models.models.ProjectDomain.PV,
+                models.Project.domain == models.ProjectDomain.PV,
                 models.Project.is_archived is False,
             )
         )
@@ -1124,7 +1154,7 @@ async def get_project_stats(
         .filter(
             and_(
                 models.Project.owner_id == user_id,
-                models.Project.domain == models.models.ProjectDomain.BESS,
+                models.Project.domain == models.ProjectDomain.BESS,
                 models.Project.is_archived is False,
             )
         )
@@ -1136,7 +1166,7 @@ async def get_project_stats(
         .filter(
             and_(
                 models.Project.owner_id == user_id,
-                models.Project.domain == models.models.ProjectDomain.HYBRID,
+                models.Project.domain == models.ProjectDomain.HYBRID,
                 models.Project.is_archived is False,
             )
         )
@@ -1152,240 +1182,95 @@ async def get_project_stats(
     }
 
 
-def _serialize_gate(
-    gate: "models.LifecycleGate",
-    approval: Optional["models.LifecycleGateApproval"] = None,
-) -> dict:
-    """Serialize a lifecycle gate with approval metadata."""
-
-    approval_obj = approval if approval is not None else getattr(gate, "approval", None)
-    approval_payload = approval_obj.as_dict() if approval_obj else None
-
-    payload = {
-        "id": str(gate.id),
-        "name": gate.name,
-        "status": gate.status,
-        "sequence": gate.sequence,
-        "description": gate.description,
-        "due_date": gate.due_date.isoformat() if gate.due_date else None,
-        "owner": gate.owner,
-        "metadata": gate.context_dict(),
-        "approval": approval_payload,
-        "approval_status": (
-            approval_payload["status"] if approval_payload else "pending"
-        ),
-    }
-
-    return payload
-
-
-def _serialize_phase(
-    phase: "models.LifecyclePhase",
-    gates: Optional[List[dict]] = None,
-) -> dict:
-    """Serialize a lifecycle phase with ordered gates."""
-
-    if gates is None:
-        gates = [
-            _serialize_gate(gate)
-            for gate in sorted(phase.gates, key=lambda gate: gate.sequence)
-        ]
-    return {
-        "id": str(phase.id),
-        "name": phase.name,
-        "status": phase.status,
-        "sequence": phase.sequence,
-        "description": phase.description,
-        "metadata": phase.context_dict(),
-        "gates": gates,
-    }
-
-
-def _fetch_project_lifecycle_rows(db: Session, project_uuid: uuid.UUID):
-    """Return phase, gate, approval rows for lifecycle serialization."""
-
-    return (
-        db.query(
-            models.LifecyclePhase,
-            models.LifecycleGate,
-            models.LifecycleGateApproval,
-        )
-        .outerjoin(
-            models.LifecycleGate,
-            models.LifecycleGate.phase_id == models.LifecyclePhase.id,
-        )
-        .outerjoin(
-            models.LifecycleGateApproval,
-            models.LifecycleGateApproval.gate_id == models.LifecycleGate.id,
-        )
-        .filter(models.LifecyclePhase.project_id == project_uuid)
-        .order_by(models.LifecyclePhase.sequence, models.LifecycleGate.sequence)
-        .all()
-    )
-
-
-@router.get("/{project_id}/lifecycle")
+@router.get(
+    "/{project_id}/lifecycle",
+    summary="Get project lifecycle",
+    description="Return lifecycle phases and gate status for a project.",
+    responses={200: {"description": "List of lifecycle phases"}},
+)
 async def get_project_lifecycle(
     project_id: str,
     db: SessionDep,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict | None = Depends(get_optional_user),
 ):
     """Return lifecycle phases and gate checklist for a project."""
 
-    try:
-        project_uuid = uuid.UUID(project_id)
-    except ValueError as exc:  # pragma: no cover - defensive
-        raise HTTPException(status_code=404, detail="Project not found") from exc
+    project = _get_project_or_404(db, project_id)
 
-    rows = _fetch_project_lifecycle_rows(db, project_uuid)
-
-    phase_cache: dict[uuid.UUID, tuple["models.LifecyclePhase", dict]] = {}
-
-    for phase, gate, approval in rows:
-        if phase.id not in phase_cache:
-            phase_cache[phase.id] = (phase, _serialize_phase(phase, gates=[]))
-
-        phase_payload = phase_cache[phase.id][1]
-
-        if gate is not None:
-            phase_payload["gates"].append(_serialize_gate(gate, approval))
-
-    if phase_cache:
-        ordered_phases = [
-            entry[1]
-            for entry in sorted(phase_cache.values(), key=lambda item: item[0].sequence)
-        ]
-
-        for phase_payload in ordered_phases:
-            phase_payload["gates"].sort(
-                key=lambda gate_payload: gate_payload["sequence"]
-            )
-    else:
-        phases_only = (
-            db.query(models.LifecyclePhase)
-            .filter(models.LifecyclePhase.project_id == project_uuid)
-            .order_by(models.LifecyclePhase.sequence)
-            .all()
+    actor_id = current_user.get("id") if current_user else None
+    if actor_id is not None and not project.can_view(actor_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
         )
-        ordered_phases = [_serialize_phase(phase) for phase in phases_only]
 
-    lifecycle_data = {"phases": ordered_phases}
-
-    lifecycle_state = copy.deepcopy(_ensure_lifecycle(project_id))
-
-    # Use orchestrator to detect bottlenecks and annotate gates
-    bottlenecks = AgentManager.detect_bottlenecks(lifecycle_state)
-    lifecycle_state["bottlenecks"] = bottlenecks
-
-    return lifecycle_state
+    _seed_project_lifecycle(db, project)
+    return build_lifecycle_view(db, project.id)
 
 
 @router.post(
     "/{project_id}/lifecycle/gates/{gate_id}/status",
-    response_model=GateStatusResponse,
+    summary="Update lifecycle gate status",
+    description="Record an approval decision for a specific lifecycle gate.",
+    responses={200: {"description": "Updated lifecycle phases"}},
 )
 async def update_lifecycle_gate_status(
     project_id: str,
     gate_id: str,
     request: GateStatusUpdateRequest,
-    db: Session = Depends(SessionDep),
+    db: SessionDep,
     current_user: dict = Depends(get_current_user),
 ):
     """Update the status of a lifecycle gate with RBAC and auditing."""
 
-    user_roles = {
-        str(role).lower() for role in current_user.get("roles", []) if role is not None
-    }
-    if not user_roles.intersection(ALLOWED_GATE_APPROVER_ROLES):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is not permitted to approve lifecycle gates",
-        )
+    return _handle_gate_approval_request(
+        project_id=project_id,
+        request=request,
+        db=db,
+        current_user=current_user,
+        gate_code_override=gate_id,
+    )
 
-    project = _get_project_or_404(db, project_id)
-    project_id_str = str(project.id)
-    lifecycle = _ensure_lifecycle(project_id_str)
 
-    target_gate: Optional[Dict[str, Any]] = None
-    target_phase_id: Optional[str] = None
-    for phase in lifecycle.get("phases", []):
-        for gate in phase.get("gates", []):
-            if gate.get("id") == gate_id:
-                target_gate = gate
-                target_phase_id = phase.get("id")
-                break
-        if target_gate:
-            break
+@router.post(
+    "/{project_id}/lifecycle/gate-approval",
+    summary="Record lifecycle gate approval",
+    description="Submit an approval using the gate code supplied in the payload.",
+    responses={200: {"description": "Updated lifecycle phases"}},
+)
+async def record_lifecycle_gate_approval(
+    project_id: str,
+    request: GateStatusUpdateRequest,
+    db: SessionDep,
+    current_user: dict = Depends(get_current_user),
+):
+    """Record a lifecycle gate approval using payload-defined gate code."""
 
-    if target_gate is None or target_phase_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Lifecycle gate not found",
-        )
+    return _handle_gate_approval_request(
+        project_id=project_id,
+        request=request,
+        db=db,
+        current_user=current_user,
+    )
 
-    raw_actor_id = current_user.get("id")
-    if not raw_actor_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current user identifier missing",
-        )
-    actor_id = str(raw_actor_id)
-    now = datetime.now(timezone.utc)
-    iso_now = now.isoformat()
 
-    target_gate["status"] = request.status
-    target_gate["updated_at"] = iso_now
-    target_gate["updated_by"] = actor_id
+@router.post(
+    "/{project_id}/lifecycle/approvals",
+    summary="Submit lifecycle gate approval",
+    description="Submit a gate approval using the new payload schema.",
+    responses={200: {"description": "Updated lifecycle phases"}},
+)
+async def create_lifecycle_gate_approval(
+    project_id: str,
+    request: GateStatusUpdateRequest,
+    db: SessionDep,
+    current_user: dict = Depends(get_current_user),
+):
+    """Alias endpoint for REST clients submitting gate approvals."""
 
-    if request.notes is not None:
-        target_gate["notes"] = request.notes
-
-    if request.status == "approved":
-        target_gate["approved_by"] = actor_id
-        target_gate["approved_at"] = iso_now
-    else:
-        target_gate["approved_by"] = actor_id
-        target_gate["approved_at"] = None
-
-    progress = _recalculate_progress(lifecycle)
-    project.display_status = str(progress["display_status"])
-    project.completion_percentage = int(progress["completion_percentage"])
-    project.updated_at = now
-
-    _persist_gate_state(db, project, lifecycle, actor_id)
-
-    try:
-        db.commit()
-    except SQLAlchemyError as exc:  # pragma: no cover - defensive
-        db.rollback()
-        logging.getLogger(__name__).exception(
-            "Failed to update lifecycle gate: %s", exc
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update lifecycle gate",
-        ) from exc
-
-    db.refresh(project)
-
-    approved_at_value = target_gate.get("approved_at")
-    updated_at_value = target_gate.get("updated_at")
-
-    return GateStatusResponse(
-        gate_id=gate_id,
-        phase_id=target_phase_id,
-        status=target_gate.get("status", "pending"),
-        approved_by=target_gate.get("approved_by"),
-        approved_at=(
-            datetime.fromisoformat(approved_at_value)
-            if isinstance(approved_at_value, str)
-            else None
-        ),
-        updated_at=(
-            datetime.fromisoformat(updated_at_value)
-            if isinstance(updated_at_value, str)
-            else None
-        ),
-        updated_by=target_gate.get("updated_by"),
-        notes=target_gate.get("notes"),
+    return _handle_gate_approval_request(
+        project_id=project_id,
+        request=request,
+        db=db,
+        current_user=current_user,
     )

@@ -217,9 +217,15 @@ class ParseDatasheetTool(BaseTool):
         pages_processed = 0
 
         try:
-            from pypdf import PdfReader
-        except Exception as e:
-            raise RuntimeError("pypdf library is required for PDF parsing") from e
+            from pypdf import PdfReader  # type: ignore
+        except Exception:
+            fallback_text = pdf_bytes.decode("latin-1", errors="ignore")
+            warnings.append(
+                "pypdf not available; returning raw byte decode. Install pypdf for full parsing."
+            )
+            if not fallback_text.strip():
+                warnings.append("Fallback decoding produced no readable text.")
+            return fallback_text, images, pages_processed, warnings
 
         try:
             reader = PdfReader(io.BytesIO(pdf_bytes))

@@ -81,6 +81,283 @@ export interface ProjectLifecycleResponse {
   bottlenecks?: any[];
 }
 
+export type GateStatus =
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "BLOCKED"
+  | "APPROVED"
+  | "REJECTED";
+export type ApprovalDecision = "APPROVE" | "REJECT";
+
+export interface GateView {
+  key: string; // e.g., "G4"
+  name: string; // "Entry" | "Exit" (compat)
+  gate_code: string; // "G4"
+  status: GateStatus;
+}
+
+export interface LifecyclePhaseView {
+  phase_code: number; // 0..11
+  phase_key: string; // "phase.discovery"
+  title: string; // "Detailed Design"
+  order: number;
+  entry_gate_code: string;
+  exit_gate_code: string;
+  required_entry_roles: string[];
+  required_exit_roles: string[];
+  odl_sd_sections: string[];
+  // Back-compat:
+  name: string;
+  status: string; // legacy, ignore for gate status
+  gates: GateView[]; // len = 2 (entry, exit)
+}
+
+const GATE_STATUS_VALUES = [
+  "NOT_STARTED",
+  "IN_PROGRESS",
+  "BLOCKED",
+  "APPROVED",
+  "REJECTED",
+] as const;
+
+const LEGACY_GATE_STATUS_MAP: Record<string, GateStatus> = {
+  pending: "NOT_STARTED",
+  not_started: "NOT_STARTED",
+  "not started": "NOT_STARTED",
+  in_review: "IN_PROGRESS",
+  "in review": "IN_PROGRESS",
+  in_progress: "IN_PROGRESS",
+  review: "IN_PROGRESS",
+  blocked: "BLOCKED",
+  approved: "APPROVED",
+  approving: "APPROVED",
+  completed: "APPROVED",
+  complete: "APPROVED",
+  rejected: "REJECTED",
+  rejecting: "REJECTED",
+  decline: "REJECTED",
+};
+
+function normalizeGateStatus(status: unknown): GateStatus {
+  if (typeof status === "string") {
+    const trimmed = status.trim();
+    if (trimmed) {
+      const upper = trimmed.toUpperCase();
+      if ((GATE_STATUS_VALUES as readonly string[]).includes(upper)) {
+        return upper as GateStatus;
+      }
+      const legacy = LEGACY_GATE_STATUS_MAP[trimmed.toLowerCase()];
+      if (legacy) {
+        return legacy;
+      }
+    }
+  }
+  return "NOT_STARTED";
+}
+
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter(
+    (item): item is string =>
+      typeof item === "string" && item.trim().length > 0,
+  );
+}
+
+function normalizeGateView(
+  gate: any,
+  phaseCode: number,
+  fallbackName: string,
+  fallbackCode: string,
+  gateIndex: number,
+): GateView {
+  const gateCodeCandidates = [
+    gate?.gate_code,
+    gate?.code,
+    gate?.id,
+    fallbackCode,
+    `G${phaseCode}-${gateIndex}`,
+  ];
+
+  const gate_code =
+    gateCodeCandidates.find(
+      (candidate): candidate is string =>
+        typeof candidate === "string" && candidate.trim().length > 0,
+    ) ?? `G${phaseCode}-${gateIndex}`;
+
+  const name =
+    typeof gate?.name === "string" && gate.name.trim().length > 0
+      ? gate.name
+      : fallbackName;
+
+  const keyCandidates = [gate?.key, gate?.id, gate_code];
+  const key =
+    keyCandidates.find(
+      (candidate): candidate is string =>
+        typeof candidate === "string" && candidate.trim().length > 0,
+    ) ?? gate_code;
+
+  return {
+    key,
+    name,
+    gate_code,
+    status: normalizeGateStatus(gate?.status),
+  };
+}
+
+function ensureGatePair(
+  gates: GateView[],
+  entryGateCode: string,
+  exitGateCode: string,
+): GateView[] {
+  if (gates.length >= 2) {
+    return gates.slice(0, 2);
+  }
+
+  if (gates.length === 1) {
+    return [
+      gates[0],
+      {
+        key: exitGateCode,
+        name: "Exit",
+        gate_code: exitGateCode,
+        status: "NOT_STARTED",
+      },
+    ];
+  }
+
+  return [
+    {
+      key: entryGateCode,
+      name: "Entry",
+      gate_code: entryGateCode,
+      status: "NOT_STARTED",
+    },
+    {
+      key: exitGateCode,
+      name: "Exit",
+      gate_code: exitGateCode,
+      status: "NOT_STARTED",
+    },
+  ];
+}
+
+function deriveNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function normalizeLifecyclePhase(
+  phase: unknown,
+  index: number,
+): LifecyclePhaseView | null {
+  if (!phase || typeof phase !== "object") {
+    return null;
+  }
+
+  const record = phase as Record<string, unknown>;
+  const phaseCode = deriveNumber(
+    record.phase_code ?? record.code ?? record.order,
+    index,
+  );
+  const order = deriveNumber(record.order, phaseCode);
+
+  const phaseKey =
+    typeof record.phase_key === "string" && record.phase_key.trim().length > 0
+      ? (record.phase_key as string)
+      : typeof record.key === "string" && record.key.trim().length > 0
+        ? (record.key as string)
+        : `phase.${phaseCode}`;
+
+  const title =
+    typeof record.title === "string" && record.title.trim().length > 0
+      ? (record.title as string)
+      : typeof record.name === "string" && record.name.trim().length > 0
+        ? (record.name as string)
+        : `Phase ${phaseCode + 1}`;
+
+  const gatesRaw = Array.isArray(record.gates) ? record.gates : [];
+  const firstGate = gatesRaw[0] as any;
+  const secondGate = gatesRaw[1] as any;
+
+  const entryGateCodeCandidates = [
+    record.entry_gate_code,
+    firstGate?.gate_code,
+    firstGate?.code,
+    firstGate?.id,
+    `G${phaseCode}-ENTRY`,
+  ];
+  const exitGateCodeCandidates = [
+    record.exit_gate_code,
+    secondGate?.gate_code,
+    secondGate?.code,
+    secondGate?.id,
+    `G${phaseCode}-EXIT`,
+  ];
+
+  const entryGateCode =
+    entryGateCodeCandidates.find(
+      (candidate): candidate is string =>
+        typeof candidate === "string" && candidate.trim().length > 0,
+    ) ?? `G${phaseCode}-ENTRY`;
+
+  const exitGateCode =
+    exitGateCodeCandidates.find(
+      (candidate): candidate is string =>
+        typeof candidate === "string" && candidate.trim().length > 0,
+    ) ?? `G${phaseCode}-EXIT`;
+
+  const gates = gatesRaw.map((gate, gateIndex) =>
+    normalizeGateView(
+      gate,
+      phaseCode,
+      gateIndex === 0 ? "Entry" : "Exit",
+      gateIndex === 0 ? entryGateCode : exitGateCode,
+      gateIndex,
+    ),
+  );
+
+  return {
+    phase_code: phaseCode,
+    phase_key: phaseKey,
+    title,
+    order,
+    entry_gate_code: entryGateCode,
+    exit_gate_code: exitGateCode,
+    required_entry_roles: toStringArray(record.required_entry_roles),
+    required_exit_roles: toStringArray(record.required_exit_roles),
+    odl_sd_sections: toStringArray(record.odl_sd_sections),
+    name: typeof record.name === "string" ? (record.name as string) : title,
+    status: typeof record.status === "string" ? (record.status as string) : "",
+    gates: ensureGatePair(gates, entryGateCode, exitGateCode),
+  };
+}
+
+function normalizeLifecyclePhases(payload: unknown): LifecyclePhaseView[] {
+  const phasesRaw = Array.isArray(payload)
+    ? payload
+    : payload &&
+        typeof payload === "object" &&
+        Array.isArray((payload as any).phases)
+      ? (payload as any).phases
+      : [];
+
+  const normalized = phasesRaw
+    .map((phase, index) => normalizeLifecyclePhase(phase, index))
+    .filter((phase): phase is LifecyclePhaseView => Boolean(phase));
+
+  return normalized.sort((a, b) => a.order - b.order);
+}
+
 export interface DocumentCreateRequest {
   project_name: string;
   portfolio_id?: string;
@@ -283,10 +560,30 @@ export class OriginFDClient {
     return this.request(`projects/${projectId}`);
   }
 
-  async getProjectLifecycle(
+  async getProjectLifecycle(projectId: string): Promise<LifecyclePhaseView[]> {
+    const response = await this.request(`projects/${projectId}/lifecycle`);
+    return normalizeLifecyclePhases(response);
+  }
+
+  async postGateApproval(
     projectId: string,
-  ): Promise<ProjectLifecycleResponse> {
-    return this.request(`projects/${projectId}/lifecycle`);
+    payload: {
+      phase_code: number;
+      gate_code: string;
+      decision: ApprovalDecision;
+      role_key: string;
+      comment?: string;
+    },
+  ): Promise<LifecyclePhaseView[]> {
+    const response = await this.request(
+      `projects/${projectId}/lifecycle/approvals`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return normalizeLifecyclePhases(response);
   }
 
   async getDocument(documentId: string, version?: number): Promise<any> {
@@ -636,4 +933,5 @@ if (typeof window !== "undefined") {
 }
 
 export const componentAPI = apiClient;
+export { normalizeLifecyclePhases };
 export default apiClient;
