@@ -3,10 +3,10 @@ Performance monitoring and metrics API endpoints.
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from datetime import datetime
+from typing import Any, Dict
 
-from core.performance import db_monitor, health_monitor, rate_limiter, response_cache
+from core.performance import db_monitor, health_monitor
 from core.redis_config import redis_config
 from deps import get_current_user
 from fastapi import APIRouter, Depends, Query

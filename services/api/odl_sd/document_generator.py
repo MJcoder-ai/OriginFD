@@ -5,7 +5,7 @@ ODL-SD Document Generator
 import hashlib
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from .schemas import (
@@ -17,7 +17,6 @@ from .schemas import (
     FunctionalRequirements,
     MetaData,
     OdlSdDocument,
-    PortfolioHierarchy,
     RegulatoryRequirements,
     Requirements,
     Scale,

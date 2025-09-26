@@ -8,14 +8,13 @@ from uuid import uuid4
 
 import models
 import uvicorn
-from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_token_pair
-from core.database import SessionDep, get_db, init_database
+from core.auth import ACCESS_TOKEN_EXPIRE_MINUTES, create_token_pair
+from core.database import SessionDep, init_database
 from core.dependencies import AdminUser, CurrentUser, EngineerUser
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import desc
-from sqlalchemy.orm import Session
 
 # FastAPI app
 app = FastAPI(
@@ -199,7 +198,7 @@ async def list_projects(
     projects = (
         db.query(models.Project)
         .filter(models.Project.owner_id == user_id)
-        .filter(models.Project.is_archived == False)
+        .filter(models.Project.is_archived.is_(False))
         .order_by(desc(models.Project.updated_at))
         .offset(skip)
         .limit(limit)
@@ -387,7 +386,7 @@ async def store_scenario_audit(scenario: ScenarioAudit, current_user: CurrentUse
 async def get_admin_stats(admin_user: AdminUser, db: SessionDep):
     """Get admin statistics"""
     total_users = db.query(models.User).count()
-    active_users = db.query(models.User).filter(models.User.is_active == True).count()
+    active_users = db.query(models.User).filter(models.User.is_active.is_(True)).count()
     total_projects = db.query(models.Project).count()
     active_projects = (
         db.query(models.Project)

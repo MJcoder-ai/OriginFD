@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Agent and automation hooks for lifecycle events."""
+
+from __future__ import annotations
 
 import logging
 import os

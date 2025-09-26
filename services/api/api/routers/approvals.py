@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Literal
 
 from fastapi import APIRouter
@@ -14,6 +15,7 @@ from pydantic import BaseModel, Field
 # from packages.py.odl_sd_patch.diff_utils import generate_diff_summary
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 APPROVAL_DECISION_PSU_CHARGE = 10
@@ -50,6 +52,14 @@ async def handle_approval(req: ApprovalRequest) -> ApprovalResponse:
         "decision": req.decision,
         "has_summary": bool(summary["grouped_diffs"]),
     }
+    if tenant_id:
+        metadata["tenant_id"] = tenant_id
+
+    logger.info(
+        "Approval decision received for project %s",
+        req.project_id,
+        extra={"metadata": metadata},
+    )
     # Temporarily disabled - publish_usage_event call
     # publish_usage_event(
     #     tenant_id or "00000000-0000-0000-0000-000000000000",

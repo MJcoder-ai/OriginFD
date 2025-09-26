@@ -41,12 +41,15 @@ logger = logging.getLogger(__name__)
 # Non-blocking prestart (migrate + seed); safe in dev/CI
 try:
     from services.api import prestart as _prestart  # noqa: F401
+
     _prestart.main()
 except Exception:  # pragma: no cover
     import logging as _logging
+
     _logging.getLogger(__name__).warning(
         "prestart skipped (dev env or missing settings)"
     )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,6 +57,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting OriginFD API Gateway...")
     settings = get_settings()
+    logger.info("API environment: %s", settings.ENVIRONMENT)
 
     # Warm up database connection
     if os.getenv("SKIP_DB_STARTUP", "0") != "1":
@@ -112,8 +116,11 @@ async def performance_monitoring_middleware(request: Request, call_next):
             )
 
         return response
-    except Exception as e:
+    except Exception:
         health_monitor.error_count += 1
+        logger.exception(
+            "Unhandled exception processing %s %s", request.method, request.url
+        )
         raise
 
 
@@ -407,6 +414,7 @@ async def create_component(request: dict):
                 "stocks": [{"on_hand_qty": request.get("stock_quantity", 50)}]
             },
         },
+        "name": name,
         "category": category,
         "domain": domain,
         "scale": scale,

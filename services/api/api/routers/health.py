@@ -9,7 +9,7 @@ from typing import Any, Dict
 import psutil
 from core.config import get_settings
 from core.database import check_database_connection
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter()

@@ -13,7 +13,6 @@ from core.database import SessionDep
 from core.performance import (
     cached_response,
     invalidate_component_cache,
-    monitor_performance,
     performance_metrics,
     rate_limit,
 )
@@ -636,7 +635,7 @@ async def transition_component_status(
     # Add audit record to component management
     if component.management:
         component.management.add_audit_record(
-            action=f"status_transition",
+            action="status_transition",
             actor_role="engineer",  # TODO: Get from user roles
             actor=current_user["email"],
             diff=f"Status changed from {old_status} to {request.new_status.value}",
@@ -847,9 +846,6 @@ async def get_component_stats(
         )
         .count()
     )
-
-    # Optimized: Get category and domain stats in a single query using subqueries
-    from sqlalchemy import case
 
     # Single query to get all category stats
     category_stats = (

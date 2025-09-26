@@ -2,7 +2,7 @@
 """
 Enhanced OriginFD API with JWT Authentication
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 import uvicorn
@@ -14,9 +14,8 @@ from core.auth import (
     verify_token,
 )
 from core.dependencies import AdminUser, CurrentUser, EngineerUser
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
 # FastAPI app
