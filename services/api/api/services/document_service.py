@@ -97,7 +97,8 @@ class DocumentService:
                 document.current_version,
             )
             raise DocumentVersionConflictError(
-                f"Version conflict. Expected {expected_version}, got {document.current_version}"
+                f"Version conflict. Expected {expected_version}, "
+                f"got {document.current_version}"
             )
 
         evidence_list = list(evidence or [])

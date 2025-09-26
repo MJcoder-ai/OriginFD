@@ -12,11 +12,10 @@ import uvicorn
 from core.config import get_settings
 from core.database import get_engine
 from core.logging_config import setup_logging
-from core.performance import compression_middleware, db_monitor, health_monitor
-from fastapi import FastAPI, HTTPException, Request
+from core.performance import health_monitor
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 # Include core API routers
@@ -26,7 +25,8 @@ from services.api.api.routers import auth, health, projects
 # from api.routers import commerce
 
 # Temporarily disabled due to import issues:
-# from api.routers import documents, marketplace, components, component_integration, suppliers
+# from api.routers import documents, marketplace, components,
+# component_integration, suppliers
 
 # Set up logging
 setup_logging()
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown tasks."""
     # Startup
     logger.info("Starting OriginFD API Gateway...")
-    settings = get_settings()
+    get_settings()  # Initialize settings
 
     # Warm up database connection
     if os.getenv("SKIP_DB_STARTUP", "0") != "1":
@@ -111,7 +111,7 @@ async def performance_monitoring_middleware(request: Request, call_next):
             )
 
         return response
-    except Exception as e:
+    except Exception:
         health_monitor.error_count += 1
         raise
 
@@ -187,6 +187,9 @@ for module_path, prefix, tags, *attr in _OPTIONAL_ROUTERS:
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
+    error_rate = (
+        health_monitor.error_count / max(health_monitor.request_count, 1) * 100
+    )
     return {
         "name": "OriginFD API Gateway",
         "version": "0.1.0",
@@ -194,7 +197,7 @@ async def root():
         "docs": "/docs",
         "performance": {
             "requests_processed": health_monitor.request_count,
-            "error_rate": f"{(health_monitor.error_count / max(health_monitor.request_count, 1) * 100):.2f}%",
+            "error_rate": f"{error_rate:.2f}%",
         },
     }
 

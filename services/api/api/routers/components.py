@@ -13,7 +13,6 @@ from core.database import SessionDep
 from core.performance import (
     cached_response,
     invalidate_component_cache,
-    monitor_performance,
     performance_metrics,
     rate_limit,
 )
@@ -625,7 +624,10 @@ async def transition_component_status(
     if not component.can_transition_to(request.new_status):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot transition from {component.status} to {request.new_status.value}",
+            detail=(
+                f"Cannot transition from {component.status} to "
+                f"{request.new_status.value}"
+            ),
         )
 
     old_status = component.status
@@ -636,7 +638,7 @@ async def transition_component_status(
     # Add audit record to component management
     if component.management:
         component.management.add_audit_record(
-            action=f"status_transition",
+            action="status_transition",
             actor_role="engineer",  # TODO: Get from user roles
             actor=current_user["email"],
             diff=f"Status changed from {old_status} to {request.new_status.value}",
@@ -649,7 +651,8 @@ async def transition_component_status(
     await invalidate_component_cache(str(component.id))
 
     logger.info(
-        f"Transitioned component {component.component_id} from {old_status} to {request.new_status.value}"
+        f"Transitioned component {component.component_id} from "
+        f"{old_status} to {request.new_status.value}"
     )
 
     return ComponentResponse(
@@ -744,7 +747,9 @@ async def list_component_media(
 async def upload_component_media(
     component_id: str,
     file: UploadFile = File(...),
-    asset_type: models.MediaAssetTypeEnum = models.MediaAssetTypeEnum.COMPONENT_PHOTO_HERO,
+    asset_type: models.MediaAssetTypeEnum = (
+        models.MediaAssetTypeEnum.COMPONENT_PHOTO_HERO
+    ),
     scope: models.MediaScopeEnum = models.MediaScopeEnum.COMPONENT_GENERIC,
     alt_text: Optional[str] = None,
     db: Session = Depends(SessionDep),
@@ -849,7 +854,7 @@ async def get_component_stats(
     )
 
     # Optimized: Get category and domain stats in a single query using subqueries
-    from sqlalchemy import case
+    pass  # Removed unused case import
 
     # Single query to get all category stats
     category_stats = (

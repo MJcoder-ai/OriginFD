@@ -43,8 +43,8 @@ async def handle_approval(req: ApprovalRequest) -> ApprovalResponse:
     # TODO: Implement generate_diff_summary when package is available
     # summary = generate_diff_summary(req.source, req.target)
     summary = {"grouped_diffs": {}, "kpi_deltas": {}}  # Temporary placeholder
-    tenant_id = _resolve_tenant_id(req.source) or _resolve_tenant_id(req.target)
-    metadata = {
+    _ = _resolve_tenant_id(req.source) or _resolve_tenant_id(req.target)
+    _ = {
         "event": "gate_approval",
         "project_id": req.project_id,
         "decision": req.decision,

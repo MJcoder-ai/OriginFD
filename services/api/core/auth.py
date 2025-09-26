@@ -11,11 +11,10 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
+from .config import get_settings
+
 # Password hashing with bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Import settings
-from .config import get_settings
 
 # Initialize settings
 settings = get_settings()

@@ -2,8 +2,6 @@
 Database models for ODL-SD documents.
 """
 
-from datetime import datetime
-
 from sqlalchemy import (
     Boolean,
     Column,
@@ -16,7 +14,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import text
 
 from .base import Base, TenantMixin, TimestampMixin, UUIDMixin
 
@@ -57,7 +54,10 @@ class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
     access_controls = relationship("DocumentAccess", back_populates="document")
 
     def __repr__(self):
-        return f"<Document(id={self.id}, project={self.project_name}, version={self.current_version})>"
+        return (
+            f"<Document(id={self.id}, project={self.project_name}, "
+            f"version={self.current_version})>"
+        )
 
 
 class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -95,7 +95,10 @@ class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
     document = relationship("Document", back_populates="versions")
 
     def __repr__(self):
-        return f"<DocumentVersion(document_id={self.document_id}, version={self.version_number})>"
+        return (
+            f"<DocumentVersion(document_id={self.document_id}, "
+            f"version={self.version_number})>"
+        )
 
 
 class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -132,7 +135,10 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
     document = relationship("Document", back_populates="access_controls")
 
     def __repr__(self):
-        return f"<DocumentAccess(document_id={self.document_id}, user_id={self.user_id}, role={self.role})>"
+        return (
+            f"<DocumentAccess(document_id={self.document_id}, "
+            f"user_id={self.user_id}, role={self.role})>"
+        )
 
 
 # Row Level Security (RLS) policies - applied at database level

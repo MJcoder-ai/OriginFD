@@ -17,6 +17,12 @@ from pydantic import BaseModel, EmailStr
 router = APIRouter()
 security = HTTPBearer()
 
+# Development JWT secret key
+DEV_JWT_SECRET = (
+    "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IA"
+    "MeTwvMLFloIN5WQ=="
+)
+
 
 class LoginRequest(BaseModel):
     """Login request model."""
@@ -69,7 +75,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
     to_encode.update({"exp": expire})
     # Use hardcoded secret for development
-    secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
+    secret_key = DEV_JWT_SECRET
     return jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
 
 
@@ -80,7 +86,7 @@ def create_refresh_token(data: dict) -> str:
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     # Use hardcoded secret for development
-    secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
+    secret_key = DEV_JWT_SECRET
     return jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
 
 
@@ -89,7 +95,7 @@ def decode_token(token: str) -> dict:
     settings = get_settings()
     try:
         # Use hardcoded secret for development
-        secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
+        secret_key = DEV_JWT_SECRET
         payload = jwt.decode(token, secret_key, algorithms=[settings.ALGORITHM])
         return payload
     except ExpiredSignatureError:

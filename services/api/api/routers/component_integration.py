@@ -163,7 +163,7 @@ async def bind_component_to_document(
         updated_content = apply_patch(current_version.document_data, patch_ops)
 
         # Validate updated document
-        updated_odl = OdlDocument.model_validate(updated_content)
+        _ = OdlDocument.model_validate(updated_content)
 
         # Calculate new content hash and update versioning metadata
         new_hash = calculate_content_hash(updated_content)
@@ -221,13 +221,17 @@ async def bind_component_to_document(
                 action="document_binding",
                 actor_role="engineer",
                 actor=current_user["email"],
-                diff=f"Bound to document {document.project_name} at {request.location_path}",
+                diff=(
+                    f"Bound to document {document.project_name} "
+                    f"at {request.location_path}"
+                ),
             )
 
         db.commit()
 
         logger.info(
-            f"Bound component {component.component_id} to document {document.project_name}"
+            f"Bound component {component.component_id} to document "
+            f"{document.project_name}"
         )
 
         return ComponentBindingResponse(
@@ -339,7 +343,10 @@ async def add_components_to_project(
             version_number=current_version.version_number + 1,
             content_hash=new_hash,
             previous_hash=previous_hash,
-            change_summary=f"Added {len(components_added)} components: {', '.join(components_added)}",
+            change_summary=(
+                f"Added {len(components_added)} components: "
+                f"{', '.join(components_added)}"
+            ),
             created_by=uuid.UUID(current_user["id"]),
             document_data=new_content,
         )
@@ -355,11 +362,14 @@ async def add_components_to_project(
         db.commit()
 
         logger.info(
-            f"Added {len(components_added)} components to project {document.project_name}"
+            f"Added {len(components_added)} components to project "
+            f"{document.project_name}"
         )
 
         return {
-            "message": f"Successfully added {len(components_added)} components to project",
+            "message": (
+                f"Successfully added {len(components_added)} components to project"
+            ),
             "components_added": components_added,
             "new_version": new_version.version_number,
         }
@@ -461,7 +471,9 @@ async def update_component_specifications(
                         version_number=current_version.version_number + 1,
                         content_hash=new_hash,
                         previous_hash=previous_hash,
-                        change_summary=f"Updated specifications for component {component.name}",
+                        change_summary=(
+                            f"Updated specifications for component {component.name}"
+                        ),
                         created_by=uuid.UUID(current_user["id"]),
                         document_data=new_content,
                     )

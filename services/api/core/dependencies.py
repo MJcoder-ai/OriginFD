@@ -122,7 +122,7 @@ def get_redis_client() -> redis.Redis:
         # Test connection
         redis_client.ping()
         return redis_client
-    except Exception as e:
+    except Exception:
         # Fall back to mock implementation if Redis is unavailable
         from unittest.mock import MagicMock
 
@@ -156,7 +156,7 @@ class CacheService:
             cached_data = self.redis.get(key)
             if cached_data:
                 return json.loads(cached_data)
-        except (json.JSONDecodeError, redis.RedisError) as e:
+        except (json.JSONDecodeError, redis.RedisError):
             # Log error but don't fail - graceful degradation
             pass
         return None
@@ -167,7 +167,7 @@ class CacheService:
             ttl = ttl or self.default_ttl
             serialized_data = json.dumps(data, default=str)
             return self.redis.setex(key, ttl, serialized_data)
-        except (json.JSONEncodeError, redis.RedisError) as e:
+        except (json.JSONEncodeError, redis.RedisError):
             # Log error but don't fail - graceful degradation
             return False
 

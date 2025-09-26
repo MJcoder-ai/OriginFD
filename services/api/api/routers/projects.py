@@ -30,7 +30,7 @@ from services.api.domain.lifecycle_service import (
 from services.api.domain.lifecycle_view import build_lifecycle_view
 from services.api.models.document import Document as SADocument
 from services.api.models.document import DocumentVersion as SADocumentVersion
-from services.api.models.lifecycle import ApprovalDecision, GateStatus
+from services.api.models.lifecycle import ApprovalDecision
 from services.api.models.project import Project as SAProject
 from services.api.models.project import (
     ProjectDomain as SAProjectDomain,  # type: ignore  # circular import friendliness

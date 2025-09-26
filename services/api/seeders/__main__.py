@@ -1,13 +1,13 @@
+from __future__ import annotations
+
+"""Command-line entry point for seeding lifecycle catalog."""
+
 try:
     from tools.paths import ensure_repo_on_path
 
     ensure_repo_on_path()
 except Exception:
     pass
-
-"""Command-line entry point for seeding lifecycle catalog."""
-
-from __future__ import annotations
 
 import argparse
 import json

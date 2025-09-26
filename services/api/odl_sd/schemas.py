@@ -4,7 +4,7 @@ ODL-SD v4.1 Schema Definitions and Validation
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, validator
 
@@ -244,11 +244,13 @@ class OdlSdDocument(BaseModel):
             for connection in self.connections:
                 if connection.from_component not in instance_ids:
                     errors.append(
-                        f"Connection references unknown component: {connection.from_component}"
+                        f"Connection references unknown component: "
+                        f"{connection.from_component}"
                     )
                 if connection.to_component not in instance_ids:
                     errors.append(
-                        f"Connection references unknown component: {connection.to_component}"
+                        f"Connection references unknown component: "
+                        f"{connection.to_component}"
                     )
 
             return len(errors) == 0, errors

@@ -78,7 +78,7 @@ def _verify_signature(
             detail="Invalid orchestrator signature format",
         )
 
-    provided_signature = signature_header[len(SIGNATURE_PREFIX) :]
+    provided_signature = signature_header[len(SIGNATURE_PREFIX):]
     expected = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
 
     if not hmac.compare_digest(provided_signature, expected):

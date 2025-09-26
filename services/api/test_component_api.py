@@ -7,10 +7,10 @@ import asyncio
 import sys
 from pathlib import Path
 
+import models
+
 # Add the API directory to the path
 sys.path.append(str(Path(__file__).parent))
-
-import models
 
 
 async def test_component_models():
@@ -23,7 +23,7 @@ async def test_component_models():
     print("✅ models.Component status enum works")
 
     # Test component model creation (without database)
-    component_data = {
+    _ = {
         "component_id": "CMP:TEST:COMP:100W:REV1",
         "brand": "TEST",
         "part_number": "COMP",
@@ -37,7 +37,7 @@ async def test_component_models():
     print("✅ models.Component model structure is valid")
 
     # Test component management model
-    management_data = {
+    _ = {
         "version": "1.0",
         "tracking_policy": {"level": "quantity"},
         "approvals": {"requested": False, "records": []},

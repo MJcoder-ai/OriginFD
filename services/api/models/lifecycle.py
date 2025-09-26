@@ -36,7 +36,10 @@ class LifecyclePhase(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "lifecycle_phases"
     __table_args__ = (
-        UniqueConstraint("project_id", "phase_code", name="uq_lifecycle_phases_project_phase_code"),
+        UniqueConstraint(
+            "project_id", "phase_code",
+            name="uq_lifecycle_phases_project_phase_code"
+        ),
         {"extend_existing": True},
     )
 

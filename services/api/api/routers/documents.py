@@ -383,7 +383,10 @@ async def apply_document_patch(
     if document.current_version != request.doc_version:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Version conflict. Expected {request.doc_version}, got {document.current_version}",
+            detail=(
+                f"Version conflict. Expected {request.doc_version}, "
+                f"got {document.current_version}"
+            ),
         )
 
     # TODO: RBAC and phase gate checks
