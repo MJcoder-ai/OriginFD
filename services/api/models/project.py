@@ -6,20 +6,24 @@ import json
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import Boolean, Column
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, foreign
+from sqlalchemy.orm import foreign, relationship
 
 from .base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from .document import Document
 
 
 def _document_id_column():
     from services.api.models.document import Document
+
     return Document.__table__.c.id
 
 
@@ -49,6 +53,7 @@ class Project(Base, UUIDMixin, TimestampMixin):
     __allow_unmapped__ = True
 
     __tablename__ = "projects"
+    __table_args__ = {"extend_existing": True}
 
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
@@ -78,10 +83,11 @@ class Project(Base, UUIDMixin, TimestampMixin):
         ForeignKey("documents.id"),
         nullable=True,
     )
-    primary_document: Optional["Document"] = relationship(
+    primary_document: Optional[Document] = relationship(
         "Document",
         foreign_keys=[primary_document_id],
-        primaryjoin=lambda: Project.primary_document_id == foreign(_document_id_column()),
+        primaryjoin=lambda: Project.primary_document_id
+        == foreign(_document_id_column()),
     )
     is_archived = Column(Boolean, default=False)
     initialization_task_id = Column(String, nullable=True)

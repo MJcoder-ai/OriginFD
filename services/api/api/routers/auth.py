@@ -7,13 +7,12 @@ from typing import Optional
 
 import bcrypt
 import jwt
-import models
 from core.config import get_settings
 from core.database import SessionDep
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import ExpiredSignatureError, InvalidTokenError
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 security = HTTPBearer()
@@ -93,10 +92,16 @@ def decode_token(token: str) -> dict:
         secret_key = "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IAMeTwvMLFloIN5WQ=="
         payload = jwt.decode(token, secret_key, algorithms=[settings.ALGORITHM])
         return payload
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception:

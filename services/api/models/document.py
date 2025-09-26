@@ -32,6 +32,7 @@ class Document(Base, UUIDMixin, TimestampMixin, TenantMixin):
         Index("ix_documents_tenant_project", "tenant_id", "project_name"),
         Index("ix_documents_domain_scale", "domain", "scale"),
         # Note: PostgreSQL partitioning will be handled via migration scripts
+        {"extend_existing": True},
     )
 
     # Document metadata
@@ -68,6 +69,7 @@ class DocumentVersion(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "document_versions"
     __table_args__ = (
         Index("ix_doc_versions_document_version", "document_id", "version_number"),
+        {"extend_existing": True},
     )
 
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)
@@ -106,6 +108,7 @@ class DocumentAccess(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __table_args__ = (
         Index("ix_doc_access_document_user", "document_id", "user_id"),
         Index("ix_doc_access_role_permissions", "role", "permissions"),
+        {"extend_existing": True},
     )
 
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)

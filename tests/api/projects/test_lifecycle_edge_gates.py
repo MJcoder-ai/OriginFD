@@ -147,6 +147,7 @@ def _create_user(session: Session) -> User:
         is_superuser=False,
         role="project_manager",
     )
+    user.id = uuid.uuid4()
     session.add(user)
     session.flush()
     return user
@@ -161,6 +162,7 @@ def _create_project(session: Session, owner_id) -> Project:
         status=ProjectStatus.DRAFT,
         owner_id=owner_id,
     )
+    project.id = uuid.uuid4()
     session.add(project)
     session.flush()
     return project
