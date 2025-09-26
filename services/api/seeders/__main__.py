@@ -1,10 +1,3 @@
-try:
-    from tools.paths import ensure_repo_on_path
-
-    ensure_repo_on_path()
-except Exception:
-    pass
-
 """Command-line entry point for seeding lifecycle catalog."""
 
 from __future__ import annotations
@@ -20,6 +13,20 @@ from services.api.models.project import Project
 from services.api.seeders.lifecycle_seeder import seed_lifecycle_catalog
 
 logger = logging.getLogger(__name__)
+
+
+def _bootstrap_paths() -> None:
+    """Ensure repository utilities are importable when executed as a module."""
+
+    try:
+        from tools.paths import ensure_repo_on_path
+
+        ensure_repo_on_path()
+    except Exception:  # pragma: no cover - defensive bootstrap
+        logger.debug("Repo path bootstrap skipped", exc_info=True)
+
+
+_bootstrap_paths()
 
 
 def main() -> None:

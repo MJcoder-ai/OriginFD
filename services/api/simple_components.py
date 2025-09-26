@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 router = APIRouter()
 

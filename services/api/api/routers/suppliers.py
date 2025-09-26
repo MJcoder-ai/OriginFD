@@ -12,8 +12,8 @@ import models
 from core.database import SessionDep
 from deps import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import and_, func, or_
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)

@@ -162,8 +162,9 @@ async def bind_component_to_document(
         # Apply patches to document
         updated_content = apply_patch(current_version.document_data, patch_ops)
 
-        # Validate updated document
+        # Validate updated document and persist normalized structure
         updated_odl = OdlDocument.model_validate(updated_content)
+        updated_content = updated_odl.model_dump(mode="json")
 
         # Calculate new content hash and update versioning metadata
         new_hash = calculate_content_hash(updated_content)

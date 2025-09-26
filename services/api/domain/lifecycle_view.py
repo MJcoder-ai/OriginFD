@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Composable lifecycle response builder."""
+
+from __future__ import annotations
 
 from typing import Any, Dict, List
 

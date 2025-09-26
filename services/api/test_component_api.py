@@ -29,11 +29,13 @@ async def test_component_models():
         "part_number": "COMP",
         "rating_w": 100,
         "name": "TEST_COMP_100W",
-        "status": models.ComponentStatusEnum.DRAFT,
+        "status": "draft",
         "category": "generation",
         "subcategory": "pv_module",
     }
 
+    assert component_data["component_id"].startswith("CMP:")
+    assert component_data["brand"] == "TEST"
     print("✅ models.Component model structure is valid")
 
     # Test component management model
@@ -46,6 +48,8 @@ async def test_component_models():
         "audit": [],
     }
 
+    assert management_data["tracking_policy"]["level"] == "quantity"
+    assert not management_data["approvals"]["requested"]
     print("✅ models.Component management model structure is valid")
 
     print("All component model tests passed! 🎉")

@@ -3,7 +3,6 @@ Base classes and mixins for SQLAlchemy models.
 """
 
 from datetime import datetime
-from typing import Any
 
 from core.database import Base
 from sqlalchemy import Column, DateTime, ForeignKey

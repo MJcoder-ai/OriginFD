@@ -1,8 +1,9 @@
 """
-FastAPI dependency functions for authentication and caching
+FastAPI dependency functions for authentication and caching.
 """
 
 import json
+import logging
 from functools import lru_cache
 from typing import Annotated, Optional
 
@@ -18,6 +19,7 @@ from .database import get_db
 
 # HTTP Bearer token scheme
 security = HTTPBearer()
+logger = logging.getLogger(__name__)
 
 
 async def get_current_user_from_token(
@@ -122,7 +124,8 @@ def get_redis_client() -> redis.Redis:
         # Test connection
         redis_client.ping()
         return redis_client
-    except Exception as e:
+    except Exception as exc:
+        logger.warning("Redis connection unavailable, using mock client: %s", exc)
         # Fall back to mock implementation if Redis is unavailable
         from unittest.mock import MagicMock
 
@@ -156,10 +159,10 @@ class CacheService:
             cached_data = self.redis.get(key)
             if cached_data:
                 return json.loads(cached_data)
-        except (json.JSONDecodeError, redis.RedisError) as e:
+        except (json.JSONDecodeError, redis.RedisError) as exc:
             # Log error but don't fail - graceful degradation
-            pass
-        return None
+            logger.debug("Failed to decode cached data for %s: %s", key, exc)
+            return None
 
     def set_cached_data(self, key: str, data: dict, ttl: Optional[int] = None) -> bool:
         """Set cached data with automatic serialization."""
@@ -167,8 +170,9 @@ class CacheService:
             ttl = ttl or self.default_ttl
             serialized_data = json.dumps(data, default=str)
             return self.redis.setex(key, ttl, serialized_data)
-        except (json.JSONEncodeError, redis.RedisError) as e:
+        except (json.JSONEncodeError, redis.RedisError) as exc:
             # Log error but don't fail - graceful degradation
+            logger.debug("Failed to cache %s: %s", key, exc)
             return False
 
     def delete_cached_data(self, key: str) -> bool:
