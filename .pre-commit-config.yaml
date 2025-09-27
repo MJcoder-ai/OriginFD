@@ -101,13 +101,14 @@ repos:
         args: [--ignore, DL3008, --ignore, DL3009] # Ignore apt version pinning
 
   # Security scanning
-  - repo: https://github.com/trufflesecurity/trufflehog
-    rev: v3.87.2
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
     hooks:
-      - id: trufflehog
-        name: TruffleHog
-        description: Detect secrets in your data.
-        args: [--since-commit=HEAD, --only-verified, --fail]
+      - id: detect-secrets
+        name: detect secrets
+        args:
+          - --baseline
+          - .secrets.baseline
         stages: ["pre-commit", "pre-push"]
 
   # Dependency vulnerability scanning
