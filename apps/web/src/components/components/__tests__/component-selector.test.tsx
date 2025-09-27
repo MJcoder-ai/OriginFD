@@ -88,7 +88,7 @@ describe("ComponentSelector", () => {
 
       await waitFor(() => {
         expect(
-          listComponentsSpy.mock.calls.some(([params]) => {
+          listComponentsSpy.mock.calls.some(([params]: [any]) => {
             return params?.search === "Inverter";
           }),
         ).toBe(true);

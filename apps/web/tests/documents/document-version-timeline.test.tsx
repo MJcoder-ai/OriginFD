@@ -2,7 +2,13 @@ import { strict as assert } from "node:assert";
 import test from "node:test";
 import * as React from "react";
 import { JSDOM } from "jsdom";
-import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { DocumentVersion } from "@originfd/types-odl";
 
@@ -17,7 +23,6 @@ globalThis.document = dom.window.document;
 globalThis.navigator = dom.window.navigator as Navigator;
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.Node = dom.window.Node;
-// @ts-expect-error jsdom defines MutationObserver on window
 globalThis.MutationObserver = dom.window.MutationObserver;
 // Silence act warnings in React 18 tests
 // @ts-expect-error - this flag is used by React testing utilities
@@ -88,10 +93,7 @@ const renderTimeline = ({
   DiffViewer,
 }: {
   client: TestClient;
-  DiffViewer?: React.ComponentType<{
-    original: any;
-    updated: any;
-  }>;
+  DiffViewer?: (props: { original: any; updated: any }) => JSX.Element;
 }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -142,9 +144,12 @@ test("selecting two versions loads diff viewer", async () => {
   };
 
   const diffRenders: Array<{ original: any; updated: any }> = [];
-  const DiffViewerStub: React.FC<{ original: any; updated: any }> = ({
+  const DiffViewerStub = ({
     original,
     updated,
+  }: {
+    original: any;
+    updated: any;
   }) => {
     diffRenders.push({ original, updated });
     return (
@@ -160,10 +165,14 @@ test("selecting two versions loads diff viewer", async () => {
   const versionOne = await view.findByText("Version v1");
   const versionThree = await view.findByText("Version v3");
 
-  const selectVersionOne = within(versionOne.closest("li")!)
-    .getByRole("button", { name: /select/i });
-  const selectVersionThree = within(versionThree.closest("li")!)
-    .getByRole("button", { name: /select/i });
+  const selectVersionOne = within(versionOne.closest("li")!).getByRole(
+    "button",
+    { name: /select/i },
+  );
+  const selectVersionThree = within(versionThree.closest("li")!).getByRole(
+    "button",
+    { name: /select/i },
+  );
 
   fireEvent.click(selectVersionOne);
   fireEvent.click(selectVersionThree);
@@ -174,5 +183,8 @@ test("selecting two versions loads diff viewer", async () => {
 
   const diffOutput = await view.findByTestId("diff-output");
   assert.equal(diffOutput.textContent, "1.0→3.0");
-  assert.deepEqual(documentCalls.sort((a, b) => a - b), [1, 3]);
+  assert.deepEqual(
+    documentCalls.sort((a, b) => a - b),
+    [1, 3],
+  );
 });

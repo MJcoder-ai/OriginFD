@@ -52,10 +52,12 @@ def _bootstrap_sqlite(database_url: str) -> None:
         from services.api.seeders.lifecycle_seeder import seed_lifecycle_catalog
 
         engine = create_engine(database_url, connect_args={"check_same_thread": False})
-        from services.api.models.project import Project
         from services.api.models.lifecycle import (
-            LifecyclePhase, LifecycleGate, LifecycleGateApproval
+            LifecycleGate,
+            LifecycleGateApproval,
+            LifecyclePhase,
         )
+        from services.api.models.project import Project
         from services.api.models.user import User
 
         tables = [

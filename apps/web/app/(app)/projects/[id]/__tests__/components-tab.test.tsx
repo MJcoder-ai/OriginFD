@@ -252,7 +252,7 @@ describe("Project components tab", () => {
 
     await waitFor(() => {
       expect(
-        invalidateSpy.mock.calls.filter((call) => {
+        invalidateSpy.mock.calls.filter((call: any) => {
           const arg = call[0];
           return (
             arg?.queryKey?.[0] === "project-document" ||

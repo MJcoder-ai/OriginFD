@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from "@originfd/ui";
 import ReviewActions from "@/components/projects/review-actions";
-import { LifecycleJourney } from "@/components/projects/lifecycle-journey";
+import LifecycleJourney from "@/components/projects/lifecycle-journey";
 
 export default function ProjectReviewsPage() {
   const params = useParams();

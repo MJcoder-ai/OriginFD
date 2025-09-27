@@ -3,13 +3,14 @@ Base classes and mixins for SQLAlchemy models.
 """
 
 from datetime import datetime
-# typing.Any removed - was unused
 
 from core.database import Base
 from sqlalchemy import Column, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.sql import text
+
+# typing.Any removed - was unused
 
 
 class UUIDMixin:

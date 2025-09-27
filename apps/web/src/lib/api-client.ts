@@ -352,10 +352,14 @@ function normalizeLifecyclePhases(payload: unknown): LifecyclePhaseView[] {
       : [];
 
   const normalized = phasesRaw
-    .map((phase, index) => normalizeLifecyclePhase(phase, index))
-    .filter((phase): phase is LifecyclePhaseView => Boolean(phase));
+    .map((phase: any, index: number) => normalizeLifecyclePhase(phase, index))
+    .filter((phase: LifecyclePhaseView | null): phase is LifecyclePhaseView =>
+      Boolean(phase),
+    );
 
-  return normalized.sort((a, b) => a.order - b.order);
+  return normalized.sort(
+    (a: LifecyclePhaseView, b: LifecyclePhaseView) => a.order - b.order,
+  );
 }
 
 export interface DocumentCreateRequest {

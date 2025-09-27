@@ -187,9 +187,7 @@ for module_path, prefix, tags, *attr in _OPTIONAL_ROUTERS:
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
-    error_rate = (
-        health_monitor.error_count / max(health_monitor.request_count, 1) * 100
-    )
+    error_rate = health_monitor.error_count / max(health_monitor.request_count, 1) * 100
     return {
         "name": "OriginFD API Gateway",
         "version": "0.1.0",

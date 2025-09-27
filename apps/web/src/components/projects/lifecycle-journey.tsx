@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CheckCircle2,
-  CircleX,
+  X,
   Clock,
   Loader2,
   type LucideIcon,
@@ -58,7 +58,7 @@ const gateStatusMeta: Record<GateStatus, GateStatusMeta> = {
   REJECTED: {
     label: "Rejected",
     variant: "destructive",
-    icon: CircleX,
+    icon: X,
     description: "Changes requested before progression.",
   },
   IN_PROGRESS: {

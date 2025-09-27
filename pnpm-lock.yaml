@@ -206,6 +206,9 @@ importers:
       "@types/dagre":
         specifier: ^0.7.53
         version: 0.7.53
+      "@types/jsdom":
+        specifier: ^21.1.7
+        version: 21.1.7
       "@types/node":
         specifier: ^20.10.0
         version: 20.19.13
@@ -3957,6 +3960,17 @@ packages:
       pretty-format: 30.0.5
     dev: true
 
+  /@types/jsdom@21.1.7:
+    resolution:
+      {
+        integrity: sha512-yOriVnggzrnQ3a9OKOCxaVuSug3w3/SbOj5i7VwXWZEyUNl3bLF9V3MfxGbZKuwqJOQyRfqXyROBB1CoZLFWzA==,
+      }
+    dependencies:
+      "@types/node": 20.19.13
+      "@types/tough-cookie": 4.0.5
+      parse5: 7.3.0
+    dev: true
+
   /@types/json-schema@7.0.15:
     resolution:
       {
@@ -4049,6 +4063,13 @@ packages:
       }
     dependencies:
       "@types/jest": 30.0.0
+    dev: true
+
+  /@types/tough-cookie@4.0.5:
+    resolution:
+      {
+        integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==,
+      }
     dev: true
 
   /@types/trusted-types@1.0.6:
