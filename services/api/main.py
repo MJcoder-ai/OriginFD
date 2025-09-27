@@ -144,6 +144,26 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers - production architecture enabled
 app.include_router(health.router, prefix="/health", tags=["health"])
+_DEFAULT_OPTIONAL_ROUTER_MODULES = {
+    "services.api.api.routers.documents",
+    "services.api.api.routers.documents.project_router",
+    "services.api.api.routers.components",
+    "services.api.api.routers.commerce",
+    "services.api.api.routers.orchestrator",
+    "services.api.api.routers.component_integration",
+    "services.api.api.routers.suppliers",
+    "services.api.api.routers.marketplace",
+}
+_ENV_OPTIONAL_ROUTER_MODULES = {
+    entry.strip()
+    for entry in os.getenv("API_OPTIONAL_ROUTERS", "").split(",")
+    if entry.strip()
+}
+_OPTIONAL_ROUTER_MODULES = (
+    _DEFAULT_OPTIONAL_ROUTER_MODULES | _ENV_OPTIONAL_ROUTER_MODULES
+)
+
+
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
 
@@ -170,17 +190,23 @@ _OPTIONAL_ROUTERS = [
 ]
 for module_path, prefix, tags, *attr in _OPTIONAL_ROUTERS:
     router_attr = attr[0] if attr else "router"
+    module_key = f"{module_path}.{router_attr}" if attr else module_path
     try:
         module = import_module(module_path)
         router_obj = getattr(module, router_attr)
     except Exception as exc:  # pragma: no cover - optional wiring
-        logger.warning(
-            "Skipping router %s.%s: %s",
-            module_path,
-            router_attr if attr else "router",
-            exc,
-        )
-        continue
+        if (
+            module_key in _OPTIONAL_ROUTER_MODULES
+            or module_path in _OPTIONAL_ROUTER_MODULES
+        ):
+            logger.warning(
+                "Skipping optional router %s.%s: %s",
+                module_path,
+                router_attr if attr else "router",
+                exc,
+            )
+            continue
+        raise
     app.include_router(router_obj, prefix=prefix, tags=tags)
 
 

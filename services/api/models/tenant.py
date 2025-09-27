@@ -13,8 +13,8 @@ class TenantMembership(Base, UUIDMixin, TimestampMixin):
     """Association table linking users to tenants with role metadata."""
 
     __tablename__ = "tenant_memberships"
-    __table_args__ = {"extend_existing": True}
 
+    __table_args__ = {"extend_existing": True}
     tenant_id = Column(
         UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True
     )
@@ -35,8 +35,8 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     """
 
     __tablename__ = "tenants"
-    __table_args__ = {"extend_existing": True}
 
+    __table_args__ = {"extend_existing": True}
     # Tenant Identity
     name = Column(String(255), nullable=False, index=True)
     slug = Column(String(100), unique=True, nullable=False, index=True)

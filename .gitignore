@@ -164,3 +164,4 @@ dev-data/
 
 !packages/ts/ui/src/lib/
 !packages/ts/ui/src/lib/**
+*.tsbuildinfo

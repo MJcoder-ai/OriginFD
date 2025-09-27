@@ -137,8 +137,8 @@ class LifecycleGateApproval(Base, UUIDMixin, TimestampMixin):
     """Approval status for lifecycle gates."""
 
     __tablename__ = "lifecycle_gate_approvals"
-    __table_args__ = {"extend_existing": True}
 
+    __table_args__ = {"extend_existing": True}
     gate_id = Column(
         UUID(as_uuid=True),
         ForeignKey("lifecycle_gates.id", ondelete="CASCADE"),

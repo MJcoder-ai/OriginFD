@@ -2,7 +2,8 @@
 Authentication and authorization endpoints.
 """
 
-from datetime import datetime, timedelta
+import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
@@ -16,12 +17,7 @@ from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
 security = HTTPBearer()
-
-# Development JWT secret key
-DEV_JWT_SECRET = (
-    "B8rgVORF0jqDwtLesImXrbQmoBv+enPRRD8FGCfnOnIJ1SGZyZpDtnATLjF3C3zC7IKm5IA"
-    "MeTwvMLFloIN5WQ=="
-)
+logger = logging.getLogger(__name__)
 
 
 class LoginRequest(BaseModel):
@@ -38,6 +34,18 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+
+
+def _get_secret_key() -> str:
+    settings = get_settings()
+    try:
+        return settings.get_secret_key()
+    except ValueError as exc:
+        logger.error("JWT secret configuration missing", exc_info=True)
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "JWT secret not configured",
+        ) from exc
 
 
 class UserResponse(BaseModel):
@@ -67,15 +75,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
     to_encode.update({"exp": expire})
-    # Use hardcoded secret for development
-    secret_key = DEV_JWT_SECRET
+    secret_key = _get_secret_key()
     return jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
 
 
@@ -83,10 +90,11 @@ def create_refresh_token(data: dict) -> str:
     """Create JWT refresh token."""
     settings = get_settings()
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
     to_encode.update({"exp": expire, "type": "refresh"})
-    # Use hardcoded secret for development
-    secret_key = DEV_JWT_SECRET
+    secret_key = _get_secret_key()
     return jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
 
 
@@ -94,10 +102,15 @@ def decode_token(token: str) -> dict:
     """Decode and verify JWT token."""
     settings = get_settings()
     try:
-        # Use hardcoded secret for development
-        secret_key = DEV_JWT_SECRET
+        secret_key = _get_secret_key()
         payload = jwt.decode(token, secret_key, algorithms=[settings.ALGORITHM])
         return payload
+    except ValueError as exc:
+        logger.error("JWT secret configuration missing", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="JWT secret not configured",
+        ) from exc
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

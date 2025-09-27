@@ -26,8 +26,32 @@ vi.mock("lucide-react", () => ({
   CheckCircle2: (props: any) => <svg {...props} />,
   CircleX: (props: any) => <svg {...props} />,
   Clock: (props: any) => <svg {...props} />,
+  X: (props: any) => <svg {...props} />,
   Loader2: (props: any) => <svg {...props} />,
 }));
+
+vi.mock("@originfd/ui", () => {
+  const React = require("react");
+  const stub =
+    (tag: string) =>
+    ({ children, ...props }: any) =>
+      React.createElement(tag, props, children);
+  return {
+    __esModule: true,
+    Badge: stub("span"),
+    Button: stub("button"),
+    Card: stub("div"),
+    CardContent: stub("div"),
+    CardHeader: stub("div"),
+    CardTitle: stub("h4"),
+    Input: ({ children, ...props }: any) =>
+      React.createElement("input", props, children),
+    Label: ({ children, ...props }: any) =>
+      React.createElement("label", props, children),
+    Textarea: ({ children, ...props }: any) =>
+      React.createElement("textarea", props, children),
+  };
+});
 
 vi.mock("@/lib/auth/auth-provider", () => ({
   useAuth: () => ({
@@ -45,9 +69,11 @@ vi.mock("@/lib/auth/auth-provider", () => ({
 }));
 
 vi.mock("@/components/projects/project-orchestrator-tasks", () => ({
+  __esModule: true,
   ProjectOrchestratorTasks: () => (
     <div data-testid="project-orchestrator-tasks" />
   ),
+  default: () => <div data-testid="project-orchestrator-tasks" />,
 }));
 
 const projectId = "project-123";

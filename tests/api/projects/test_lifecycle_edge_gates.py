@@ -1,4 +1,10 @@
 import uuid
+import os
+
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
+os.environ.setdefault("jwt-secret-key", "test-secret-key")
+from services.api.core.config import get_settings
+get_settings.cache_clear()
 from types import SimpleNamespace
 import importlib
 import sys

@@ -53,8 +53,8 @@ class Project(Base, UUIDMixin, TimestampMixin):
     __allow_unmapped__ = True
 
     __tablename__ = "projects"
-    __table_args__ = {"extend_existing": True}
 
+    __table_args__ = {"extend_existing": True}
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     domain = Column(SqlEnum(ProjectDomain), nullable=False)

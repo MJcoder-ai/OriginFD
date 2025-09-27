@@ -3,6 +3,12 @@ import sys
 from pathlib import Path
 from typing import Dict, Iterable, List
 import uuid
+import os
+
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
+os.environ.setdefault("jwt-secret-key", "test-secret-key")
+from services.api.core.config import get_settings
+get_settings.cache_clear()
 
 import pytest
 from fastapi.testclient import TestClient

@@ -38,11 +38,17 @@ def get_secret_from_manager(
     except Exception as e:
         logger.warning(f"Failed to get secret {secret_id} from Secret Manager: {e}")
 
-    # Fallback to environment variables
-    env_value = os.getenv(secret_id)
-    if env_value:
-        logger.info(f"Retrieved secret {secret_id} from environment variables")
-        return env_value
+    # Fallback to environment variables (support canonical and uppercase underscore variants)
+    env_candidates = [secret_id, secret_id.upper().replace("-", "_")]
+    for candidate in env_candidates:
+        env_value = os.getenv(candidate)
+        if env_value:
+            logger.info(
+                "Retrieved secret %s from environment variables (%s)",
+                secret_id,
+                candidate,
+            )
+            return env_value
 
     logger.warning(
         f"Secret {secret_id} not found in Secret Manager or environment variables"
@@ -119,9 +125,6 @@ class Settings(BaseSettings):
     )
 
     # Google Cloud
-    GOOGLE_CLOUD_PROJECT: Optional[str] = Field(
-        default=None, env="GOOGLE_CLOUD_PROJECT"
-    )
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = Field(
         default=None, env="GOOGLE_APPLICATION_CREDENTIALS"
     )
